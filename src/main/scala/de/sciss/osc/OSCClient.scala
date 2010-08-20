@@ -154,6 +154,15 @@ object OSCClient {
 
 	   new OSCClient( rcv, trns, transport )
    }
+
+   @throws( classOf[ IOException ])
+   def withAddress( transport: OSCTransport, localAddress: InetSocketAddress,
+                    codec: OSCPacketCodec = OSCPacketCodec.default ) : OSCClient = {
+	   val rcv  = OSCReceiver.withAddress( transport, localAddress, codec )
+   	val trns	= OSCTransmitter.withAddress( transport, localAddress, codec )
+
+	   new OSCClient( rcv, trns, transport )
+   }
 }
 
 class OSCClient private( rcv: OSCReceiver, trns: OSCTransmitter, val transport: OSCTransport )
