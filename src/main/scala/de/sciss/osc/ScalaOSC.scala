@@ -2,7 +2,7 @@
  *  ScalaOSC.scala
  *  (ScalaOSC)
  *
- *  Copyright (c) 2008-2010 Hanns Holger Rutz. All rights reserved.
+ *  Copyright (c) 2008-2011 Hanns Holger Rutz. All rights reserved.
  *
  *	 This library is free software; you can redistribute it and/or
  *	 modify it under the terms of the GNU Lesser General Public
@@ -29,8 +29,8 @@ import java.util.{ MissingResourceException, ResourceBundle }
  */
 object ScalaOSC {
    val name                = "ScalaOSC"
-   val version             = 0.19
-   val copyright           = "(C)opyright 2008-2010 Hanns Holger Rutz"
+   val version             = 0.22
+   val copyright           = "(C)opyright 2008-2011 Hanns Holger Rutz"
 //   private val resBundle	= ResourceBundle.getBundle( "ScalaOSCStrings" )
 
    def versionString = (version + 0.001).toString.substring( 0, 4 )

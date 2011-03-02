@@ -1,14 +1,14 @@
-h2. ScalaOSC ==<small>-- version 0.19 (built 10-aug-10) --</small>==
+h2. ScalaOSC ==<small>-- version 0.22 (built 02-mar-11) --</small>==
 
 h3. statement
 
-ScalaOSC is an OpenSoundControl (OSC) library for the Scala programming language. It is (C)opyright 2004&ndash;2010 by Hanns Holger Rutz. All rights reserved. ScalaOSC is released under the "GNU Lesser General Public License":http://www.sciss.de/scalaOSC/licenses/ScalaOSC-License.txt and comes with absolutely no warranties. To contact the author, send an email to @contact at sciss.de@
+ScalaOSC is an OpenSoundControl (OSC) library for the Scala programming language. It is (C)opyright 2008&ndash;2011 by Hanns Holger Rutz. All rights reserved. ScalaOSC is released under the "GNU Lesser General Public License":http://www.sciss.de/scalaOSC/licenses/ScalaOSC-License.txt and comes with absolutely no warranties. To contact the author, send an email to @contact at sciss.de@
 
 For project status, API and current version, visit "www.sciss.de/scalaOSC":http://www.sciss.de/scalaOSC/ .
 
 h3. requirements / installation
 
-ScalaOSC currently compiles against the Scala 2.8.0. The repository contains a project file for Intellij IDEA 9 CE, and project files for sbt. Standard targets for sbt:
+ScalaOSC currently compiles against the Scala 2.8.1. The repository contains a project file for Intellij IDEA 10 CE, and project files for sbt. Standard targets for sbt:
 
 * @clean@
 * @compile@
