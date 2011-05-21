@@ -1,4 +1,4 @@
-h2. ScalaOSC ==<small>-- version 0.22 (built 02-mar-11) --</small>==
+h2. ScalaOSC ==<small>-- version 0.23 --</small>==
 
 h3. statement
 
@@ -8,7 +8,7 @@ For project status, API and current version, visit "www.sciss.de/scalaOSC":http:
 
 h3. requirements / installation
 
-ScalaOSC currently compiles against the Scala 2.8.1. The repository contains a project file for Intellij IDEA 10 CE, and project files for sbt. Standard targets for sbt:
+ScalaOSC currently compiles against the Scala 2.9.0 and 2.8.1. The repository contains a project file for Intellij IDEA 10 CE, and project files for sbt. Standard targets for sbt:
 
 * @clean@
 * @compile@

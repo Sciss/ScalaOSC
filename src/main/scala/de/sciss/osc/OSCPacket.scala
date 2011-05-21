@@ -443,6 +443,7 @@ with LinearSeqLike[ OSCPacket, OSCBundle ] {
 	override def drop( n: Int ) : OSCBundle = new OSCBundle( timetag, packets.drop( n ): _* )
    def apply( idx: Int ) = packets( idx )
    def length: Int = packets.length
+   def seq: TraversableOnce[ OSCPacket ] = this // need for Scala 2.9.0
 
 	// ---- OSCPacket implementation ----
 	def name: String = OSCBundle.TAG
@@ -496,6 +497,7 @@ with LinearSeqLike[ Any, OSCMessage ]
 	override def drop( n: Int ) : OSCMessage = new OSCMessage( name, args.drop( n ): _* )
    def apply( idx: Int ) = args( idx )
    def length: Int = args.length
+   def seq: TraversableOnce[ Any ] = this // need for Scala 2.9.0
 
 	def encode( c: OSCPacketCodec, b: ByteBuffer ) : Unit = c.encodeMessage( this, b )
 	def getEncodedSize( c: OSCPacketCodec ) : Int = c.getEncodedMessageSize( this )
