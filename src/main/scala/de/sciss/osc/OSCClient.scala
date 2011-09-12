@@ -161,13 +161,12 @@ object OSCClient {
 }
 
 class OSCClient private( rcv: OSCReceiver, trns: OSCTransmitter, val transport: OSCTransport )
-extends OSCInputChannel with OSCOutputChannel
-{
+extends OSCInputChannel with OSCOutputChannel {
 	import OSCChannel._
 	
 	private var bufSize = DEFAULTBUFSIZE
 
-	def action_=( f: (OSCMessage, SocketAddress, Long) => Unit ) = {
+	def action_=( f: (OSCMessage, SocketAddress, Long) => Unit ) {
 		rcv.action = f
 	}
 	def action: (OSCMessage, SocketAddress, Long) => Unit = rcv.action
@@ -234,7 +233,7 @@ extends OSCInputChannel with OSCOutputChannel
 	 *	@see	#start()
 	 */
 	@throws( classOf[ IOException ])
-	def connect: Unit = trns.connect
+	def connect() { trns.connect() }
 
 	/**
 	 *	Queries the connection state of the client.
@@ -262,7 +261,7 @@ extends OSCInputChannel with OSCOutputChannel
 	 *	@see	#setTarget( SocketAddress )
 	 */
 	@throws( classOf[ IOException ])
-	def !( p: OSCPacket ): Unit = trns.!( p )
+	def !( p: OSCPacket ) { trns.!( p )}
 
 	/**
 	 *  Registers a listener that gets informed
@@ -304,12 +303,12 @@ extends OSCInputChannel with OSCOutputChannel
 	 *				possible in a future version.
 	 */
 	@throws( classOf[ IOException ])
-	def start {
+	def start() {
 		if( !trns.isConnected ) {
-			trns.connect
+			trns.connect()
 			rcv.channel = trns.channel
 		}
-		rcv.start
+		rcv.start()
 	}
 	
 	/**
@@ -324,7 +323,7 @@ extends OSCInputChannel with OSCOutputChannel
 	def isActive: Boolean = rcv.isActive
 
 	@throws( classOf[ IOException ])
-	def stop: Unit = rcv.stop
+	def stop() { rcv.stop() }
 
 	/**
 	 *	Adjusts the buffer size for OSC messages (both for sending and receiving).
@@ -401,8 +400,8 @@ extends OSCInputChannel with OSCOutputChannel
 	 *	This automatically stops the client and closes the networking channel.
 	 *	Do not use this client instance any more after calling <code>dispose.</code>
 	 */
-	def dispose {
-		rcv.dispose
-		trns.dispose
+	def dispose() {
+		rcv.dispose()
+		trns.dispose()
 	}
 }

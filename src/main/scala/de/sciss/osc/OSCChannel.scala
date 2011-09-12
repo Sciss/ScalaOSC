@@ -140,15 +140,14 @@ trait OSCChannel {
 	 *	Disposes the resources associated with the OSC communicator.
 	 *	The object should not be used any more after calling this method.
 	 */
-	def dispose
+	def dispose() : Unit
 	
 	def codec : OSCPacketCodec
 	def codec_=( c: OSCPacketCodec ) : Unit
 }
 
 trait OSCInputChannel
-extends OSCChannel
-{
+extends OSCChannel {
 	def action_=( f: (OSCMessage, SocketAddress, Long) => Unit )
 	def action: (OSCMessage, SocketAddress, Long) => Unit
 	
@@ -158,7 +157,7 @@ extends OSCChannel
 	 *	@throws	IOException	if a networking error occurs
 	 */
 	@throws( classOf[ IOException ])
-	def start
+	def start() : Unit
 
 	/**
 	 *	Checks whether the communicator is active (was started) or not (is stopped).
@@ -173,7 +172,7 @@ extends OSCChannel
 	 *	@throws	IOException	if a networking error occurs
 	 */
 	@throws( classOf[ IOException ])
-	def stop
+	def stop() : Unit
 
 	/**
 	 *	Changes the way incoming messages are dumped
@@ -195,8 +194,7 @@ extends OSCChannel
 }
 
 trait OSCOutputChannel
-extends OSCChannel
-{
+extends OSCChannel {
 	/**
 	 *	Changes the way outgoing messages are dumped
 	 *	to the console. By default outgoing messages are not

@@ -278,7 +278,7 @@ extends OSCChannel with Runnable {
 	 *									(which would obviously cause a loop)
 	 */
 	@throws( classOf[ IOException ])
-	def start {
+	def start() {
 		generalSync.synchronized {
 			if( Thread.currentThread == thread ) throw new IllegalStateException( "Cannot be called from reception thread" )
 
@@ -286,11 +286,11 @@ extends OSCChannel with Runnable {
 				listening		= false
 			}
 			if( !listening ) {
-				if( !isConnected ) connect
+				if( !isConnected ) connect()
 				listening		= true
 				thread			= new Thread( this, "OSCReceiver" )
 				thread.setDaemon( true )
-				thread.start
+				thread.start()
 			}
 		}
 	}
@@ -319,7 +319,7 @@ extends OSCChannel with Runnable {
 	 *									(which would obviously cause a loop)
 	 */
 	@throws( classOf[ IOException ])
-	def stop {
+	def stop() {
         generalSync.synchronized {
 			if( Thread.currentThread == thread ) throw new IllegalStateException( "Cannot be called from reception thread" )
 
@@ -328,21 +328,21 @@ extends OSCChannel with Runnable {
 				if( (thread != null) && thread.isAlive ) {
 					try {
 						threadSync.synchronized {
-							sendGuardSignal
+							sendGuardSignal()
 							threadSync.wait( 5000 )
 						}
 					}
 					catch { case e2: InterruptedException =>
-						e2.printStackTrace
+						e2.printStackTrace()
 					}
 					finally {
 						if( (thread != null) && thread.isAlive ) {
 							try {
 								System.err.println( "OSCReceiver.stopListening : rude task killing (" + this.hashCode + ")" )
-								closeChannel
+								closeChannel()
 							}
 							catch { case e3: IOException =>
-								e3.printStackTrace
+								e3.printStackTrace()
 							}
 						}
 						thread = null
@@ -365,25 +365,25 @@ extends OSCChannel with Runnable {
 		}
 	}
 
-	def dispose {
+	def dispose() {
 		try {
-			stop
+			stop()
 		}
 		catch { case e1: IOException =>
-			e1.printStackTrace
+			e1.printStackTrace()
 		}
 		try {
-			closeChannel
+			closeChannel()
 		}
 		catch { case e1: IOException =>
-			e1.printStackTrace
+			e1.printStackTrace()
 		}
 //		collListeners.clear
 		byteBuf	= null
 	}
 	
 	@throws( classOf[ IOException ])
-	protected def sendGuardSignal : Unit
+	protected def sendGuardSignal() : Unit
 	
 	@throws( classOf[ IOException ])
 //	protected def channel_=( ch: SelectableChannel ) : Unit
@@ -392,7 +392,7 @@ extends OSCChannel with Runnable {
 	private[ osc ] def channel: SelectableChannel
 
 	@throws( classOf[ IOException ])
-	protected def closeChannel : Unit
+	protected def closeChannel() : Unit
 
 	@throws( classOf[ IOException ])
 	protected def flipDecodeDispatch( sender: SocketAddress ) {
@@ -441,7 +441,7 @@ extends OSCChannel with Runnable {
 //		}
 	}
 	
-	protected def checkBuffer {
+	protected def checkBuffer() {
 		bufSync.synchronized {
 			if( (byteBuf == null) || (byteBuf.capacity != bufSize) ) {
 				byteBuf	= ByteBuffer.allocateDirect( bufSize )
@@ -483,7 +483,7 @@ extends OSCChannel with Runnable {
 	 *	@throws IOException
 	 */
 	@throws( classOf[ IOException ])
-	def connect : Unit
+	def connect() : Unit
 	
 	/**
 	 *	Queries the connection state of the receiver.

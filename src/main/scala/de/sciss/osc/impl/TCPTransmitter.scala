@@ -36,15 +36,15 @@ extends OSCTransmitter( TCP, _addr, sch == null ) {
    def this( localAddress: InetSocketAddress, codec: OSCPacketCodec ) = this( localAddress, null, codec )
 
    def this( sch: SocketChannel, codec: OSCPacketCodec ) {
-      this( new InetSocketAddress( sch.socket().getLocalAddress(), sch.socket().getLocalPort() ), sch, codec )
-      if( sch.isConnected() ) target = sch.socket().getRemoteSocketAddress()
+      this( new InetSocketAddress( sch.socket().getLocalAddress, sch.socket().getLocalPort ), sch, codec )
+      if( sch.isConnected ) target = sch.socket().getRemoteSocketAddress
    }
 
    def localAddress : InetSocketAddress = {
       sync.synchronized {
          if( sch != null ) {
             val s = sch.socket()
-            new InetSocketAddress( s.getLocalAddress(), s.getLocalPort() )
+            new InetSocketAddress( s.getLocalAddress, s.getLocalPort )
          } else {
             addr
          }
@@ -58,9 +58,9 @@ extends OSCTransmitter( TCP, _addr, sch == null ) {
    }
 
    @throws( classOf[ IOException ])
-   def connect {
+   def connect() {
       sync.synchronized {
-         if( (sch != null) && !sch.isOpen() ) {
+         if( (sch != null) && !sch.isOpen ) {
             if( !revivable ) throw new IOException( "Channel cannot be revived" )
             sch = null;
          }
@@ -69,7 +69,7 @@ extends OSCTransmitter( TCP, _addr, sch == null ) {
             newCh.socket().bind( addr )
             sch = newCh
          }
-         if( !sch.isConnected() ) {
+         if( !sch.isConnected ) {
             sch.connect( target )
          }
       }
@@ -77,12 +77,12 @@ extends OSCTransmitter( TCP, _addr, sch == null ) {
 
    def isConnected : Boolean = {
       sync.synchronized {
-         (sch != null) && sch.isConnected()
+         (sch != null) && sch.isConnected
       }
    }
 
-   override def dispose {
-      super.dispose
+   override def dispose() {
+      super.dispose()
       if( sch != null ) {
          try {
             sch.close()
@@ -107,8 +107,8 @@ extends OSCTransmitter( TCP, _addr, sch == null ) {
       try {
          sync.synchronized {
             if( sch == null ) throw new IOException( "Channel not connected" );
-            checkBuffer
-            byteBuf.clear
+            checkBuffer()
+            byteBuf.clear()
             byteBuf.position( 4 )
             p.encode( codec, byteBuf )
             val len = byteBuf.position() - 4

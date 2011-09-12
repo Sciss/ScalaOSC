@@ -31,6 +31,7 @@ import collection.LinearSeqLike
 import collection.mutable.Builder
 import java.text.{NumberFormat, SimpleDateFormat, DecimalFormat}
 import java.util.Locale
+
 object OSCPacket {
 	private val HEX				= "0123456789ABCDEF".getBytes
   	private val PAD				= new Array[ Byte ]( 4 )
@@ -75,12 +76,12 @@ object OSCPacket {
 		var n = 0
 		var i = 4
 		while( i < 56 ) {
-			txt( i ) = 0x20
+			txt( i ) = 0x20.toByte
 			i += 1
         }
-		txt( 56 ) = 0x7C
+		txt( 56 ) = 0x7C.toByte
 		
-		stream.println
+		stream.println()
 		i = b.position
 		while( i < lim ) {
 			j = 0
@@ -95,21 +96,21 @@ object OSCPacket {
 				n			= b.get
 				txt( j )	= HEX( (n >> 4) & 0xF ); j += 1
 				txt( j )	= HEX( n & 0xF ); j += 1
-				txt( m )	= (if( (n > 0x1F) && (n < 0x7F) ) n.toByte else 0x2E); m += 1
+				txt( m )	= (if( (n > 0x1F) && (n < 0x7F) ) n.toByte else 0x2E.toByte); m += 1
 				k += 1
 				i += 1
 			}
-			txt( m ) = 0x7C; m += 1
+			txt( m ) = 0x7C.toByte; m += 1
 			while( j < 54 ) {
-				txt( j ) = 0x20; j += 1
+				txt( j ) = 0x20.toByte; j += 1
 			}
 			while( m < 74 ) {
-				txt( m ) = 0x20; m += 1
+				txt( m ) = 0x20.toByte; m += 1
 			}
 			stream.write( txt, 0, 74 )
-			stream.println
+			stream.println()
         }
-		stream.println
+		stream.println()
     }
 	
 	def printEscapedStringOn( stream: PrintStream, str: String ) {
@@ -124,7 +125,7 @@ object OSCPacket {
 			    		if( ch == '"' ) "\\\"" else if( ch == '\\' ) "\\\\" else ch
 			    	} else {
 			    		(if( ch < 0x100 ) "\\u00" else if( ch < 0x1000) "\\u0" else "\\u") +
-							Integer.toHexString( ch ).toUpperCase()
+							Integer.toHexString( ch ).toUpperCase
 			    	}
 			    } else {
 			    	ch match {
@@ -134,7 +135,7 @@ object OSCPacket {
                 		case '\f' => "\\f"
                 		case '\r' => "\\r"
                 		case _ => (if( ch > 0xF) "\\u00" else "\\u000") +
-                			Integer.toHexString( ch ).toUpperCase()
+                			Integer.toHexString( ch ).toUpperCase
 					}
                 }
 			)
@@ -452,7 +453,7 @@ with LinearSeqLike[ OSCPacket, OSCBundle ] {
 	def name: String = OSCBundle.TAG
 
 	@throws( classOf[ OSCException ])
-	def encode( c: OSCPacketCodec, b: ByteBuffer ) : Unit = c.encodeBundle( this, b )
+	def encode( c: OSCPacketCodec, b: ByteBuffer ) { c.encodeBundle( this, b )}
 
 	def getEncodedSize( c: OSCPacketCodec ) : Int = c.getEncodedBundleSize( this )
 
@@ -480,14 +481,12 @@ with LinearSeqLike[ OSCPacket, OSCBundle ] {
 
 object OSCMessage {
    def apply( name: String, args: Any* ) = new OSCMessage( name, args: _* )
-//   def unapply( m: OSCMessage ): Option[ OSCMessage ] = Some( m )
-   def unapplySeq( m: OSCMessage ): Option[ Tuple2[ String, Seq[ Any ]]]= Some( m.name -> m.args )
+   def unapplySeq( m: OSCMessage ): Option[ (String, Seq[ Any ])]= Some( m.name -> m.args )
 }
 
 class OSCMessage( val name: String, val args: Any* )
 extends OSCPacket
-with LinearSeqLike[ Any, OSCMessage ]
-{
+with LinearSeqLike[ Any, OSCMessage ] {
    import OSCPacket._
    
 	// ---- getting LinearSeqLike to work properly ----
@@ -502,7 +501,7 @@ with LinearSeqLike[ Any, OSCMessage ]
    def length: Int = args.length
    def seq: TraversableOnce[ Any ] = this // need for Scala 2.9.0
 
-	def encode( c: OSCPacketCodec, b: ByteBuffer ) : Unit = c.encodeMessage( this, b )
+	def encode( c: OSCPacketCodec, b: ByteBuffer ) { c.encodeMessage( this, b )}
 	def getEncodedSize( c: OSCPacketCodec ) : Int = c.getEncodedMessageSize( this )
 
    // recreate stuff we lost when removing case modifier

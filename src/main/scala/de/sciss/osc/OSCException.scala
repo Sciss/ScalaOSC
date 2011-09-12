@@ -26,7 +26,6 @@
 package de.sciss.osc
 
 import java.io.IOException
-import ScalaOSC._
 
 object OSCException {
 	private val errMessages = Array(

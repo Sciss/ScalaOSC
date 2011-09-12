@@ -36,7 +36,7 @@ extends OSCReceiver( TCP, _localAddress, sch == null, _c ) {
       this( localAddress, null, c )
 
    def this( sch: SocketChannel, c: OSCPacketCodec ) =
-      this( new InetSocketAddress( sch.socket().getLocalAddress(), sch.socket().getLocalPort() ), sch, c )
+      this( new InetSocketAddress( sch.socket().getLocalAddress, sch.socket().getLocalPort ), sch, c )
 
    @throws( classOf[ IOException ])
    private[ osc ] def channel_=( ch: SelectableChannel ) {
@@ -44,7 +44,7 @@ extends OSCReceiver( TCP, _localAddress, sch == null, _c ) {
          if( listening ) throw new IllegalStateException( "Cannot be called while receiver is active" )
 
          sch	= ch.asInstanceOf[ SocketChannel ]
-         if( !sch.isBlocking() ) {
+         if( !sch.isBlocking ) {
             sch.configureBlocking( true )
          }
       }
@@ -55,9 +55,9 @@ extends OSCReceiver( TCP, _localAddress, sch == null, _c ) {
       generalSync.synchronized {
          if( sch != null ) {
             val s = sch.socket()
-            getLocalAddress( s.getLocalAddress(), s.getLocalPort() )
+            getLocalAddress( s.getLocalAddress, s.getLocalPort )
          } else {
-            getLocalAddress( addr.getAddress(), addr.getPort() )
+            getLocalAddress( addr.getAddress, addr.getPort )
          }
       }
    }
@@ -70,11 +70,11 @@ extends OSCReceiver( TCP, _localAddress, sch == null, _c ) {
    }
 
    @throws( classOf[ IOException ])
-   def connect {
+   def connect() {
       generalSync.synchronized {
          if( listening ) throw new IllegalStateException( "Cannot be called while receiver is active" )
 
-         if( (sch != null) && !sch.isOpen() ) {
+         if( (sch != null) && !sch.isOpen ) {
             if( !revivable ) throw new IOException( "Channel cannot be revived" )
             sch = null
          }
@@ -83,7 +83,7 @@ extends OSCReceiver( TCP, _localAddress, sch == null, _c ) {
             newCh.socket().bind( localAddress )
             sch = newCh
          }
-         if( !sch.isConnected() ) {
+         if( !sch.isConnected ) {
             sch.connect( target )
          }
       }
@@ -91,12 +91,12 @@ extends OSCReceiver( TCP, _localAddress, sch == null, _c ) {
 
    def isConnected : Boolean = {
       generalSync.synchronized {
-         (sch != null) && sch.isConnected()
+         (sch != null) && sch.isConnected
       }
    }
 
    @throws( classOf[ IOException ])
-   protected def closeChannel {
+   protected def closeChannel() {
       if( sch != null ) {
          try {
             sch.close()
@@ -107,9 +107,9 @@ extends OSCReceiver( TCP, _localAddress, sch == null, _c ) {
       }
    }
 
-   def run {
-      val sender = sch.socket().getRemoteSocketAddress()
-      checkBuffer
+   def run() {
+      val sender = sch.socket().getRemoteSocketAddress
+      checkBuffer()
 
       try {
    		while( listening ) {
@@ -118,13 +118,13 @@ extends OSCReceiver( TCP, _localAddress, sch == null, _c ) {
                do {
                   val len = sch.read( byteBuf )
                   if( len == -1 ) return
-               } while( byteBuf.hasRemaining() )
+               } while( byteBuf.hasRemaining )
 
                byteBuf.rewind()
                val packetSize = byteBuf.getInt()
                byteBuf.rewind().limit( packetSize )
 
-               while( byteBuf.hasRemaining() ) {
+               while( byteBuf.hasRemaining ) {
                   val len = sch.read( byteBuf )
                   if( len == -1 ) return
                }
@@ -134,16 +134,16 @@ extends OSCReceiver( TCP, _localAddress, sch == null, _c ) {
             catch {
                case e1: IllegalArgumentException =>	// thrown on illegal byteBuf.limit() calls
                   if( listening ) {
-                     val e2 = new OSCException( OSCException.RECEIVE, e1.toString() )
-                     System.err.println( "OSCReceiver.run : " + e2.getClass().getName() + " : " + e2.getLocalizedMessage() )
+                     val e2 = new OSCException( OSCException.RECEIVE, e1.toString )
+                     System.err.println( "OSCReceiver.run : " + e2.getClass.getName + " : " + e2.getLocalizedMessage )
                   }
                case e1: ClosedChannelException =>	// bye bye, we have to quit
                   if( listening ) {
-                     System.err.println( "OSCReceiver.run : " + e1.getClass().getName() + " : " + e1.getLocalizedMessage() );
+                     System.err.println( "OSCReceiver.run : " + e1.getClass.getName + " : " + e1.getLocalizedMessage )
                   }
                case e1: IOException =>
                   if( listening ) {
-                     System.err.println( "OSCReceiver.run : " + e1.getClass().getName() + " : " + e1.getLocalizedMessage() );
+                     System.err.println( "OSCReceiver.run : " + e1.getClass.getName + " : " + e1.getLocalizedMessage )
                   }
             }
          }
@@ -163,7 +163,7 @@ extends OSCReceiver( TCP, _localAddress, sch == null, _c ) {
     *				receiver in TCP mode ;-( have to check for alternative ways
     */
    @throws( classOf[ IOException ])
-   protected def sendGuardSignal {
+   protected def sendGuardSignal() {
       sch.socket().shutdownInput()
    }
 }

@@ -26,9 +26,9 @@
 package de.sciss.osc
 
 import java.io.IOException
-import java.nio.{ BufferOverflowException, BufferUnderflowException, ByteBuffer }
+import java.nio.ByteBuffer
 
-import collection.immutable.{ IntMap }
+import collection.immutable.IntMap
 import OSCPacket._
 
 /**
@@ -68,20 +68,20 @@ import OSCPacket._
 object OSCPacketCodec {
 	lazy val default = new OSCPacketCodec
   	
-	val MODE_READ_DOUBLE			= 0x0001
-	val MODE_READ_DOUBLE_AS_FLOAT	= 0x0002
-	private val MODE_READ_DOUBLE_MASK		= 0x0003
-	val MODE_READ_LONG				= 0x0004
-	val MODE_READ_LONG_AS_INTEGER	= 0x0008
-	private val MODE_READ_LONG_MASK			= 0x000C
-	val MODE_WRITE_DOUBLE			= 0x0010
-	val MODE_WRITE_DOUBLE_AS_FLOAT	= 0x0020
-	private val MODE_WRITE_DOUBLE_MASK		= 0x0030
-	val MODE_WRITE_LONG				= 0x0040
-	val MODE_WRITE_LONG_AS_INTEGER	= 0x0080
-	private val MODE_WRITE_LONG_MASK		= 0x00C0
-	val MODE_READ_SYMBOL_AS_STRING	= 0x0100
-	val MODE_WRITE_PACKET_AS_BLOB	= 0x0200
+	val MODE_READ_DOUBLE			         = 0x0001
+	val MODE_READ_DOUBLE_AS_FLOAT	      = 0x0002
+	private val MODE_READ_DOUBLE_MASK	= 0x0003
+	val MODE_READ_LONG				      = 0x0004
+	val MODE_READ_LONG_AS_INTEGER	      = 0x0008
+	private val MODE_READ_LONG_MASK		= 0x000C
+	val MODE_WRITE_DOUBLE			      = 0x0010
+	val MODE_WRITE_DOUBLE_AS_FLOAT	   = 0x0020
+//	private val MODE_WRITE_DOUBLE_MASK	= 0x0030
+	val MODE_WRITE_LONG				      = 0x0040
+	val MODE_WRITE_LONG_AS_INTEGER	   = 0x0080
+//	private val MODE_WRITE_LONG_MASK		= 0x00C0
+	val MODE_READ_SYMBOL_AS_STRING	   = 0x0100
+	val MODE_WRITE_PACKET_AS_BLOB	      = 0x0200
 
 	/**
 	 *	Support mode: coder only accepts <code>java.lang.Integer</code>,
@@ -141,43 +141,41 @@ object OSCPacketCodec {
 class OSCPacketCodec( mode: Int = OSCPacketCodec.MODE_FAT_V1, var charsetName: String = "UTF-8" ) {
 	
 	import OSCPacketCodec._
-	
+
+	// ---- constructor ----
+	// OSC version 1.0 strict type tag support
+   atomDecoders += 0x69 -> Atom.Int
+//	atomEncoders += classOf[ Int ] -> IntAtom
+//	atomEncoders += classOf[ java.lang.Integer ] -> IntAtom
+   atomDecoders += 0x66 -> Atom.Float
+//	atomEncoders += classOf[ Float ] -> FloatAtom
+//	atomEncoders += classOf[ java.lang.Float ] -> FloatAtom
+   atomDecoders += 0x73 -> Atom.String
+// atomEncoders += classOf[ String ] -> StringAtom
+   atomDecoders += 0x62 -> Atom.Blob
+//	atomEncoders += classOf[ ByteBuffer ] -> BlobAtom
+
+//	setStringCharsetCodec( charset )
+	setSupportMode( mode )
+
 //	private[scalaosc] var atomEncoders	= Map.empty[ Class[_], Atom ]
 	private[osc] var atomDecoders	= IntMap.empty[ Atom ]
 	
-	private[osc] val atomEncoders: Function1[ Any, Atom ] = {
-		case x: Int => IntAtom
-		case x: Float => FloatAtom
-		case x: String => StringAtom
-		case x: ByteBuffer => BlobAtom
+	private[osc] val atomEncoders: Any => Atom = {
+		case x: Int          => Atom.Int
+		case x: Float        => Atom.Float
+		case x: String       => Atom.String
+		case x: ByteBuffer   => Atom.Blob
 
 		// XXX use 64-bit fat types
 		// here until encoder list updating is implemented
 
 //		if( (mode & MODE_WRITE_PACKET_AS_BLOB) != 0 ) {
-			case x: OSCPacket => PacketAtom
+			case x: OSCPacket  => Atom.Packet
 //		}
 			
-		case x: Long => LongAtom
-		case x: Double => DoubleAtom
-	}
-
-	// constructor
-	{
-		// OSC version 1.0 strict type tag support
-		atomDecoders += 0x69 -> IntAtom
-//		atomEncoders += classOf[ Int ] -> IntAtom
-//		atomEncoders += classOf[ java.lang.Integer ] -> IntAtom
-		atomDecoders += 0x66 -> FloatAtom
-//		atomEncoders += classOf[ Float ] -> FloatAtom
-//		atomEncoders += classOf[ java.lang.Float ] -> FloatAtom
-		atomDecoders += 0x73 -> StringAtom
-//		atomEncoders += classOf[ String ] -> StringAtom
-		atomDecoders += 0x62 -> BlobAtom
-//		atomEncoders += classOf[ ByteBuffer ] -> BlobAtom
-				
-//		setStringCharsetCodec( charset )
-		setSupportMode( mode )
+		case x: Long         => Atom.Long
+		case x: Double       => Atom.Double
 	}
 
 	/**
@@ -226,10 +224,10 @@ class OSCPacketCodec( mode: Int = OSCPacketCodec.MODE_FAT_V1, var charsetName: S
 			bndl.foreach( p => {
 				b.mark()
 				b.putInt( 0 )			// calculate size later
-				val pos1 = b.position()
+				val pos1 = b.position
 //				encode( p, b )
 				p.encode( this, b )
-				val pos2 = b.position()
+				val pos2 = b.position
 				b.reset()
 				b.putInt( pos2 - pos1 ).position( pos2 )			
 			})
@@ -252,17 +250,17 @@ class OSCPacketCodec( mode: Int = OSCPacketCodec.MODE_FAT_V1, var charsetName: S
 	 *								(buffer overflow, illegal arguments).
 	 */
 	@throws( classOf[ IOException ])
-	private[ osc ] def encodeMessage( msg: OSCMessage, b: ByteBuffer ) : Unit = {
+	private[ osc ] def encodeMessage( msg: OSCMessage, b: ByteBuffer ) {
 		val numArgs = msg.length
 
-		b.put( msg.name.getBytes() )  // this one assumes 7-bit ascii only
+		b.put( msg.name.getBytes )  // this one assumes 7-bit ascii only
 		terminateAndPadToAlign( b )
 		// it's important to slice at a 4-byte boundary because
 		// the position will become 0 and terminateAndPadToAlign
 		// will be malfunctioning otherwise
-		val b2 = b.slice();
-		b2.put( 0x2C.toByte );		// ',' to announce type string
-		b.position( b.position() + ((numArgs + 5) & ~3) )	// comma + numArgs + zero + align
+		val b2 = b.slice
+		b2.put( 0x2C.toByte )		// ',' to announce type string
+		b.position( b.position + ((numArgs + 5) & ~3) )	// comma + numArgs + zero + align
 //		try {
 			msg.foreach( v => {
 //				val cl = v.asInstanceOf[ AnyRef ].getClass
@@ -298,10 +296,14 @@ class OSCPacketCodec( mode: Int = OSCPacketCodec.MODE_FAT_V1, var charsetName: S
 		result
 	}
 
+   // sum of name, timetag and sizes of each bundle element
 	private[ osc ] def getEncodedBundleSize( bndl: OSCBundle ) : Int = {
-		var result  = 16 + (bndl.length << 2) // name, timetag, size of each bundle element
-		bndl.foreach( result += _.getEncodedSize( this ))
-		result
+//		var result  = 16 + (bndl.length << 2) // name, timetag, size of each bundle element
+//		bndl.foreach( result += _.getEncodedSize( this ))
+//		result
+//
+                 // overhead: name, timetag
+      bndl.foldLeft( 16 + (bndl.size << 2) )( (sum, p) => sum + p.getEncodedSize( this ))
 	}
 	
 	/**
@@ -321,15 +323,15 @@ class OSCPacketCodec( mode: Int = OSCPacketCodec.MODE_FAT_V1, var charsetName: S
 	def setSupportMode( mode: Int ) {
 		(mode & MODE_READ_DOUBLE_MASK) match {
 			case MODE_STRICT_V1 => atomDecoders -= 0x64	// 'd' double
-			case MODE_READ_DOUBLE => atomDecoders += 0x64 -> DoubleAtom
-			case MODE_READ_DOUBLE_AS_FLOAT => atomDecoders += 0x64 -> DoubleAsFloatAtom
+			case MODE_READ_DOUBLE => atomDecoders += 0x64 -> Atom.Double
+			case MODE_READ_DOUBLE_AS_FLOAT => atomDecoders += 0x64 -> Atom.DoubleAsFloat
 			case _ => throw new IllegalArgumentException( String.valueOf( mode ))
 		}
 		
 		(mode & MODE_READ_LONG_MASK) match {
 			case MODE_STRICT_V1 => atomDecoders -= 0x68	// 'h' long
-			case MODE_READ_LONG => atomDecoders += 0x68 -> LongAtom
-			case MODE_READ_LONG_AS_INTEGER => atomDecoders += 0x68 -> LongAsIntAtom
+			case MODE_READ_LONG => atomDecoders += 0x68 -> Atom.Long
+			case MODE_READ_LONG_AS_INTEGER => atomDecoders += 0x68 -> Atom.LongAsInt
 			case _ => throw new IllegalArgumentException( String.valueOf( mode ))
 		}
 
@@ -372,7 +374,7 @@ class OSCPacketCodec( mode: Int = OSCPacketCodec.MODE_FAT_V1, var charsetName: S
 //		}
 		
 		if( (mode & MODE_READ_SYMBOL_AS_STRING) != 0 ) {
-			atomDecoders += 0x53 -> StringAtom	// 'S' symbol
+			atomDecoders += 0x53 -> Atom.String // 'S' symbol
 		} else {
 			atomDecoders -= 0x53
 		}

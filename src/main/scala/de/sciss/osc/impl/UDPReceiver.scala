@@ -48,10 +48,10 @@ extends OSCReceiver( UDP, _addr, dch == null, _codec ) {
 			if( listening ) throw new IllegalStateException( "Cannot be called while receiver is active" )
 
 			val dchTmp	= ch.asInstanceOf[ DatagramChannel ]
-			if( !dchTmp.isBlocking() ) {
+			if( !dchTmp.isBlocking ) {
 				dchTmp.configureBlocking( true )
 			}
-			if( dchTmp.isConnected() ) throw new IllegalStateException( "Channel is not connected" )
+			if( dchTmp.isConnected ) throw new IllegalStateException( "Channel is not connected" )
 			dch = dchTmp
 		}
 	}
@@ -61,9 +61,9 @@ extends OSCReceiver( UDP, _addr, dch == null, _codec ) {
 		generalSync.synchronized {
 			if( dch != null ) {
 				val ds = dch.socket()
-				getLocalAddress( ds.getLocalAddress(), ds.getLocalPort() )
+				getLocalAddress( ds.getLocalAddress, ds.getLocalPort )
 			} else {
-				getLocalAddress( addr.getAddress(), addr.getPort() )
+				getLocalAddress( addr.getAddress, addr.getPort )
 			}
 		}
 	}
@@ -73,11 +73,11 @@ extends OSCReceiver( UDP, _addr, dch == null, _codec ) {
 	}
 
 	@throws( classOf[ IOException ])
-	def connect {
+	def connect() {
 		generalSync.synchronized {
 			if( listening ) throw new IllegalStateException( "Cannot be called while receiver is active" )
 
-			if( (dch != null) && !dch.isOpen() ) {
+			if( (dch != null) && !dch.isOpen ) {
 				if( !revivable ) throw new IOException( "Channel cannot be revived" )
 				dch = null
 			}
@@ -91,12 +91,12 @@ extends OSCReceiver( UDP, _addr, dch == null, _codec ) {
 
 	def isConnected : Boolean = {
 		generalSync.synchronized {
-			(dch != null) && dch.isOpen()
+			(dch != null) && dch.isOpen
 		}
 	}
 
 	@throws( classOf[ IOException ])
-	protected def closeChannel {
+	protected def closeChannel() {
 		if( dch != null ) {
 			try {
 				dch.close()
@@ -110,13 +110,13 @@ extends OSCReceiver( UDP, _addr, dch == null, _codec ) {
 	/**
 	 *	This is the body of the listening thread
 	 */
-	def run {
-		checkBuffer
+	def run() {
+		checkBuffer()
 
 		try {
 			while( listening ) {
 				try {
-					byteBuf.clear
+					byteBuf.clear()
 //println( "in run : " + dch )
 					val sender = dch.receive( byteBuf )
 
@@ -143,17 +143,17 @@ extends OSCReceiver( UDP, _addr, dch == null, _codec ) {
 		finally {
 			threadSync.synchronized {
 				thread = null
-				threadSync.notifyAll   // stopListening() might be waiting
+				threadSync.notifyAll()   // stopListening() might be waiting
 			}
 		}
 	}
 
 	@throws( classOf[ IOException ])
-	protected def sendGuardSignal {
+	protected def sendGuardSignal() {
 		val guard		   = new DatagramSocket
 		val guardPacket	= new DatagramPacket( new Array[ Byte ]( 0 ), 0 )
 		guardPacket.setSocketAddress( localAddress )
 		guard.send( guardPacket )
-		guard.close
+		guard.close()
 	}
 }

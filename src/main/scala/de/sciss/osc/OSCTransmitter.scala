@@ -27,10 +27,9 @@ package de.sciss.osc
 
 import impl.{TCPTransmitter, UDPTransmitter}
 import java.io.IOException
-import java.net.{ InetAddress, InetSocketAddress, SocketAddress }
-import java.nio.{ BufferOverflowException, ByteBuffer }
+import java.net.{InetAddress, InetSocketAddress, SocketAddress}
+import java.nio.ByteBuffer
 import OSCChannel._
-import ScalaOSC._
 import java.nio.channels.{SocketChannel, DatagramChannel, SelectableChannel}
 
 /**
@@ -177,7 +176,7 @@ extends OSCChannel {
 	 *	@see	#isConnected()
 	 */
 	@throws( classOf[ IOException ])
-	def connect : Unit
+	def connect() : Unit
 		
 	/**
 	 *	Queries the connection state of the transmitter.
@@ -190,7 +189,7 @@ extends OSCChannel {
 	 */
 	def isConnected : Boolean
 
-	final def !( p: OSCPacket ) : Unit = send( p, target )
+	final def !( p: OSCPacket ) { send( p, target )}
  
 	final def bufferSize_=( size: Int ) {
 		sync.synchronized {
@@ -207,12 +206,12 @@ extends OSCChannel {
 		}
 	}
 
-	def dispose {
+	def dispose() {
 		byteBuf	= null
 	}
 
 	// @synchronization	caller must ensure synchronization
-	protected final def checkBuffer {
+	protected final def checkBuffer() {
 		if( allocBuf ) {
 			byteBuf		= ByteBuffer.allocateDirect( bufSize )
 			allocBuf	= false
