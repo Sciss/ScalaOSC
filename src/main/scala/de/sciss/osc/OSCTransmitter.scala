@@ -143,8 +143,7 @@ object OSCTransmitter {
 //   }
 }
 
-abstract class OSCTransmitter( final val localSocketAddress: InetSocketAddress )
-extends OSCChannel {
+trait OSCTransmitter extends OSCChannel {
 	protected final val generalSync	   = new AnyRef
 //	protected var allocBuf 					= true
 //	private var bufSize						= DEFAULTBUFSIZE
@@ -237,7 +236,7 @@ extends OSCChannel {
 //		}
 //	}
 	
-	private[ osc ] def channel : SelectableChannel
+//	private[ osc ] def channel : SelectableChannel
 
    /**
     *	Sends an OSC packet (bundle or message) to the given

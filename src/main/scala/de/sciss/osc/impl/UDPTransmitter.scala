@@ -23,27 +23,32 @@
  * contact@sciss.de
  */
 
-package de.sciss.osc.impl
+package de.sciss.osc
+package impl
 
 import java.nio.BufferOverflowException
-import de.sciss.osc._
 import java.net.{SocketAddress, InetSocketAddress}
 import java.io.IOException
-import java.nio.channels.{SelectableChannel, DatagramChannel}
+import java.nio.channels.DatagramChannel
 
-final class UDPTransmitter( _addr: InetSocketAddress, private var dch: DatagramChannel, val config: UDP.Config )
-extends OSCTransmitter( _addr ) {
+final class UDPTransmitter( channel: DatagramChannel, val config: UDP.Config )
+extends OSCTransmitter {
 
 //  private var dch: DatagramChannel = null
 
 //	def this( localAddress: InetSocketAddress, codec: OSCPacketCodec ) = this( localAddress, null, codec )
-	def this( dch: DatagramChannel, config: UDP.Config ) {
-		this( new InetSocketAddress( dch.socket.getLocalAddress, dch.socket.getLocalPort ), dch, config )
-  	}
+//	def this( dch: DatagramChannel, config: UDP.Config ) {
+//		this( new InetSocketAddress( dch.socket.getLocalAddress, dch.socket.getLocalPort ), dch, config )
+//  	}
+
+   def localSocketAddress = {
+      val so = channel.socket()
+      new InetSocketAddress( so.getLocalAddress, so.getLocalPort )
+   }
 
    def target : SocketAddress = sys.error( "TODO" )
 
- 	private[ osc ] def channel : SelectableChannel = dch
+// 	private[ osc ] def channel : SelectableChannel = dch
 //    {
 //		sync.synchronized {
 //			dch
@@ -85,7 +90,7 @@ extends OSCTransmitter( _addr ) {
 
    @throws( classOf[ IOException ])
 	protected def closeChannel() {
-      dch.close()
+      channel.close()
 	}
 
    @throws( classOf[ IOException ])
@@ -98,7 +103,7 @@ extends OSCTransmitter( _addr ) {
             p.encode( codec, byteBuf )
             byteBuf.flip()
             dumpPacket( p )
-            dch.send( byteBuf, target )
+            channel.send( byteBuf, target )
          }
       }
       catch { case e: BufferOverflowException =>

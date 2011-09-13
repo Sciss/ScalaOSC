@@ -23,12 +23,12 @@
  * contact@sciss.de
  */
 
-package de.sciss.osc.impl
+package de.sciss.osc
+package impl
 
 import java.io.IOException
-import java.net.{SocketAddress, InetSocketAddress}
-import java.nio.channels.{ClosedChannelException, AlreadyConnectedException, SelectableChannel, SocketChannel}
-import de.sciss.osc.{OSCChannelConfig, OSCException, TCP, OSCReceiver, OSCPacketCodec}
+import java.net.InetSocketAddress
+import java.nio.channels.{ClosedChannelException, SelectableChannel, SocketChannel}
 
 final class TCPReceiver private( _localAddress: InetSocketAddress, sch: SocketChannel, val config: TCP.Config )
 extends OSCReceiver( _localAddress ) {

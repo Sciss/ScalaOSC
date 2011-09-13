@@ -23,12 +23,12 @@
  * contact@sciss.de
  */
 
-package de.sciss.osc.impl
+package de.sciss.osc
+package impl
 
 import java.nio.channels.{ClosedChannelException, SelectableChannel, DatagramChannel}
 import java.net.{DatagramPacket, DatagramSocket, SocketAddress, InetSocketAddress}
 import java.io.IOException
-import de.sciss.osc.{OSCChannelConfig, UDP, OSCReceiver, OSCPacketCodec}
 
 final class UDPReceiver( _addr: InetSocketAddress, dch: DatagramChannel, val config: UDP.Config )
 extends OSCReceiver( _addr ) {

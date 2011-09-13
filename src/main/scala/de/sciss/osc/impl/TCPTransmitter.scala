@@ -23,23 +23,30 @@
  * contact@sciss.de
  */
 
-package de.sciss.osc.impl
+package de.sciss.osc
+package impl
 
 import java.net.{SocketAddress, InetSocketAddress}
 import java.nio.BufferOverflowException
-import de.sciss.osc._
 import java.nio.channels.{SelectableChannel, SocketChannel}
 import java.io.IOException
 
-final class TCPTransmitter private( _addr: InetSocketAddress, private var sch: SocketChannel,
-                                    val config: TCP.Config, val target: SocketAddress )
-extends OSCTransmitter( _addr ) {
+final class TCPTransmitter private( channel: SocketChannel, val config: TCP.Config )
+extends OSCTransmitter {
+
+   def target: SocketAddress = channel.socket().getRemoteSocketAddress
+
 //   def this( localAddress: InetSocketAddress, codec: OSCPacketCodec ) = this( localAddress, null, codec )
 
-   def this( sch: SocketChannel, config: TCP.Config ) {
-      this( new InetSocketAddress( sch.socket().getLocalAddress, sch.socket().getLocalPort ), sch, config,
-         sch.socket().getRemoteSocketAddress )
-//      if( sch.isConnected ) target = sch.socket().getRemoteSocketAddress
+//   def this( sch: SocketChannel, config: TCP.Config ) {
+//      this( new InetSocketAddress( sch.socket().getLocalAddress, sch.socket().getLocalPort ), sch, config,
+//         sch.socket().getRemoteSocketAddress )
+////      if( sch.isConnected ) target = sch.socket().getRemoteSocketAddress
+//   }
+
+   def localSocketAddress = {
+      val so = channel.socket()
+      new InetSocketAddress( so.getLocalAddress, so.getLocalPort )
    }
 
 //   def localAddress : InetSocketAddress = {
@@ -53,7 +60,7 @@ extends OSCTransmitter( _addr ) {
 //      }
 //   }
 
-   private[ osc ] def channel : SelectableChannel = sch
+//   private[ osc ] def channel : SelectableChannel = sch
 //   {
 //      sync.synchronized {
 //         sch
@@ -86,7 +93,7 @@ extends OSCTransmitter( _addr ) {
 
    @throws( classOf[ IOException ])
    protected def closeChannel() {
-      sch.close()
+      channel.close()
    }
 
 //   @throws( classOf[ IOException ])
@@ -112,7 +119,7 @@ extends OSCTransmitter( _addr ) {
             byteBuf.flip()
             byteBuf.putInt( 0, len )
             dumpPacket( p )
-            sch.write( byteBuf )
+            channel.write( byteBuf )
          }
       }
       catch { case e: BufferOverflowException =>
