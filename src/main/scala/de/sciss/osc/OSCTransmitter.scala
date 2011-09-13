@@ -25,12 +25,13 @@
 
 package de.sciss.osc
 
-import impl.{TCPTransmitter, UDPTransmitter}
 import java.io.IOException
 import java.net.{InetAddress, InetSocketAddress, SocketAddress}
-import java.nio.ByteBuffer
 import OSCChannel._
 import java.nio.channels.{InterruptibleChannel, SocketChannel, DatagramChannel, SelectableChannel}
+import java.nio.{BufferOverflowException, ByteBuffer}
+
+import de.sciss.osc.{ UDP => TUDP, TCP => TTCP }
 
 /**
  * 	@author	Hanns Holger Rutz
@@ -146,14 +147,16 @@ object OSCTransmitter {
       def !( p: OSCPacket ) : Unit
    }
 
-   trait Net extends OSCTransmitter with OSCChannelNet {
-      def target: SocketAddress
-   }
+   type Net = OSCTransmitter with OSCChannelNet
+//   trait Net extends OSCTransmitter with OSCChannelNet {
+//      def target: SocketAddress
+//   }
 
-   trait TCP extends Directed with Net {
+   trait TCP extends OSCChannelNet with Directed {
       override protected def config: TCP.Config
+      override protected def channel: SocketChannel
+
       final def target = channel.socket().getRemoteSocketAddress
-      protected def channel: SocketChannel
 
       final def transport = config.transport
 
@@ -163,12 +166,75 @@ object OSCTransmitter {
       }
    }
 
-   trait UDP extends Net {
-      override protected def config: UDP.Config
+   object UDP {
+      def apply( config: TUDP.Config ) : UDP with UndirectedNet = {
+         val cfg = config
+         new UDP with UndirectedNet {
+            protected def config = cfg
+
+            @throws( classOf[ IOException ])
+            def send( p: OSCPacket, target: SocketAddress ) {
+               try {
+                  generalSync.synchronized {
+                     byteBuf.clear()
+                     p.encode( codec, byteBuf )
+                     byteBuf.flip()
+                     dumpPacket( p )
+                     channel.send( byteBuf, target )
+                  }
+               }
+               catch { case e: BufferOverflowException =>
+                   throw new OSCException( OSCException.BUFFER, p match {
+                      case m: OSCMessage => m.name
+                      case _ => p.getClass.getName
+                   })
+               }
+            }
+         }
+      }
+
+      def apply( config: TUDP.Config, target: SocketAddress ) : UDP with Directed = {
+         val cfg = config
+         new UDP with Directed {
+            channel.connect( target )
+
+            protected def config = cfg
+
+            @throws( classOf[ IOException ])
+            def !( p: OSCPacket ) {
+               try {
+                  generalSync.synchronized {
+                     byteBuf.clear()
+                     p.encode( codec, byteBuf )
+                     byteBuf.flip()
+                     dumpPacket( p )
+                     channel.write( byteBuf )
+                  }
+               }
+               catch { case e: BufferOverflowException =>
+                   throw new OSCException( OSCException.BUFFER, p match {
+                      case m: OSCMessage => m.name
+                      case _ => p.getClass.getName
+                   })
+               }
+            }
+         }
+      }
+   }
+
+   trait UDP extends OSCTransmitter with OSCChannelNet {
+      final override protected val channel: DatagramChannel = config.openChannel()
+      override protected def config: TUDP.Config
+      final def transport = config.transport
+
+      final def localSocketAddress = {
+         val so = channel.socket()
+         new InetSocketAddress( so.getLocalAddress, so.getLocalPort )
+      }
    }
 
    trait UndirectedNet {
-      def send( p: OSCPacket, target: InetSocketAddress ) : Unit
+      def send( p: OSCPacket, target: SocketAddress ) : Unit
    }
 
    type DirectedNet = Net with Directed
@@ -292,7 +358,7 @@ trait OSCTransmitter extends OSCChannel {
             if( (dumpMode & DUMP_TEXT) != 0 ) OSCPacket.printTextOn( codec, printStream, p )
             if( (dumpMode & DUMP_HEX)  != 0 ) {
                OSCPacket.printHexOn( printStream, byteBuf )
-               byteBuf.flip
+               byteBuf.flip()
             }
          }
       }

@@ -25,6 +25,7 @@
 package de.sciss.osc
 
 import java.net.{InetAddress, InetSocketAddress}
+import java.nio.channels.DatagramChannel
 
 sealed trait OSCTransport { def name: String }
 
@@ -37,7 +38,9 @@ case object UDP extends OSCTransport.Net {
 
    def config : ConfigBuilder = new ConfigBuilderImpl
 
-   sealed trait Config extends OSCChannelNetConfig
+   sealed trait Config extends OSCChannelNetConfig {
+      def openChannel() : DatagramChannel
+   }
    sealed trait ConfigBuilder extends OSCChannelNetConfigBuilder {
       override def build : Config
    }
@@ -51,6 +54,11 @@ case object UDP extends OSCTransport.Net {
                                         localSocketAddress: InetSocketAddress )
    extends Config {
       def transport = UDP
+      def openChannel() = {
+         val ch = DatagramChannel.open()
+         ch.socket().bind( localSocketAddress )
+         ch
+      }
    }
 }
 
