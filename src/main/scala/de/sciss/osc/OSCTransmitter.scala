@@ -30,7 +30,7 @@ import java.io.IOException
 import java.net.{InetAddress, InetSocketAddress, SocketAddress}
 import java.nio.ByteBuffer
 import OSCChannel._
-import java.nio.channels.{SocketChannel, DatagramChannel, SelectableChannel}
+import java.nio.channels.{InterruptibleChannel, SocketChannel, DatagramChannel, SelectableChannel}
 
 /**
  * 	@author	Hanns Holger Rutz
@@ -147,15 +147,24 @@ object OSCTransmitter {
    }
 
    trait Net extends OSCTransmitter with OSCChannelNet {
-      def target: InetSocketAddress
+      def target: SocketAddress
    }
 
    trait TCP extends Directed with Net {
-      override def config: TCP.Config
+      override protected def config: TCP.Config
+      final def target = channel.socket().getRemoteSocketAddress
+      protected def channel: SocketChannel
+
+      final def transport = config.transport
+
+      final def localSocketAddress = {
+         val so = channel.socket()
+         new InetSocketAddress( so.getLocalAddress, so.getLocalPort )
+      }
    }
 
    trait UDP extends Net {
-      override def config: UDP.Config
+      override protected def config: UDP.Config
    }
 
    trait UndirectedNet {
@@ -170,7 +179,7 @@ trait OSCTransmitter extends OSCChannel {
 //	protected var allocBuf 					= true
 //	private var bufSize						= DEFAULTBUFSIZE
 	protected final val byteBuf : ByteBuffer = ByteBuffer.allocateDirect( config.bufferSize )
-   private var wasClosed               = false
+//   private var wasClosed               = false
  
 //   var target: SocketAddress		      = null
 	
@@ -202,19 +211,21 @@ trait OSCTransmitter extends OSCChannel {
    @throws( classOf[ IOException ])
    final def close() {
 //      stop()
-      closeChannel()
+      channel.close()
    }
 
-   @throws( classOf[ IOException ])
-   protected def closeChannel() : Unit
+   protected def channel: InterruptibleChannel
+
+//   @throws( classOf[ IOException ])
+//   protected def closeChannel() : Unit
 
    /**
     *	Queries whether the <code>OSCReceiver</code> is
     *	listening or not.
     */
-   final def isOpen : Boolean = generalSync.synchronized { !wasClosed }
+   final def isOpen : Boolean = channel.isOpen // generalSync.synchronized { !wasClosed }
 
-   protected final def isOpenNoSync : Boolean = !wasClosed
+//   protected final def isOpenNoSync : Boolean = !wasClosed
 
 //	/**
 //	 *	Queries the connection state of the transmitter.

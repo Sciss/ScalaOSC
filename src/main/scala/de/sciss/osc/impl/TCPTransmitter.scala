@@ -26,15 +26,19 @@
 package de.sciss.osc
 package impl
 
-import java.net.{SocketAddress, InetSocketAddress}
+import java.net.InetSocketAddress
 import java.nio.BufferOverflowException
 import java.nio.channels.SocketChannel
 import java.io.IOException
 
-final class TCPTransmitter private( channel: SocketChannel, val config: TCP.Config )
-extends OSCTransmitter {
+final class TCPTransmitter( protected val config: TCP.Config, protected val channel: SocketChannel )
+extends OSCTransmitter.TCP {
 
-   def target: SocketAddress = channel.socket().getRemoteSocketAddress
+//      channel.socket().getRemoteSocketAddress match {
+//         case iaddr: InetSocketAddress => iaddr
+//         case addr => new InetSocketAddress( addr.getAddress, addr.getPort )
+//      }
+//   }
 
 //   def this( localAddress: InetSocketAddress, codec: OSCPacketCodec ) = this( localAddress, null, codec )
 
@@ -43,13 +47,6 @@ extends OSCTransmitter {
 //         sch.socket().getRemoteSocketAddress )
 ////      if( sch.isConnected ) target = sch.socket().getRemoteSocketAddress
 //   }
-
-   def transport = config.transport
-
-   def localSocketAddress = {
-      val so = channel.socket()
-      new InetSocketAddress( so.getLocalAddress, so.getLocalPort )
-   }
 
 //   def localAddress : InetSocketAddress = {
 //      sync.synchronized {
@@ -109,7 +106,7 @@ extends OSCTransmitter {
 //   }
 
    @throws( classOf[ IOException ])
-   def send( p: OSCPacket, target: SocketAddress ) {
+   def !( p: OSCPacket ) {
       try {
          generalSync.synchronized {
 //            if( sch == null ) throw new IOException( "Channel not connected" );

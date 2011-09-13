@@ -31,8 +31,8 @@ import java.net.{SocketAddress, InetSocketAddress}
 import java.io.IOException
 import java.nio.channels.DatagramChannel
 
-final class UDPTransmitter( channel: DatagramChannel, val config: UDP.Config )
-extends OSCTransmitter {
+final class UDPTransmitter( protected val config: UDP.Config, protected val channel: DatagramChannel )
+extends OSCTransmitter.UDP {
 
 //  private var dch: DatagramChannel = null
 
