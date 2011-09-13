@@ -1,37 +1,39 @@
 /*
- *  Test.scala
- *  (ScalaOSC)
+ * Test.scala
+ * (ScalaOSC)
  *
- *  Copyright (c) 2008-2009 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2011 Hanns Holger Rutz. All rights reserved.
  *
- *	 This library is free software; you can redistribute it and/or
- *	 modify it under the terms of the GNU Lesser General Public
- *	 License as published by the Free Software Foundation; either
- *	 version 2.1 of the License, or (at your option) any later version.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *	 This library is distributed in the hope that it will be useful,
- *	 but WITHOUT ANY WARRANTY; without even the implied warranty of
- *	 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *	 Lesser General Public License for more details.
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- *	 Below is a copy of the GNU Lesser General Public License
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  *
- *	 For further information, please contact Hanns Holger Rutz at
- *	 contact@sciss.de
+ *
+ * For further information, please contact Hanns Holger Rutz at
+ * contact@sciss.de
  */
 
 package de.sciss.osc
 
 import java.io.IOException
-import java.net.{ InetAddress, InetSocketAddress }
-import java.nio.ByteBuffer
+import java.net.{InetAddress, InetSocketAddress}
 import java.nio.channels.DatagramChannel
 
 /**
  *	   @version	0.11, 24-Nov-09
  */
 object Test {
-	def codec {
+	def codec() {
 // NOTE: scalacheck doesn't seem to be compatible with
 //		 scala 2.8 BETA, and i cannot get the sources
 // 		 to compile due to more stupid dependancies.
@@ -69,13 +71,13 @@ object Test {
 */
 	}
 	
-  def receiver {
-	    val rcv = OSCReceiver.apply( UDP, 0, true )
-	    rcv.start
+  def receiver() {
+	    val rcv: OSCReceiver = sys.error( "TODO" ) // = OSCReceiver.apply( UDP, 0, true )
+//	    rcv.start()
 	    
 	    println( "Test.receiver\n\n" +
                "  is waiting for an incoming message " +
-               "on UDP port " + rcv.localAddress.getPort + ".\n" +
+               "on UDP port " + rcv.localPort + ".\n" +
                "  Send \"/quit\" to terminate.\n" )
 	    
 	    val sync = new AnyRef
@@ -84,12 +86,12 @@ object Test {
 	    rcv.action = (msg, addr, when) => {
 	    	System.out.println( "Received message '" + msg.name + "'" )
 //	    	OSCPacket.printTextOn( System.out, msg )
-	    	if( msg.name == "/quit" ) sync.synchronized( sync.notifyAll )
+	    	if( msg.name == "/quit" ) sync.synchronized( sync.notifyAll() )
 	    }
-	    sync.synchronized( sync.wait )
+	    sync.synchronized( sync.wait() )
   }
   
-  def transmitter {
+  def transmitter() {
 //	  import StrictV1._
    
 	  println( "Test.transmitter\n\n" +
@@ -101,12 +103,12 @@ object Test {
 
       try {
           val addr		= new InetSocketAddress( InetAddress.getLocalHost, 57110 )
-          val notify	= new AnyRef
+//          val notify	= new AnyRef
           
           dch     = DatagramChannel.open
           dch.socket.bind( null )    // assigns an automatic local socket address
-          trns    = OSCTransmitter.withChannel( dch )
-          trns.target = addr
+          trns    = sys.error( "TODO" ) // OSCTransmitter.withChannel( dch )
+//          trns.target = addr
           trns.dumpOSC( OSCChannel.DUMP_TEXT, System.out )
 
           trns ! OSCMessage( "/s_new", "default", 1000, 0, 0, "amp", 0f )
@@ -131,17 +133,17 @@ object Test {
 //          } else
           if( dch != null ) {
               try {
-                  dch.close
+                  dch.close()
               }
               catch { case e: IOException => }
           }
       }
    }
 
-   def tcpClient {
-      val c = OSCClient( TCP, loopBack = true )
-      c.target = new InetSocketAddress( "127.0.0.1", 57110 )
-      c.start
+   def tcpClient() {
+      val c: OSCClient = sys.error( "TODO" ) // = OSCClient( TCP, loopBack = true )
+//      c.target = new InetSocketAddress( "127.0.0.1", 57110 )
+//      c.start()
       c.dumpOSC(1)
       c ! OSCMessage( "/dumpOSC", 1 )
       c ! OSCMessage( "/notify", 1 )

@@ -31,72 +31,69 @@ import java.net.{SocketAddress, InetSocketAddress}
 import java.io.IOException
 import java.nio.channels.{SelectableChannel, DatagramChannel}
 
-final class UDPTransmitter( _addr: InetSocketAddress, private var dch: DatagramChannel, var codec: OSCPacketCodec )
-extends OSCTransmitter( UDP, _addr, dch == null ) {
+final class UDPTransmitter( _addr: InetSocketAddress, private var dch: DatagramChannel, val config: UDP.Config )
+extends OSCTransmitter( _addr ) {
 
 //  private var dch: DatagramChannel = null
 
-	def this( localAddress: InetSocketAddress, codec: OSCPacketCodec ) = this( localAddress, null, codec )
-	def this( dch: DatagramChannel, codec: OSCPacketCodec ) {
-		this( new InetSocketAddress( dch.socket.getLocalAddress, dch.socket.getLocalPort ), dch, codec )
+//	def this( localAddress: InetSocketAddress, codec: OSCPacketCodec ) = this( localAddress, null, codec )
+	def this( dch: DatagramChannel, config: UDP.Config ) {
+		this( new InetSocketAddress( dch.socket.getLocalAddress, dch.socket.getLocalPort ), dch, config )
   	}
 
- 	private[ osc ] def channel : SelectableChannel = {
-		sync.synchronized {
-			dch
-		}
-	}
+   def target : SocketAddress = sys.error( "TODO" )
 
-	def localAddress : InetSocketAddress = {
-		sync.synchronized {
-			if( dch != null ) {
-				val ds = dch.socket
-				new InetSocketAddress( ds.getLocalAddress, ds.getLocalPort )
-			} else {
-//				localAddress
-				addr
-			}
-		}
-	}
+ 	private[ osc ] def channel : SelectableChannel = dch
+//    {
+//		sync.synchronized {
+//			dch
+//		}
+//	}
 
-	@throws( classOf[ IOException ])
-	def connect() {
-		sync.synchronized {
-			if( (dch != null) && !dch.isOpen ) {
-				if( !revivable ) throw new IOException( "Channel cannot be revived" )
-				dch = null
-			}
-			if( dch == null ) {
-				val newCh = DatagramChannel.open()
-				newCh.socket.bind( addr )
-				dch = newCh
-			}
-		}
-	}
+//	def localAddress : InetSocketAddress = {
+//		sync.synchronized {
+//			if( dch != null ) {
+//				val ds = dch.socket
+//				new InetSocketAddress( ds.getLocalAddress, ds.getLocalPort )
+//			} else {
+////				localAddress
+//				addr
+//			}
+//		}
+//	}
 
-	def isConnected : Boolean = {
-		sync.synchronized {
-			(dch != null) && dch.isOpen
-		}
-	}
+//	@throws( classOf[ IOException ])
+//	def connect() {
+//		sync.synchronized {
+//			if( (dch != null) && !dch.isOpen ) {
+//				if( !revivable ) throw new IOException( "Channel cannot be revived" )
+//				dch = null
+//			}
+//			if( dch == null ) {
+//				val newCh = DatagramChannel.open()
+//				newCh.socket.bind( addr )
+//				dch = newCh
+//			}
+//		}
+//	}
 
-	override def dispose() {
-		super.dispose()
-		if( dch != null ) {
-			try {
-				dch.close()
-			}
-			catch { case e: IOException => /* ignored */ }
-			dch = null
-		}
+//	def isConnected : Boolean = {
+//		sync.synchronized {
+//			(dch != null) && dch.isOpen
+//		}
+//	}
+
+   @throws( classOf[ IOException ])
+	protected def closeChannel() {
+      dch.close()
 	}
 
    @throws( classOf[ IOException ])
    def send( p: OSCPacket, target: SocketAddress ) {
       try {
-         sync.synchronized {
-            if( dch == null ) throw new IOException( "Channel not connected" );
-            checkBuffer()
+         generalSync.synchronized {
+//            if( dch == null ) throw new IOException( "Channel not connected" );
+//            checkBuffer()
             byteBuf.clear()
             p.encode( codec, byteBuf )
             byteBuf.flip()

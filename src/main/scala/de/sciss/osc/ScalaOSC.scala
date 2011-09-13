@@ -39,19 +39,19 @@ object ScalaOSC {
 		   args( 0 ) match {
 		      case "--testTransmitter" => {
 				   testo	= true
-				   Test.transmitter
+				   Test.transmitter()
 			   }
 		      case "--testReceiver" => {
 		    	   testo = true
-		    	   Test.receiver
+		    	   Test.receiver()
 		      }
 		      case "--runChecks" => {
 		    	   testo = true
-		    	   Test.codec
+		    	   Test.codec()
 		      }
             case "--testTCPClient" => {
                testo = true
-               Test.tcpClient
+               Test.tcpClient()
             }
 		   }
 		}

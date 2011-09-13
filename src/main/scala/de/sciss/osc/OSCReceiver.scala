@@ -64,12 +64,12 @@ object OSCReceiver {
 	 *	@throws	IOException					if a networking error occurs while creating the socket
 	 *	@throws	IllegalArgumentException	if an illegal protocol is used
 	 */
-	@throws( classOf[ IOException ])
-	def apply( transport: OSCTransport, port: Int = 0, loopBack: Boolean = false,
-              codec: OSCPacketCodec = OSCPacketCodec.default ) : OSCReceiver = {
-		val localAddress = new InetSocketAddress( if( loopBack ) "127.0.0.1" else "0.0.0.0", port )
-		withAddress( transport, localAddress, codec )
-	}
+//	@throws( classOf[ IOException ])
+//	def apply( transport: OSCTransport, port: Int = 0, loopBack: Boolean = false,
+//              codec: OSCPacketCodec = OSCPacketCodec.default ) : OSCReceiver = {
+//		val localAddress = new InetSocketAddress( if( loopBack ) "127.0.0.1" else "0.0.0.0", port )
+//		withAddress( transport, localAddress, codec )
+//	}
 
 	/**
 	 *	Creates a new instance of a revivable <code>OSCReceiver</code>, using
@@ -95,14 +95,14 @@ object OSCReceiver {
 	 *	@throws	IOException					if a networking error occurs while creating the socket
 	 *	@throws	IllegalArgumentException	if an illegal protocol is used
 	 */
-	@throws( classOf[ IOException ])
-	def withAddress( transport: OSCTransport, localAddress: InetSocketAddress,
-                    codec: OSCPacketCodec = OSCPacketCodec.default ) : OSCReceiver = {
-      transport match {
-         case UDP => new UDPReceiver( localAddress, codec )
-         case TCP => new TCPReceiver( localAddress, codec )
-      }
-	}
+//	@throws( classOf[ IOException ])
+//	def withAddress( transport: OSCTransport, localAddress: InetSocketAddress,
+//                    codec: OSCPacketCodec = OSCPacketCodec.default ) : OSCReceiver = {
+//      transport match {
+//         case UDP => new UDPReceiver( localAddress, codec )
+//         case TCP => new TCPReceiver( localAddress, codec )
+//      }
+//	}
 
 	/**
 	 *	Creates a new instance of a non-revivable <code>OSCReceiver</code>, using
@@ -120,13 +120,13 @@ object OSCReceiver {
 	 *
 	 *	@throws	IOException	if a networking error occurs while configuring the socket
 	 */
-	@throws( classOf[ IOException ])
-	def withChannel( dch: DatagramChannel ) : OSCReceiver =
-		new UDPReceiver( dch, OSCPacketCodec.default )
+//	@throws( classOf[ IOException ])
+//	def withChannel( dch: DatagramChannel ) : OSCReceiver =
+//		new UDPReceiver( dch, OSCPacketCodec.default )
 
-   @throws( classOf[ IOException ])
-   def withChannel( dch: DatagramChannel, codec: OSCPacketCodec ) : OSCReceiver =
-      new UDPReceiver( dch, codec )
+//   @throws( classOf[ IOException ])
+//   def withChannel( dch: DatagramChannel, codec: OSCPacketCodec ) : OSCReceiver =
+//      new UDPReceiver( dch, codec )
 
 	/**
 	 *	Creates a new instance of a non-revivable <code>OSCReceiver</code>, using
@@ -145,36 +145,61 @@ object OSCReceiver {
 	 *
 	 *	@throws	IOException	if a networking error occurs while configuring the socket
 	 */
-	@throws( classOf[ IOException ])
-	def withChannel( sch: SocketChannel, codec: OSCPacketCodec ) : OSCReceiver =
-      new TCPReceiver( sch, codec )
+//	@throws( classOf[ IOException ])
+//	def withChannel( sch: SocketChannel, codec: OSCPacketCodec ) : OSCReceiver =
+//      new TCPReceiver( sch, codec )
 
-   @throws( classOf[ IOException ])
-   def withChannel( sch: SocketChannel ) : OSCReceiver =
-      new TCPReceiver( sch, OSCPacketCodec.default )
+//   @throws( classOf[ IOException ])
+//   def withChannel( sch: SocketChannel ) : OSCReceiver =
+//      new TCPReceiver( sch, OSCPacketCodec.default )
 
 	protected def debugTimeString : String = {
 		new java.text.SimpleDateFormat( "HH:mm:ss.SSS" ).format( new java.util.Date )
 	}
 }
 
-abstract class OSCReceiver( val transport: OSCTransport, protected val addr: InetSocketAddress,
-                            protected val revivable: Boolean, var codec: OSCPacketCodec )
-extends OSCChannel with Runnable {
+abstract class OSCReceiver( val localSocketAddress: InetSocketAddress )
+extends OSCChannel {
 //	private val		collListeners   			= new ArrayList[ OSCListener ]
   	var				action						= (msg: OSCMessage, sender: SocketAddress, time: Long ) => ()
-	protected var	thread : Thread				= null
+//	protected var	thread : Thread				= null
 
 	protected val	generalSync					= new AnyRef	// mutual exclusion startListening / stopListening
-	protected val	threadSync					= new AnyRef	// communication with receiver thread
+//	protected val	threadSync					= new AnyRef	// communication with receiver thread
 
-	protected var	listening					= false
+//	protected var	listening					= false
+   private var    wasClosed               = false
 	
-	private val		bufSync						= new AnyRef	// buffer (re)allocation
-	private var		bufSize						= DEFAULTBUFSIZE
-	protected var	byteBuf : ByteBuffer		= null
+//	private val		bufSync						= new AnyRef	// buffer (re)allocation
+//	private var		bufSize						= DEFAULTBUFSIZE
+//	protected var	byteBuf : ByteBuffer		= null
+   protected final val byteBuf	         = ByteBuffer.allocateDirect( config.bufferSize )
 
 	protected var	tgt : SocketAddress			= null
+
+   // ---- constructor ----
+//   connect()
+//	listening		      = true
+	protected val thread = new Thread( "OSCReceiver" ) {
+      override def run {
+         try {
+            receiverLoop()
+         } finally {
+            generalSync.synchronized {
+               wasClosed = true
+               generalSync.notifyAll()
+            }
+         }
+      }
+   }
+	thread.setDaemon( true )
+	thread.start()
+
+//   final def transport  = config.transport
+//   final def codec      = config.codec
+//   final def bufferSize = config.bufferSize
+
+   protected def receiverLoop() : Unit
 
 //	/**
 //	 *	Queries the receiver's local socket address.
@@ -213,11 +238,11 @@ extends OSCChannel with Runnable {
 	 *	@see	java.net.InetSocketAddress#getPort()
 	 */
 //	def getLocalAddress : InetSocketAddress
-	def localAddress : InetSocketAddress
+//	def localAddress : InetSocketAddress
 
 //	def setTarget( target: SocketAddress ) : Unit
-	def target: SocketAddress = tgt
-	def target_=( t: SocketAddress ) : Unit
+	final def target: SocketAddress = tgt
+//	def target_=( t: SocketAddress ) : Unit
 	
 //	def decoder_=( dec: OSCPacketCodec ) {
 //		decoder = dec
@@ -251,60 +276,71 @@ extends OSCChannel with Runnable {
 //		}
 //	}
 
-	/**
-	 *  Starts to wait for incoming messages.
-	 *	See the class constructor description to learn how
-	 *	connected and unconnected channels are handled.
-	 *	You should never modify the
-	 *	the channel's setup between the constructor and calling
-	 *	<code>startListening</code>. This method will check
-	 *	the connection status of the channel, using <code>isConnected</code>
-	 *	and establish the connection if necessary. Therefore,
-	 *	calling <code>connect</code> prior to <code>startListening</code>
-	 *	is not necessary.
-	 *	<p>
-	 *	To find out at which port we are listening, call
-	 *	<code>getLocalAddress().getPort()</code>.
-	 *	<p>
-	 *	If the <code>OSCReceiver</code> is already listening,
-	 *	this method does nothing.
-     *
-     *  @throws IOException when an error occurs
-     *          while establishing the channel connection.
-     *          In that case, no thread has been started
-     *          and hence stopListening() needn't be called
-	 *
-	 *	@throws	IllegalStateException	when trying to call this method from within the OSC receiver thread
-	 *									(which would obviously cause a loop)
-	 */
-	@throws( classOf[ IOException ])
-	def start() {
-		generalSync.synchronized {
-			if( Thread.currentThread == thread ) throw new IllegalStateException( "Cannot be called from reception thread" )
-
-			if( listening && ((thread == null) || !thread.isAlive) ) {
-				listening		= false
-			}
-			if( !listening ) {
-				if( !isConnected ) connect()
-				listening		= true
-				thread			= new Thread( this, "OSCReceiver" )
-				thread.setDaemon( true )
-				thread.start()
-			}
-		}
-	}
+//	/**
+//	 *  Starts to wait for incoming messages.
+//	 *	See the class constructor description to learn how
+//	 *	connected and unconnected channels are handled.
+//	 *	You should never modify the
+//	 *	the channel's setup between the constructor and calling
+//	 *	<code>startListening</code>. This method will check
+//	 *	the connection status of the channel, using <code>isConnected</code>
+//	 *	and establish the connection if necessary. Therefore,
+//	 *	calling <code>connect</code> prior to <code>startListening</code>
+//	 *	is not necessary.
+//	 *	<p>
+//	 *	To find out at which port we are listening, call
+//	 *	<code>getLocalAddress().getPort()</code>.
+//	 *	<p>
+//	 *	If the <code>OSCReceiver</code> is already listening,
+//	 *	this method does nothing.
+//     *
+//     *  @throws IOException when an error occurs
+//     *          while establishing the channel connection.
+//     *          In that case, no thread has been started
+//     *          and hence stopListening() needn't be called
+//	 *
+//	 *	@throws	IllegalStateException	when trying to call this method from within the OSC receiver thread
+//	 *									(which would obviously cause a loop)
+//	 */
+//	@throws( classOf[ IOException ])
+//	def start() {
+//		generalSync.synchronized {
+//			if( Thread.currentThread == thread ) throw new IllegalStateException( "Cannot be called from reception thread" )
+//
+//			if( listening && ((thread == null) || !thread.isAlive) ) {
+//				listening		= false
+//			}
+//			if( !listening ) {
+//				if( !isConnected ) connect()
+//				listening		= true
+//				thread			= new Thread( this, "OSCReceiver" )
+//				thread.setDaemon( true )
+//				thread.start()
+//			}
+//		}
+//	}
 
 	/**
 	 *	Queries whether the <code>OSCReceiver</code> is
 	 *	listening or not.
 	 */
-	def isActive : Boolean = {
-        generalSync.synchronized {
-			listening
-		}
-	}
-	
+	final def isOpen : Boolean = generalSync.synchronized { !wasClosed }
+
+   protected final def isOpenNoSync : Boolean = !wasClosed
+
+//   protected final def threadTerminates() {
+//      generalSync.synchronized {
+//         wasClosed = true
+//         generalSync.notifyAll()
+//      }
+//   }
+
+   @throws( classOf[ IOException ])
+   final def close() {
+      stop()
+      closeChannel()
+   }
+
 	/**
 	 *  Stops waiting for incoming messages. This
 	 *	method returns when the receiving thread has terminated.
@@ -319,85 +355,81 @@ extends OSCChannel with Runnable {
 	 *									(which would obviously cause a loop)
 	 */
 	@throws( classOf[ IOException ])
-	def stop() {
+	private def stop() {
         generalSync.synchronized {
 			if( Thread.currentThread == thread ) throw new IllegalStateException( "Cannot be called from reception thread" )
 
-			if( listening ) {
-				listening = false
-				if( (thread != null) && thread.isAlive ) {
-					try {
-						threadSync.synchronized {
-							sendGuardSignal()
-							threadSync.wait( 5000 )
-						}
+			if( !wasClosed ) {
+				if( thread.isAlive ) {
+               try {
+//					   threadSync.synchronized {
+						   sendGuardSignal()
+                     generalSync.wait( 5000 )
+//							threadSync.wait( 5000 )
+//						}
 					}
 					catch { case e2: InterruptedException =>
 						e2.printStackTrace()
 					}
 					finally {
-						if( (thread != null) && thread.isAlive ) {
+						if( !wasClosed && thread.isAlive ) {
 							try {
-								System.err.println( "OSCReceiver.stopListening : rude task killing (" + this.hashCode + ")" )
+                        Console.err.println( "OSCReceiver.stopListening : rude task killing (" + this.hashCode + ")" )
 								closeChannel()
 							}
 							catch { case e3: IOException =>
 								e3.printStackTrace()
 							}
 						}
-						thread = null
+                  wasClosed = true
+//						thread = null
 					}
 				}
 			}
 		}
 	}
 
-	def bufferSize_=( size: Int ) {
-		bufSync.synchronized {
-			if( listening ) throw new IllegalStateException( "Cannot be called while receiver is active" )
-			bufSize	= size
-		}
-	}
+//	def bufferSize_=( size: Int ) {
+//		bufSync.synchronized {
+//			if( listening ) throw new IllegalStateException( "Cannot be called while receiver is active" )
+//			bufSize	= size
+//		}
+//	}
 
-	def bufferSize : Int = {
-		bufSync.synchronized {
-			bufSize
-		}
-	}
-
-	def dispose() {
-		try {
-			stop()
-		}
-		catch { case e1: IOException =>
-			e1.printStackTrace()
-		}
-		try {
-			closeChannel()
-		}
-		catch { case e1: IOException =>
-			e1.printStackTrace()
-		}
-//		collListeners.clear
-		byteBuf	= null
-	}
+//	def dispose() {
+//		try {
+//			stop()
+//		}
+//		catch { case e1: IOException =>
+//			e1.printStackTrace()
+//		}
+//		try {
+//			closeChannel()
+//		}
+//		catch { case e1: IOException =>
+//			e1.printStackTrace()
+//		}
+////		collListeners.clear
+//		byteBuf	= null
+//	}
 	
 	@throws( classOf[ IOException ])
 	protected def sendGuardSignal() : Unit
 	
-	@throws( classOf[ IOException ])
+//	@throws( classOf[ IOException ])
 //	protected def channel_=( ch: SelectableChannel ) : Unit
 // XXX just to make it compile
-	private[ osc ] def channel_=( ch: SelectableChannel ) : Unit
+
+//	private[ osc ] def channel_=( ch: SelectableChannel ) : Unit
 	private[ osc ] def channel: SelectableChannel
 
 	@throws( classOf[ IOException ])
 	protected def closeChannel() : Unit
 
 	@throws( classOf[ IOException ])
-	protected def flipDecodeDispatch( sender: SocketAddress ) {
+	protected final def flipDecodeDispatch( sender: SocketAddress ) {
 		try {
-			byteBuf.flip
+			byteBuf.flip()
 			val p = codec.decode( byteBuf )
 			
 			if( (dumpMode != DUMP_OFF) && dumpFilter.apply( p )) {
@@ -405,7 +437,7 @@ extends OSCChannel with Runnable {
 					printStream.print( "r: " )
 					if( (dumpMode & DUMP_TEXT) != 0 ) OSCPacket.printTextOn( codec, printStream, p )
 					if( (dumpMode & DUMP_HEX)  != 0 ) {
-						byteBuf.flip
+						byteBuf.flip()
 						OSCPacket.printHexOn( printStream, byteBuf )
 					}
 				}
@@ -413,8 +445,8 @@ extends OSCChannel with Runnable {
 			dispatchPacket( p, sender, OSCBundle.NOW )	// OSCBundles will override this dummy time tag
 		}
 		catch { case e1: BufferUnderflowException =>
-			if( listening ) {
-				System.err.println( new OSCException( OSCException.RECEIVE, e1.toString ))
+			if( !wasClosed ) {
+				Console.err.println( new OSCException( OSCException.RECEIVE, e1.toString ))
 			}
 		}
 	}
@@ -441,58 +473,58 @@ extends OSCChannel with Runnable {
 //		}
 	}
 	
-	protected def checkBuffer() {
-		bufSync.synchronized {
-			if( (byteBuf == null) || (byteBuf.capacity != bufSize) ) {
-				byteBuf	= ByteBuffer.allocateDirect( bufSize )
-			}
-//			allocBuf = false;
-		}
-	}
+//	protected def checkBuffer() {
+//		bufSync.synchronized {
+//			if( (byteBuf == null) || (byteBuf.capacity != bufSize) ) {
+//				byteBuf	= ByteBuffer.allocateDirect( bufSize )
+//			}
+////			allocBuf = false;
+//		}
+//	}
 
-	@throws( classOf[ UnknownHostException ])
-	protected def getLocalAddress( addr: InetAddress, port: Int ) : InetSocketAddress = {
-		new InetSocketAddress( if( addr.getHostName == "0.0.0.0" ) InetAddress.getLocalHost else addr, port )
-	}
+//	@throws( classOf[ UnknownHostException ])
+//	protected def getLocalAddress( addr: InetAddress, port: Int ) : InetSocketAddress = {
+//		new InetSocketAddress( if( addr.getHostName == "0.0.0.0" ) InetAddress.getLocalHost else addr, port )
+//	}
 
-	/**
-	 *	Establishes connection for transports requiring
-	 *	connectivity (e.g. TCP). For transports that do not require connectivity (e.g. UDP),
-	 *	this ensures the communication channel is created and bound.
-	 *  <P>
-	 *  Having a connected channel without actually listening to incoming messages
-	 *  is usually not making sense. You can call <code>startListening</code> without
-	 *  explicit prior call to <code>connect</code>, because <code>startListening</code>
-	 *  will establish the connection if necessary.
-	 *  <P>
-	 *	When a <B>UDP</B> transmitter
-	 *	is created without an explicit <code>DatagramChannel</code> &ndash; say by
-	 *	calling <code>OSCReceiver.newUsing( &quot;udp&quot; )</code>, calling
-	 *	<code>connect()</code> will actually create and bind a <code>DatagramChannel</code>.
-	 *	For a <B>UDP</B> receiver which was created with an explicit
-	 *	<code>DatagramChannel</code>. However, for <B>TCP</B> receivers, 
-	 *	this may throw an <code>IOException</code> if the receiver
-	 *	was already connected, therefore be sure to check <code>isConnected()</code> before.
-	 *	
-	 *	@throws	IOException	if a networking error occurs. Possible reasons: - the underlying
-	 *						network channel had been closed by the server. - the transport
-	 *						is TCP and the server is not available.
-	 *
-	 *	@see	#isConnected()
-	 *	@see	#startListening()
-	 *	@throws IOException
-	 */
-	@throws( classOf[ IOException ])
-	def connect() : Unit
-	
-	/**
-	 *	Queries the connection state of the receiver.
-	 *
-	 *	@return	<code>true</code> if the receiver is connected, <code>false</code> otherwise. For transports that do not use
-	 *			connectivity (e.g. UDP) this returns <code>false</code>, if the
-	 *			underlying <code>DatagramChannel</code> has not yet been created.
-	 *
-	 *	@see	#connect()
-	 */
-	def isConnected : Boolean
+//	/**
+//	 *	Establishes connection for transports requiring
+//	 *	connectivity (e.g. TCP). For transports that do not require connectivity (e.g. UDP),
+//	 *	this ensures the communication channel is created and bound.
+//	 *  <P>
+//	 *  Having a connected channel without actually listening to incoming messages
+//	 *  is usually not making sense. You can call <code>startListening</code> without
+//	 *  explicit prior call to <code>connect</code>, because <code>startListening</code>
+//	 *  will establish the connection if necessary.
+//	 *  <P>
+//	 *	When a <B>UDP</B> transmitter
+//	 *	is created without an explicit <code>DatagramChannel</code> &ndash; say by
+//	 *	calling <code>OSCReceiver.newUsing( &quot;udp&quot; )</code>, calling
+//	 *	<code>connect()</code> will actually create and bind a <code>DatagramChannel</code>.
+//	 *	For a <B>UDP</B> receiver which was created with an explicit
+//	 *	<code>DatagramChannel</code>. However, for <B>TCP</B> receivers,
+//	 *	this may throw an <code>IOException</code> if the receiver
+//	 *	was already connected, therefore be sure to check <code>isConnected()</code> before.
+//	 *
+//	 *	@throws	IOException	if a networking error occurs. Possible reasons: - the underlying
+//	 *						network channel had been closed by the server. - the transport
+//	 *						is TCP and the server is not available.
+//	 *
+//	 *	@see	#isConnected()
+//	 *	@see	#startListening()
+//	 *	@throws IOException
+//	 */
+//	@throws( classOf[ IOException ])
+//	def connect() : Unit
+//
+//	/**
+//	 *	Queries the connection state of the receiver.
+//	 *
+//	 *	@return	<code>true</code> if the receiver is connected, <code>false</code> otherwise. For transports that do not use
+//	 *			connectivity (e.g. UDP) this returns <code>false</code>, if the
+//	 *			underlying <code>DatagramChannel</code> has not yet been created.
+//	 *
+//	 *	@see	#connect()
+//	 */
+//	def isConnected : Boolean
 }

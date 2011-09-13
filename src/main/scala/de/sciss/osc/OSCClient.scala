@@ -71,7 +71,7 @@ import java.net.{ InetSocketAddress, SocketAddress }
         }
     });
     // let's see what's going out and coming in
-    c.dumpOSC( OSCChannel.kDumpBoth, System.err );
+    c.dumpOSC( OSCChannel.kDumpBoth, Console.err );
     
     try {
         // the /notify message tells scsynth to send info messages back to us
@@ -141,30 +141,30 @@ object OSCClient {
 	 *	@throws	IOException					if a networking error occurs while creating the socket
 	 *	@throws	IllegalArgumentException	if an illegal protocol is used
 	 */
-   @throws( classOf[ IOException ])
-   def apply( transport: OSCTransport, port: Int = 0, loopBack: Boolean = false,
-              codec: OSCPacketCodec = OSCPacketCodec.default ) : OSCClient = {
-	   val rcv  = OSCReceiver( transport, port, loopBack, codec )
-   	val trns	= OSCTransmitter( transport, port, loopBack, codec )
+//   @throws( classOf[ IOException ])
+//   def apply( transport: OSCTransport, port: Int = 0, loopBack: Boolean = false,
+//              codec: OSCPacketCodec = OSCPacketCodec.default ) : OSCClient = {
+//	   val rcv  = OSCReceiver( transport, port, loopBack, codec )
+//   	val trns	= OSCTransmitter( transport, port, loopBack, codec )
+//
+//	   new OSCClient( rcv, trns, transport )
+//   }
 
-	   new OSCClient( rcv, trns, transport )
-   }
-
-   @throws( classOf[ IOException ])
-   def withAddress( transport: OSCTransport, localAddress: InetSocketAddress,
-                    codec: OSCPacketCodec = OSCPacketCodec.default ) : OSCClient = {
-	   val rcv  = OSCReceiver.withAddress( transport, localAddress, codec )
-   	val trns	= OSCTransmitter.withAddress( transport, localAddress, codec )
-
-	   new OSCClient( rcv, trns, transport )
-   }
+//   @throws( classOf[ IOException ])
+//   def withAddress( transport: OSCTransport, localAddress: InetSocketAddress,
+//                    codec: OSCPacketCodec = OSCPacketCodec.default ) : OSCClient = {
+//	   val rcv  = OSCReceiver.withAddress( transport, localAddress, codec )
+//   	val trns	= OSCTransmitter.withAddress( transport, localAddress, codec )
+//
+//	   new OSCClient( rcv, trns, transport )
+//   }
 }
 
-class OSCClient private( rcv: OSCReceiver, trns: OSCTransmitter, val transport: OSCTransport )
+class OSCClient private( rcv: OSCReceiver, trns: OSCTransmitter, val config: OSCChannelConfig )
 extends OSCInputChannel with OSCOutputChannel {
 	import OSCChannel._
 	
-	private var bufSize = DEFAULTBUFSIZE
+//	private var bufSize = DEFAULTBUFSIZE
 
 	def action_=( f: (OSCMessage, SocketAddress, Long) => Unit ) {
 		rcv.action = f
@@ -193,58 +193,60 @@ extends OSCInputChannel with OSCOutputChannel {
 	 *
 	 *	@see	#getProtocol()
 	 */
-	@throws( classOf[ IOException ])
-	def localAddress = rcv.localAddress
+//	@throws( classOf[ IOException ])
+//	def localAddress = rcv.localAddress
+
+   def localSocketAddress = rcv.localSocketAddress
 	
-	/**
-	 *	Specifies the client's target address, that is the address of the server to talk to.
-	 *	You should call this method only once and you must call it before starting the client
-	 *	or sending messages.
-	 *
-	 *	@param	target	the address of the server. Usually you construct an appropriate <code>InetSocketAddress</code>
-	 *
-	 *	@see	InetSocketAddress
-	 */
-	def target_=( target: SocketAddress ) {
-		rcv.target  = target
-		trns.target = target
-	}
+//	/**
+//	 *	Specifies the client's target address, that is the address of the server to talk to.
+//	 *	You should call this method only once and you must call it before starting the client
+//	 *	or sending messages.
+//	 *
+//	 *	@param	target	the address of the server. Usually you construct an appropriate <code>InetSocketAddress</code>
+//	 *
+//	 *	@see	InetSocketAddress
+//	 */
+//	def target_=( target: SocketAddress ) {
+//		rcv.target  = target
+//		trns.target = target
+//	}
 	def target: SocketAddress = rcv.target
 	
-	def codec_=( c: OSCPacketCodec ) {
-		rcv.codec	= c
-		trns.codec	= c
-	}
+//	def codec_=( c: OSCPacketCodec ) {
+//		rcv.codec	= c
+//		trns.codec	= c
+//	}
 	
-	def codec: OSCPacketCodec = rcv.codec
+//	def codec: OSCPacketCodec = rcv.codec
 	
-	/**
-	 *	Initializes network channel (if necessary) and establishes connection for transports requiring
-	 *	connectivity (e.g. TCP). Do not call this method when the client is already connected.
-	 *	Note that <code>start</code> implicitly calls <code>connect</code> if necessary, so
-	 *	usually you will not need to call <code>connect</code> yourself.
-	 *	
-	 *	@throws	IOException	if a networking error occurs. Possible reasons: - the underlying
-	 *						network channel had been closed by the server. - the transport
-	 *						is TCP and the server is not available. - the transport is TCP
-	 *						and the client was stopped before (unable to revive).
-	 *
-	 *	@see	#isConnected()
-	 *	@see	#start()
-	 */
-	@throws( classOf[ IOException ])
-	def connect() { trns.connect() }
+//	/**
+//	 *	Initializes network channel (if necessary) and establishes connection for transports requiring
+//	 *	connectivity (e.g. TCP). Do not call this method when the client is already connected.
+//	 *	Note that <code>start</code> implicitly calls <code>connect</code> if necessary, so
+//	 *	usually you will not need to call <code>connect</code> yourself.
+//	 *
+//	 *	@throws	IOException	if a networking error occurs. Possible reasons: - the underlying
+//	 *						network channel had been closed by the server. - the transport
+//	 *						is TCP and the server is not available. - the transport is TCP
+//	 *						and the client was stopped before (unable to revive).
+//	 *
+//	 *	@see	#isConnected()
+//	 *	@see	#start()
+//	 */
+//	@throws( classOf[ IOException ])
+//	def connect() { trns.connect() }
 
-	/**
-	 *	Queries the connection state of the client.
-	 *
-	 *	@return	<code>true</code> if the client is connected, <code>false</code> otherwise. For transports that do not use
-	 *			connectivity (e.g. UDP) this returns <code>false</code>, if the
-	 *			underlying <code>DatagramChannel</code> has not yet been created.
-	 *
-	 *	@see	#connect()
-	 */
-	def isConnected: Boolean = trns.isConnected
+//	/**
+//	 *	Queries the connection state of the client.
+//	 *
+//	 *	@return	<code>true</code> if the client is connected, <code>false</code> otherwise. For transports that do not use
+//	 *			connectivity (e.g. UDP) this returns <code>false</code>, if the
+//	 *			underlying <code>DatagramChannel</code> has not yet been created.
+//	 *
+//	 *	@see	#connect()
+//	 */
+//	def isConnected: Boolean = trns.isConnected
 	
 	/**
 	 *	Sends an OSC packet (bundle or message) to the target
@@ -287,29 +289,29 @@ extends OSCInputChannel with OSCOutputChannel {
 //		rcv.removeOSCListener( listener );
 //	}
 
-	/**
-	 *	Starts the client. This calls <code>connect</code> if the transport requires
-	 *	connectivity (e.g. TCP) and the channel is not yet connected.
-	 *	It then tells the underlying OSC receiver to start listening.
-	 *	
-	 *	@throws	IOException	if a networking error occurs. Possible reasons: - the underlying
-	 *						network channel had been closed by the server. - the transport
-	 *						is TCP and the server is not available. - the transport is TCP
-	 *						and the client was stopped before (unable to revive).
-	 *
-	 *	@warning	in the current version, it is not possible to &quot;revive&quot;
-	 *				clients after the server has closed the connection. Also it's not
-	 *				possible to start a TCP client more than once. This might be
-	 *				possible in a future version.
-	 */
-	@throws( classOf[ IOException ])
-	def start() {
-		if( !trns.isConnected ) {
-			trns.connect()
-			rcv.channel = trns.channel
-		}
-		rcv.start()
-	}
+//	/**
+//	 *	Starts the client. This calls <code>connect</code> if the transport requires
+//	 *	connectivity (e.g. TCP) and the channel is not yet connected.
+//	 *	It then tells the underlying OSC receiver to start listening.
+//	 *
+//	 *	@throws	IOException	if a networking error occurs. Possible reasons: - the underlying
+//	 *						network channel had been closed by the server. - the transport
+//	 *						is TCP and the server is not available. - the transport is TCP
+//	 *						and the client was stopped before (unable to revive).
+//	 *
+//	 *	@warning	in the current version, it is not possible to &quot;revive&quot;
+//	 *				clients after the server has closed the connection. Also it's not
+//	 *				possible to start a TCP client more than once. This might be
+//	 *				possible in a future version.
+//	 */
+//	@throws( classOf[ IOException ])
+//	def start() {
+//		if( !trns.isConnected ) {
+//			trns.connect()
+//			rcv.channel = trns.channel
+//		}
+//		rcv.start()
+//	}
 	
 	/**
 	 *	Queries whether the client was activated or not. A client is activated by
@@ -320,30 +322,33 @@ extends OSCInputChannel with OSCOutputChannel {
 	 *	@see	#start()
 	 *	@see	#stop()
 	 */
-	def isActive: Boolean = rcv.isActive
+	def isOpen: Boolean = rcv.isOpen
 
 	@throws( classOf[ IOException ])
-	def stop() { rcv.stop() }
+	def close() {
+      rcv.close()
+      trns.close()
+   }
 
-	/**
-	 *	Adjusts the buffer size for OSC messages (both for sending and receiving).
-	 *	This is the maximum size an OSC packet (bundle or message) can grow to.
-	 *	The initial buffer size is <code>DEFAULTBUFSIZE</code>. Do not call this
-	 *	method while the client is active!
-	 *
-	 *	@param	size					the new size in bytes.
-	 *
-	 *	@throws	IllegalStateException	if trying to change the buffer size while the client is active
-	 *									(listening).
-	 *
-	 *	@see	#isActive()
-	 *	@see	#getBufferSize()
-	 */
-	def bufferSize_=( size: Int ) {
-		bufSize			= size
-		rcv.bufferSize	= size
-		trns.bufferSize	= size
-	}
+//	/**
+//	 *	Adjusts the buffer size for OSC messages (both for sending and receiving).
+//	 *	This is the maximum size an OSC packet (bundle or message) can grow to.
+//	 *	The initial buffer size is <code>DEFAULTBUFSIZE</code>. Do not call this
+//	 *	method while the client is active!
+//	 *
+//	 *	@param	size					the new size in bytes.
+//	 *
+//	 *	@throws	IllegalStateException	if trying to change the buffer size while the client is active
+//	 *									(listening).
+//	 *
+//	 *	@see	#isActive()
+//	 *	@see	#getBufferSize()
+//	 */
+//	def bufferSize_=( size: Int ) {
+//		bufSize			= size
+//		rcv.bufferSize	= size
+//		trns.bufferSize	= size
+//	}
 	
 	/**
 	 *	Queries the buffer size used for sending and receiving OSC messages.
@@ -354,7 +359,7 @@ extends OSCInputChannel with OSCOutputChannel {
 	 *
 	 *	@see	#setBufferSize( int )
 	 */
-	def bufferSize: Int = bufSize
+//	def bufferSize: Int = bufSize
 
 	/**
 	 *	Changes the way incoming and outgoing OSC messages are printed to the standard err console.
@@ -365,7 +370,7 @@ extends OSCInputChannel with OSCOutputChannel {
 	 *					<code>kDumpHex</code> (hexdump), or
 	 *					<code>kDumpBoth</code> (both text and hex)
 	 *	@param	stream	the stream to print on, or <code>null</code> which
-	 *					is shorthand for <code>System.err</code>
+	 *					is shorthand for <code>Console.err</code>
 	 *
 	 *	@see	#dumpIncomingOSC( int, PrintStream )
 	 *	@see	#dumpOutgoingOSC( int, PrintStream )
@@ -375,33 +380,33 @@ extends OSCInputChannel with OSCOutputChannel {
 	 *	@see	#kDumpBoth
 	 */
 	override def dumpOSC( mode: Int = DUMP_TEXT,
-					     stream: PrintStream = System.err,
+					     stream: PrintStream = Console.err,
 					     filter: (OSCPacket) => Boolean = NO_FILTER ) {
 		dumpIncomingOSC( mode, stream, filter )
 		dumpOutgoingOSC( mode, stream, filter )
 	}
 
 	def dumpIncomingOSC( mode: Int = DUMP_TEXT,
-					     stream: PrintStream = System.err,
+					     stream: PrintStream = Console.err,
 					     filter: (OSCPacket) => Boolean = NO_FILTER ) {
 
 		rcv.dumpOSC( mode, stream, filter )
 	}
 	
 	def dumpOutgoingOSC( mode: Int = DUMP_TEXT,
-					     stream: PrintStream = System.err,
+					     stream: PrintStream = Console.err,
 					     filter: (OSCPacket) => Boolean = NO_FILTER ) {
 
 		trns.dumpOSC( mode, stream, filter )
 	}
 
-	/**
-	 *	Destroys the client and frees resources associated with it.
-	 *	This automatically stops the client and closes the networking channel.
-	 *	Do not use this client instance any more after calling <code>dispose.</code>
-	 */
-	def dispose() {
-		rcv.dispose()
-		trns.dispose()
-	}
+//	/**
+//	 *	Destroys the client and frees resources associated with it.
+//	 *	This automatically stops the client and closes the networking channel.
+//	 *	Do not use this client instance any more after calling <code>dispose.</code>
+//	 */
+//	def dispose() {
+//		rcv.dispose()
+//		trns.dispose()
+//	}
 }

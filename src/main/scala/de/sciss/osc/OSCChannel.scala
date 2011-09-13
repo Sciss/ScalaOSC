@@ -26,7 +26,8 @@
 package de.sciss.osc
 
 import java.io.{ IOException, PrintStream }
-import java.net.{ InetSocketAddress, SocketAddress }
+import java.nio.channels.Channel
+import java.net.{InetAddress, InetSocketAddress, SocketAddress}
 
 object OSCChannel {
 	/**
@@ -57,23 +58,10 @@ object OSCChannel {
 
 import OSCChannel._
 
-/**
- *    @version 0.11, 27-May-10
- */
-trait OSCChannel {
-    protected var dumpMode					= DUMP_OFF
-    protected var printStream : PrintStream	= null
-    protected var dumpFilter : (OSCPacket) => Boolean = NO_FILTER
-	
-	/**
-	 *	Queries the transport protocol used by this communicator.
-	 *	
-	 *	@return	the transport, such as <code>UDP</code> or <code>TCP</code>
-	 *
-	 *	@see	#UDP
-	 *	@see	#TCP
-	 */
-	def transport : OSCTransport
+trait OSCChannel extends OSCChannelConfigLike with Channel {
+   protected var dumpMode					= DUMP_OFF
+   protected var printStream : PrintStream	= null
+   protected var dumpFilter : (OSCPacket) => Boolean = NO_FILTER
 
 	/**
 	 *	Queries the communicator's local socket address.
@@ -90,27 +78,27 @@ trait OSCChannel {
 	 *	@see	#getProtocol()
 	 */
 	@throws( classOf[ IOException ])
-	def localAddress : InetSocketAddress
-	
-	/**
-	 *	Adjusts the buffer size for OSC messages.
-	 *	This is the maximum size an OSC packet (bundle or message) can grow to.
-	 *
-	 *	@param	size					the new size in bytes.
-	 *
-	 *	@see	#getBufferSize()
-	 */
-	def bufferSize_=( size: Int ) : Unit
+	def localSocketAddress : InetSocketAddress
 
-	/**
-	 *	Queries the buffer size used for coding or decoding OSC messages.
-	 *	This is the maximum size an OSC packet (bundle or message) can grow to.
-	 *
-	 *	@return			the buffer size in bytes.
-	 *
-	 *	@see	#setBufferSize( int )
-	 */
-	def bufferSize : Int
+   protected def config : OSCChannelConfig
+
+   final def localPort        : Int          = localSocketAddress.getPort
+   final def localAddress     : InetAddress  = localSocketAddress.getAddress
+   final def localIsLoopback  : Boolean      = localSocketAddress.getAddress.isLoopbackAddress
+
+   final def transport : OSCTransport = config.transport
+   final def bufferSize : Int = config.bufferSize
+   final def codec : OSCPacketCodec = config.codec
+
+//	/**
+//	 *	Adjusts the buffer size for OSC messages.
+//	 *	This is the maximum size an OSC packet (bundle or message) can grow to.
+//	 *
+//	 *	@param	size					the new size in bytes.
+//	 *
+//	 *	@see	#getBufferSize()
+//	 */
+//	def bufferSize_=( size: Int ) : Unit
 
 	/**
 	 *	Changes the way processed OSC messages are printed to the standard err console.
@@ -121,7 +109,7 @@ trait OSCChannel {
 	 *					<code>kDumpHex</code> (hexdump), or
 	 *					<code>kDumpBoth</code> (both text and hex)
 	 *	@param	stream	the stream to print on, or <code>null</code> which
-	 *					is shorthand for <code>System.err</code>
+	 *					is shorthand for <code>Console.err</code>
 	 *
 	 *	@see	#DUMP_OFF
 	 *	@see	#DUMP_TEXT
@@ -129,7 +117,7 @@ trait OSCChannel {
 	 *	@see	#DUMP_BOTH
 	 */
 	def dumpOSC( mode: Int = DUMP_TEXT,
-				 stream: PrintStream = System.err,
+				 stream: PrintStream = Console.err,
 				 filter: (OSCPacket) => Boolean = NO_FILTER ) {
 		dumpMode	= mode
 		printStream	= stream
@@ -140,10 +128,9 @@ trait OSCChannel {
 	 *	Disposes the resources associated with the OSC communicator.
 	 *	The object should not be used any more after calling this method.
 	 */
-	def dispose() : Unit
+	def close() : Unit
 	
-	def codec : OSCPacketCodec
-	def codec_=( c: OSCPacketCodec ) : Unit
+//	def codec_=( c: OSCPacketCodec ) : Unit
 }
 
 trait OSCInputChannel
@@ -151,28 +138,28 @@ extends OSCChannel {
 	def action_=( f: (OSCMessage, SocketAddress, Long) => Unit )
 	def action: (OSCMessage, SocketAddress, Long) => Unit
 	
-	/**
-	 *	Starts the communicator.
-	 *
-	 *	@throws	IOException	if a networking error occurs
-	 */
-	@throws( classOf[ IOException ])
-	def start() : Unit
+//	/**
+//	 *	Starts the communicator.
+//	 *
+//	 *	@throws	IOException	if a networking error occurs
+//	 */
+//	@throws( classOf[ IOException ])
+//	def start() : Unit
 
-	/**
-	 *	Checks whether the communicator is active (was started) or not (is stopped).
-	 *
-	 *	@return	<code>true</code> if the communicator is active, <code>false</code> otherwise
-	 */
-	def isActive : Boolean
+//	/**
+//	 *	Checks whether the communicator is active (was started) or not (is stopped).
+//	 *
+//	 *	@return	<code>true</code> if the communicator is active, <code>false</code> otherwise
+//	 */
+//	def isActive : Boolean
 
-	/**
-	 *	Stops the communicator.
-	 *
-	 *	@throws	IOException	if a networking error occurs
-	 */
-	@throws( classOf[ IOException ])
-	def stop() : Unit
+//	/**
+//	 *	Stops the communicator.
+//	 *
+//	 *	@throws	IOException	if a networking error occurs
+//	 */
+//	@throws( classOf[ IOException ])
+//	def stop() : Unit
 
 	/**
 	 *	Changes the way incoming messages are dumped
@@ -183,13 +170,13 @@ extends OSCChannel {
 	 *
 	 *	@param	mode	see <code>dumpOSC( int )</code> for details
 	 *	@param	stream	the stream to print on, or <code>null</code> which
-	 *					is shorthand for <code>System.err</code>
+	 *					is shorthand for <code>Console.err</code>
 	 *
 	 *	@see	#dumpOSC( int, PrintStream )
 	 *	@see	#dumpOutgoingOSC( int, PrintStream )
 	 */
 	def dumpIncomingOSC( mode: Int = DUMP_TEXT,
-					     stream: PrintStream = System.err,
+					     stream: PrintStream = Console.err,
 					     filter: (OSCPacket) => Boolean = NO_FILTER )
 }
 
@@ -203,12 +190,12 @@ extends OSCChannel {
 	 *
 	 *	@param	mode	see <code>dumpOSC( int )</code> for details
 	 *	@param	stream	the stream to print on, or <code>null</code> which
-	 *					is shorthand for <code>System.err</code>
+	 *					is shorthand for <code>Console.err</code>
 	 *
 	 *	@see	#dumpOSC( int, PrintStream )
 	 *	@see	#dumpIncomingOSC( int, PrintStream )
 	 */
 	def dumpOutgoingOSC( mode: Int = DUMP_TEXT,
-						 stream: PrintStream = System.err,
+						 stream: PrintStream = Console.err,
 					     filter: (OSCPacket) => Boolean = NO_FILTER )
 }

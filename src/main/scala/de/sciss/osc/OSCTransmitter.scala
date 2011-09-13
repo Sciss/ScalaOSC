@@ -56,14 +56,14 @@ object OSCTransmitter {
 	 *	@throws	IOException					if a networking error occurs while creating the socket
 	 *	@throws	IllegalArgumentException	if an illegal protocol is used
 	 */
-	@throws( classOf[ IOException ])
-	def apply( transport: OSCTransport, port: Int = 0, loopBack: Boolean = false,
-              codec: OSCPacketCodec = OSCPacketCodec.default ) : OSCTransmitter = {
-		val localAddress = if( loopBack )
-			new InetSocketAddress( "127.0.0.1", port ) else
-			new InetSocketAddress( InetAddress.getLocalHost, port )
-		withAddress( transport, localAddress, codec )
-	}
+//	@throws( classOf[ IOException ])
+//	def apply( transport: OSCTransport, port: Int = 0, loopBack: Boolean = false,
+//              codec: OSCPacketCodec = OSCPacketCodec.default ) : OSCTransmitter = {
+//		val localAddress = if( loopBack )
+//			new InetSocketAddress( "127.0.0.1", port ) else
+//			new InetSocketAddress( InetAddress.getLocalHost, port )
+//		withAddress( transport, localAddress, codec )
+//	}
 
 	/**
 	 *	Creates a new instance of an <code>OSCTransmitter</code>, using
@@ -83,14 +83,14 @@ object OSCTransmitter {
 	 *	@throws	IOException					if a networking error occurs while creating the socket
 	 *	@throws	IllegalArgumentException	if an illegal protocol is used
 	 */
-	@throws( classOf[ IOException ])
-	def withAddress( transport: OSCTransport, localAddress: InetSocketAddress,
-                    codec: OSCPacketCodec = OSCPacketCodec.default ) : OSCTransmitter = {
-      transport match {
-         case UDP => new UDPTransmitter( localAddress, codec )
-         case TCP => new TCPTransmitter( localAddress, codec )
-		}
-	}
+//	@throws( classOf[ IOException ])
+//	def withAddress( transport: OSCTransport, localAddress: InetSocketAddress,
+//                    codec: OSCPacketCodec = OSCPacketCodec.default ) : OSCTransmitter = {
+//      transport match {
+//         case UDP => new UDPTransmitter( localAddress, codec )
+//         case TCP => new TCPTransmitter( localAddress, codec )
+//		}
+//	}
 
 	/**
 	 *	Creates a new instance of an <code>OSCTransmitter</code>, using
@@ -106,15 +106,15 @@ object OSCTransmitter {
 	 *
 	 *	@throws	IOException	if a networking error occurs while configuring the socket
 	 */
-	@throws( classOf[ IOException ])
-	def withChannel( dch: DatagramChannel, codec: OSCPacketCodec ) : OSCTransmitter = {
-		new UDPTransmitter( dch, codec )
-	}
+//	@throws( classOf[ IOException ])
+//	def withChannel( dch: DatagramChannel, codec: OSCPacketCodec ) : OSCTransmitter = {
+//		new UDPTransmitter( dch, codec )
+//	}
 
-   @throws( classOf[ IOException ])
-   def withChannel( dch: DatagramChannel ) : OSCTransmitter = {
-      new UDPTransmitter( dch, OSCPacketCodec.default )
-   }
+//   @throws( classOf[ IOException ])
+//   def withChannel( dch: DatagramChannel ) : OSCTransmitter = {
+//      new UDPTransmitter( dch, OSCPacketCodec.default )
+//   }
 
 	/**
 	 *	Creates a new instance of an <code>OSCTransmitter</code>, using
@@ -132,91 +132,110 @@ object OSCTransmitter {
 	 *
 	 *	@throws	IOException	if a networking error occurs while configuring the socket
 	 */
-	@throws( classOf[ IOException ])
-	def withChannel( sch: SocketChannel, codec: OSCPacketCodec ) : OSCTransmitter = {
-		new TCPTransmitter( sch, codec )
-	}
+//	@throws( classOf[ IOException ])
+//	def withChannel( sch: SocketChannel, codec: OSCPacketCodec ) : OSCTransmitter = {
+//		new TCPTransmitter( sch, codec )
+//	}
 
-   @throws( classOf[ IOException ])
-   def withChannel( sch: SocketChannel ) : OSCTransmitter = {
-      new TCPTransmitter( sch, OSCPacketCodec.default )
-   }
+//   @throws( classOf[ IOException ])
+//   def withChannel( sch: SocketChannel ) : OSCTransmitter = {
+//      new TCPTransmitter( sch, OSCPacketCodec.default )
+//   }
 }
 
-abstract class OSCTransmitter( val transport: OSCTransport, protected val addr: InetSocketAddress,
-                               protected val revivable: Boolean )
+abstract class OSCTransmitter( final val localSocketAddress: InetSocketAddress )
 extends OSCChannel {
-	protected val sync						= new AnyRef
-	protected var allocBuf 					= true
-	private var bufSize						= DEFAULTBUFSIZE
-	protected var byteBuf : ByteBuffer	= null
+	protected final val generalSync	   = new AnyRef
+//	protected var allocBuf 					= true
+//	private var bufSize						= DEFAULTBUFSIZE
+	protected final val byteBuf : ByteBuffer = ByteBuffer.allocateDirect( config.bufferSize )
+   private var wasClosed               = false
  
-   var target: SocketAddress		      = null
+//   var target: SocketAddress		      = null
 	
-	/**
-	 *	Establishes connection for transports requiring
-	 *	connectivity (e.g. TCP). For transports that do not require connectivity (e.g. UDP),
-	 *	this ensures the communication channel is created and bound.
-	 *  <P>
-	 *	When a <B>UDP</B> transmitter
-	 *	is created without an explicit <code>DatagramChannel</code> &ndash; say by
-	 *	calling <code>OSCTransmitter.newUsing( &quot;udp&quot; )</code>, you are required
-	 *	to call <code>connect()</code> so that an actual <code>DatagramChannel</code> is
-	 *	created and bound. For a <B>UDP</B> transmitter which was created with an explicit
-	 *	<code>DatagramChannel</code>, this method does noting, so it is always safe
-	 *	to call <code>connect()</code>. However, for <B>TCP</B> transmitters, 
-	 *	this may throw an <code>IOException</code> if the transmitter
-	 *	was already connected, therefore be sure to check <code>isConnected()</code> before.
-	 *	
-	 *	@throws	IOException	if a networking error occurs. Possible reasons: - the underlying
-	 *						network channel had been closed by the server. - the transport
-	 *						is TCP and the server is not available. - the transport is TCP
-	 *						and an <code>OSCReceiver</code> sharing the same socket was stopped before (unable to revive).
-	 *
-	 *	@see	#isConnected()
-	 */
-	@throws( classOf[ IOException ])
-	def connect() : Unit
-		
-	/**
-	 *	Queries the connection state of the transmitter.
-	 *
-	 *	@return	<code>true</code> if the transmitter is connected, <code>false</code> otherwise. For transports that do not use
-	 *			connectivity (e.g. UDP) this returns <code>false</code>, if the
-	 *			underlying <code>DatagramChannel</code> has not yet been created.
-	 *
-	 *	@see	#connect()
-	 */
-	def isConnected : Boolean
+//	/**
+//	 *	Establishes connection for transports requiring
+//	 *	connectivity (e.g. TCP). For transports that do not require connectivity (e.g. UDP),
+//	 *	this ensures the communication channel is created and bound.
+//	 *  <P>
+//	 *	When a <B>UDP</B> transmitter
+//	 *	is created without an explicit <code>DatagramChannel</code> &ndash; say by
+//	 *	calling <code>OSCTransmitter.newUsing( &quot;udp&quot; )</code>, you are required
+//	 *	to call <code>connect()</code> so that an actual <code>DatagramChannel</code> is
+//	 *	created and bound. For a <B>UDP</B> transmitter which was created with an explicit
+//	 *	<code>DatagramChannel</code>, this method does noting, so it is always safe
+//	 *	to call <code>connect()</code>. However, for <B>TCP</B> transmitters,
+//	 *	this may throw an <code>IOException</code> if the transmitter
+//	 *	was already connected, therefore be sure to check <code>isConnected()</code> before.
+//	 *
+//	 *	@throws	IOException	if a networking error occurs. Possible reasons: - the underlying
+//	 *						network channel had been closed by the server. - the transport
+//	 *						is TCP and the server is not available. - the transport is TCP
+//	 *						and an <code>OSCReceiver</code> sharing the same socket was stopped before (unable to revive).
+//	 *
+//	 *	@see	#isConnected()
+//	 */
+//	@throws( classOf[ IOException ])
+//	def connect() : Unit
+
+   @throws( classOf[ IOException ])
+   final def close() {
+//      stop()
+      closeChannel()
+   }
+
+   @throws( classOf[ IOException ])
+   protected def closeChannel() : Unit
+
+   /**
+    *	Queries whether the <code>OSCReceiver</code> is
+    *	listening or not.
+    */
+   final def isOpen : Boolean = generalSync.synchronized { !wasClosed }
+
+   protected final def isOpenNoSync : Boolean = !wasClosed
+
+//	/**
+//	 *	Queries the connection state of the transmitter.
+//	 *
+//	 *	@return	<code>true</code> if the transmitter is connected, <code>false</code> otherwise. For transports that do not use
+//	 *			connectivity (e.g. UDP) this returns <code>false</code>, if the
+//	 *			underlying <code>DatagramChannel</code> has not yet been created.
+//	 *
+//	 *	@see	#connect()
+//	 */
+//	def isConnected : Boolean
+
+   def target: SocketAddress
 
 	final def !( p: OSCPacket ) { send( p, target )}
  
-	final def bufferSize_=( size: Int ) {
-		sync.synchronized {
-			if( bufSize != size ) {
-				bufSize		= size
-				allocBuf	= true
-			}
-		}
-	}
+//	final def bufferSize_=( size: Int ) {
+//		sync.synchronized {
+//			if( bufSize != size ) {
+//				bufSize		= size
+//				allocBuf	= true
+//			}
+//		}
+//	}
 	
-	final def bufferSize : Int = {
-		sync.synchronized {
-			bufSize
-		}
-	}
+//	final def bufferSize : Int = {
+//		sync.synchronized {
+//			bufSize
+//		}
+//	}
 
-	def dispose() {
-		byteBuf	= null
-	}
+//	def dispose() {
+//		byteBuf	= null
+//	}
 
-	// @synchronization	caller must ensure synchronization
-	protected final def checkBuffer() {
-		if( allocBuf ) {
-			byteBuf		= ByteBuffer.allocateDirect( bufSize )
-			allocBuf	= false
-		}
-	}
+//	// @synchronization	caller must ensure synchronization
+//	protected final def checkBuffer() {
+//		if( allocBuf ) {
+//			byteBuf		= ByteBuffer.allocateDirect( bufSize )
+//			allocBuf	= false
+//		}
+//	}
 	
 	private[ osc ] def channel : SelectableChannel
 
