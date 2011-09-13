@@ -139,8 +139,27 @@ object OSCPacketCodec {
 }
 
 class OSCPacketCodec( mode: Int = OSCPacketCodec.MODE_FAT_V1, var charsetName: String = "UTF-8" ) {
-	
-	import OSCPacketCodec._
+   import OSCPacketCodec._
+
+//	private[scalaosc] var atomEncoders	= Map.empty[ Class[_], Atom ]
+   private[osc] var atomDecoders	= IntMap.empty[ Atom ]
+
+   private[osc] val atomEncoders: Any => Atom = {
+      case x: Int          => Atom.Int
+      case x: Float        => Atom.Float
+      case x: String       => Atom.String
+      case x: ByteBuffer   => Atom.Blob
+
+      // XXX use 64-bit fat types
+      // here until encoder list updating is implemented
+
+//		if( (mode & MODE_WRITE_PACKET_AS_BLOB) != 0 ) {
+         case x: OSCPacket  => Atom.Packet
+//		}
+
+      case x: Long         => Atom.Long
+      case x: Double       => Atom.Double
+   }
 
 	// ---- constructor ----
 	// OSC version 1.0 strict type tag support
@@ -157,26 +176,6 @@ class OSCPacketCodec( mode: Int = OSCPacketCodec.MODE_FAT_V1, var charsetName: S
 
 //	setStringCharsetCodec( charset )
 	setSupportMode( mode )
-
-//	private[scalaosc] var atomEncoders	= Map.empty[ Class[_], Atom ]
-	private[osc] var atomDecoders	= IntMap.empty[ Atom ]
-	
-	private[osc] val atomEncoders: Any => Atom = {
-		case x: Int          => Atom.Int
-		case x: Float        => Atom.Float
-		case x: String       => Atom.String
-		case x: ByteBuffer   => Atom.Blob
-
-		// XXX use 64-bit fat types
-		// here until encoder list updating is implemented
-
-//		if( (mode & MODE_WRITE_PACKET_AS_BLOB) != 0 ) {
-			case x: OSCPacket  => Atom.Packet
-//		}
-			
-		case x: Long         => Atom.Long
-		case x: Double       => Atom.Double
-	}
 
 	/**
 	 * 	Registers an atomic decoder with the packet codec. This

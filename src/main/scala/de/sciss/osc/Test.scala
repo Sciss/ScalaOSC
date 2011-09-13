@@ -91,52 +91,31 @@ object Test {
 	    sync.synchronized( sync.wait() )
   }
   
-  def transmitter() {
-//	  import StrictV1._
-   
-	  println( "Test.transmitter\n\n" +
+   def transmitter() {
+      println( "Test.transmitter\n\n" +
                "  assumes that scsynth is running on" +
-               "  localhost port 57110\n" )
+               "  localhost UDP port 57110\n" )
    
-	  var trns : OSCTransmitter.DirectedNet	= null
-      var dch : DatagramChannel = null
+      val trns = UDP.Transmitter( InetAddress.getLocalHost -> 57110 )
 
       try {
-          val addr		= new InetSocketAddress( InetAddress.getLocalHost, 57110 )
-//          val notify	= new AnyRef
-          
-          dch     = DatagramChannel.open
-          dch.socket.bind( null )    // assigns an automatic local socket address
-          trns    = sys.error( "TODO" ) // OSCTransmitter.withChannel( dch )
-//          trns.target = addr
-          trns.dumpOSC( OSCChannel.DUMP_TEXT, System.out )
+         trns.dumpOSC( OSCChannel.DUMP_TEXT, Console.out )
+         trns ! OSCMessage( "/s_new", "default", 1000, 0, 0, "amp", 0f )
+         for( i <- (1 to 8) ) {
+        	   trns ! OSCMessage( "/n_set", 1000, "freq", i * 333, "amp", 0.5f )
+        	   Thread.sleep( 200 )
+         }
 
-          trns ! OSCMessage( "/s_new", "default", 1000, 0, 0, "amp", 0f )
-          for( i <- (1 to 8) ) {
-        	  trns ! OSCMessage( "/n_set", 1000, "freq", i * 333, "amp", 0.5f )
-        	  Thread.sleep( 200 )
-          }
-          
-          import de.sciss.osc.{ OSCMessage => M }
-          
-//        trns.send( OSCMessage( "/n_free", 1000 ))
-          trns ! M( "/n_free", 1000 )
-      }
-      catch {
+         import de.sciss.osc.{ OSCMessage => M }
+         trns ! M( "/n_free", 1000 )
+
+      } catch {
         case e1: InterruptedException => ()
         case e2: IOException =>
           println( e2.getClass.getName + " : " + e2.getLocalizedMessage )
       }
       finally {
-//          if( rcv != null ) {
-//              rcv.dispose();
-//          } else
-          if( dch != null ) {
-              try {
-                  dch.close()
-              }
-              catch { case e: IOException => }
-          }
+         trns.close()
       }
    }
 

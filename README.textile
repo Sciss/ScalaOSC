@@ -1,4 +1,6 @@
-h2. ScalaOSC ==<small>-- version 0.24 --</small>==
+h2. ScalaOSC ==<small>-- version 0.24 SNAPSHOT --</small>==
+
+*WARNING:* This is a highly unfinished new version. Please use the 0.23 tag for the latest working version.
 
 h3. statement
 
