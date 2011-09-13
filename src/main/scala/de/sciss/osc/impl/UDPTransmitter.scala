@@ -107,8 +107,10 @@ extends OSCTransmitter {
          }
       }
       catch { case e: BufferOverflowException =>
-          throw new OSCException( OSCException.BUFFER,
-             if( p.isInstanceOf[ OSCMessage ]) p.asInstanceOf[ OSCMessage ].name else p.getClass.getName )
+          throw new OSCException( OSCException.BUFFER, p match {
+             case m: OSCMessage => m.name
+             case _ => p.getClass.getName
+          })
       }
    }
 }

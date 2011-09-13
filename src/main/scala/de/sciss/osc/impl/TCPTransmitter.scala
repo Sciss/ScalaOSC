@@ -28,7 +28,7 @@ package impl
 
 import java.net.{SocketAddress, InetSocketAddress}
 import java.nio.BufferOverflowException
-import java.nio.channels.{SelectableChannel, SocketChannel}
+import java.nio.channels.SocketChannel
 import java.io.IOException
 
 final class TCPTransmitter private( channel: SocketChannel, val config: TCP.Config )
@@ -123,8 +123,10 @@ extends OSCTransmitter {
          }
       }
       catch { case e: BufferOverflowException =>
-          throw new OSCException( OSCException.BUFFER,
-             if( p.isInstanceOf[ OSCMessage ]) p.asInstanceOf[ OSCMessage ].name else p.getClass.getName )
+          throw new OSCException( OSCException.BUFFER, p match {
+             case m: OSCMessage => m.name
+             case _ => p.getClass.getName
+          })
       }
    }
 }
