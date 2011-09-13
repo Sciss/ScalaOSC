@@ -41,6 +41,8 @@ extends OSCTransmitter {
 //		this( new InetSocketAddress( dch.socket.getLocalAddress, dch.socket.getLocalPort ), dch, config )
 //  	}
 
+   def transport = config.transport
+
    def localSocketAddress = {
       val so = channel.socket()
       new InetSocketAddress( so.getLocalAddress, so.getLocalPort )

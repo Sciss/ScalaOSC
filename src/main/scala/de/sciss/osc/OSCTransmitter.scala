@@ -141,6 +141,28 @@ object OSCTransmitter {
 //   def withChannel( sch: SocketChannel ) : OSCTransmitter = {
 //      new TCPTransmitter( sch, OSCPacketCodec.default )
 //   }
+
+   trait Directed extends OSCTransmitter {
+      def !( p: OSCPacket ) : Unit
+   }
+
+   trait Net extends OSCTransmitter with OSCChannelNet {
+      def target: InetSocketAddress
+   }
+
+   trait TCP extends Directed with Net {
+      override def config: TCP.Config
+   }
+
+   trait UDP extends Net {
+      override def config: UDP.Config
+   }
+
+   trait UndirectedNet {
+      def send( p: OSCPacket, target: InetSocketAddress ) : Unit
+   }
+
+   type DirectedNet = Net with Directed
 }
 
 trait OSCTransmitter extends OSCChannel {
@@ -205,9 +227,10 @@ trait OSCTransmitter extends OSCChannel {
 //	 */
 //	def isConnected : Boolean
 
-   def target: SocketAddress
 
-	final def !( p: OSCPacket ) { send( p, target )}
+//   def target: SocketAddress
+
+//	final def !( p: OSCPacket ) { send( p, target )}
  
 //	final def bufferSize_=( size: Int ) {
 //		sync.synchronized {
@@ -238,18 +261,18 @@ trait OSCTransmitter extends OSCChannel {
 	
 //	private[ osc ] def channel : SelectableChannel
 
-   /**
-    *	Sends an OSC packet (bundle or message) to the given
-    *	network address, using the current codec.
-    *
-    *	@param	p		the packet to send
-    *	@param	target	the target address to send the packet to
-    *
-    *	@throws	IOException	if a write error, OSC encoding error,
-    *						buffer overflow error or network error occurs
-    */
-	@throws( classOf[ IOException ])
-	def send( p: OSCPacket, target: SocketAddress ) : Unit
+//   /**
+//    *	Sends an OSC packet (bundle or message) to the given
+//    *	network address, using the current codec.
+//    *
+//    *	@param	p		the packet to send
+//    *	@param	target	the target address to send the packet to
+//    *
+//    *	@throws	IOException	if a write error, OSC encoding error,
+//    *						buffer overflow error or network error occurs
+//    */
+//	@throws( classOf[ IOException ])
+//	def send( p: OSCPacket, target: SocketAddress ) : Unit
 
    protected final def dumpPacket( p: OSCPacket ) {
       if( (dumpMode != DUMP_OFF) && dumpFilter.apply( p )) {

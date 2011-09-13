@@ -156,6 +156,8 @@ object OSCReceiver {
 	protected def debugTimeString : String = {
 		new java.text.SimpleDateFormat( "HH:mm:ss.SSS" ).format( new java.util.Date )
 	}
+
+   trait Net extends OSCReceiver with OSCChannelNet
 }
 
 abstract class OSCReceiver( val localSocketAddress: InetSocketAddress )

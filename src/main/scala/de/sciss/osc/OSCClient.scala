@@ -160,11 +160,13 @@ object OSCClient {
 //   }
 }
 
-class OSCClient private( rcv: OSCReceiver, trns: OSCTransmitter, val config: OSCChannelConfig )
-extends OSCInputChannel with OSCOutputChannel {
+trait OSCClient extends OSCInputChannel with OSCOutputChannel {
 	import OSCChannel._
 	
 //	private var bufSize = DEFAULTBUFSIZE
+
+   protected def rcv: OSCReceiver
+   protected def trns: OSCTransmitter.Directed
 
 	def action_=( f: (OSCMessage, SocketAddress, Long) => Unit ) {
 		rcv.action = f
@@ -196,8 +198,8 @@ extends OSCInputChannel with OSCOutputChannel {
 //	@throws( classOf[ IOException ])
 //	def localAddress = rcv.localAddress
 
-   def localSocketAddress = rcv.localSocketAddress
-	
+   final def localSocketAddress = rcv.localSocketAddress
+
 //	/**
 //	 *	Specifies the client's target address, that is the address of the server to talk to.
 //	 *	You should call this method only once and you must call it before starting the client

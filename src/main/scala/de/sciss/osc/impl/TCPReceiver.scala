@@ -35,6 +35,8 @@ extends OSCReceiver( _localAddress ) {
 //   def this( localAddress: InetSocketAddress, c: OSCChannelConfig ) =
 //      this( localAddress, null, c )
 
+   def transport = config.transport
+
    private val sender = sch.socket().getRemoteSocketAddress
 
    def this( sch: SocketChannel, config: TCP.Config ) =

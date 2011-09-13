@@ -45,6 +45,8 @@ extends OSCReceiver( _addr ) {
 //		c = cdc
 //	}
 
+   def transport = config.transport
+
 //	@throws( classOf[ IOException ])
 //	private[ osc ] def channel_=( ch: SelectableChannel ) {
 //		generalSync.synchronized {

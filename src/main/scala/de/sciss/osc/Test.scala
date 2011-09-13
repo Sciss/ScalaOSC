@@ -72,7 +72,7 @@ object Test {
 	}
 	
   def receiver() {
-	    val rcv: OSCReceiver = sys.error( "TODO" ) // = OSCReceiver.apply( UDP, 0, true )
+	    val rcv: OSCReceiver.Net = sys.error( "TODO" ) // = OSCReceiver.apply( UDP, 0, true )
 //	    rcv.start()
 	    
 	    println( "Test.receiver\n\n" +
@@ -98,7 +98,7 @@ object Test {
                "  assumes that scsynth is running on" +
                "  localhost port 57110\n" )
    
-	  var trns : OSCTransmitter	= null
+	  var trns : OSCTransmitter.DirectedNet	= null
       var dch : DatagramChannel = null
 
       try {

@@ -27,9 +27,12 @@ package de.sciss.osc
 import java.net.{InetAddress, InetSocketAddress}
 
 sealed trait OSCTransport { def name: String }
-sealed trait OSCNetTransport extends OSCTransport
 
-case object UDP extends OSCNetTransport {
+object OSCTransport {
+   sealed trait Net extends OSCTransport
+}
+
+case object UDP extends OSCTransport.Net {
    val name = "UDP"
 
    def config : ConfigBuilder = new ConfigBuilderImpl
@@ -51,7 +54,7 @@ case object UDP extends OSCNetTransport {
    }
 }
 
-case object TCP extends OSCNetTransport {
+case object TCP extends OSCTransport.Net {
    val name = "TCP"
 
    sealed trait Config extends OSCChannelNetConfig
@@ -87,8 +90,8 @@ case object OSCFileTransport extends OSCTransport {
 }
 sealed trait OSCChannelConfig extends OSCChannelConfigLike
 
-sealed trait OSCChannelNetConfigLike extends OSCChannelConfigLike {
-   override def transport : OSCNetTransport
+trait OSCChannelNetConfigLike extends OSCChannelConfigLike {
+   override def transport : OSCTransport.Net
 
    def localSocketAddress : InetSocketAddress
 

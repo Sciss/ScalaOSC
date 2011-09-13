@@ -63,30 +63,9 @@ trait OSCChannel extends OSCChannelConfigLike with Channel {
    protected var printStream : PrintStream	= null
    protected var dumpFilter : (OSCPacket) => Boolean = NO_FILTER
 
-	/**
-	 *	Queries the communicator's local socket address.
-	 *	You can determine the host and port from the returned address
-	 *	by calling <code>getHostName()</code> (or for the IP <code>getAddress().getHostAddress()</code>)
-	 *	and <code>getPort()</code>.
-	 *	
-	 *	@return				the address of the communicator's local socket.
-	 *
-	 *	@see	java.net.InetSocketAddress#getHostName()
-	 *	@see	java.net.InetSocketAddress#getAddress()
-	 *	@see	java.net.InetSocketAddress#getPort()
-	 *
-	 *	@see	#getProtocol()
-	 */
-	@throws( classOf[ IOException ])
-	def localSocketAddress : InetSocketAddress
-
    protected def config : OSCChannelConfig
 
-   final def localPort        : Int          = localSocketAddress.getPort
-   final def localAddress     : InetAddress  = localSocketAddress.getAddress
-   final def localIsLoopback  : Boolean      = localSocketAddress.getAddress.isLoopbackAddress
-
-   final def transport : OSCTransport = config.transport
+//   final def transport : OSCTransport = config.transport
    final def bufferSize : Int = config.bufferSize
    final def codec : OSCPacketCodec = config.codec
 
@@ -131,6 +110,29 @@ trait OSCChannel extends OSCChannelConfigLike with Channel {
 	def close() : Unit
 	
 //	def codec_=( c: OSCPacketCodec ) : Unit
+}
+
+trait OSCChannelNet extends OSCChannel with OSCChannelNetConfigLike {
+   /**
+    *	Queries the communicator's local socket address.
+    *	You can determine the host and port from the returned address
+    *	by calling <code>getHostName()</code> (or for the IP <code>getAddress().getHostAddress()</code>)
+    *	and <code>getPort()</code>.
+    *
+    *	@return				the address of the communicator's local socket.
+    *
+    *	@see	java.net.InetSocketAddress#getHostName()
+    *	@see	java.net.InetSocketAddress#getAddress()
+    *	@see	java.net.InetSocketAddress#getPort()
+    *
+    *	@see	#getProtocol()
+    */
+   @throws( classOf[ IOException ])
+   def localSocketAddress : InetSocketAddress
+
+//   final def localPort        : Int          = localSocketAddress.getPort
+//   final def localAddress     : InetAddress  = localSocketAddress.getAddress
+//   final def localIsLoopback  : Boolean      = localSocketAddress.getAddress.isLoopbackAddress
 }
 
 trait OSCInputChannel

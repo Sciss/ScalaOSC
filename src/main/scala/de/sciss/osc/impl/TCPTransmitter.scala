@@ -44,6 +44,8 @@ extends OSCTransmitter {
 ////      if( sch.isConnected ) target = sch.socket().getRemoteSocketAddress
 //   }
 
+   def transport = config.transport
+
    def localSocketAddress = {
       val so = channel.socket()
       new InetSocketAddress( so.getLocalAddress, so.getLocalPort )
