@@ -25,7 +25,7 @@
 package de.sciss.osc
 
 import java.nio.BufferOverflowException
-import java.net.{SocketAddress, InetAddress, InetSocketAddress}
+import java.net.{SocketAddress, InetSocketAddress}
 import java.io.IOException
 import java.nio.channels.{SocketChannel, DatagramChannel}
 
@@ -44,8 +44,6 @@ object OSCTransport {
 
 case object UDP extends OSCTransport.Net {
    val name = "UDP"
-
-//   def config : ConfigBuilder = new ConfigBuilderImpl
 
    object Config {
       implicit def default = apply().build
@@ -188,7 +186,6 @@ case object TCP extends OSCTransport.Net {
    object Transmitter {
       def apply( target: SocketAddress )( implicit config: Config ) : Transmitter = {
          val cfg = config
-//         val tgt = target
          new Transmitter {
             override def toString = name + ".Transmitter(" + target + ")"
 
@@ -237,6 +234,16 @@ case object TCP extends OSCTransport.Net {
 
       final override protected val channel: SocketChannel = config.openChannel()
       override protected def config: Config
+   }
+
+   object Receiver {
+      def apply( target: SocketAddress )( implicit config: Config ) : Transmitter = {
+         sys.error( "TODO" )
+      }
+   }
+
+   sealed trait Receiver extends OSCReceiver with OSCChannel.DirectedNet {
+
    }
 }
 
