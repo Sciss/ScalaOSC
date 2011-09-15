@@ -82,7 +82,7 @@ object Test {
 	    
 	    val sync = new AnyRef
 	    
-	    rcv.dumpOSC( OSCChannel.DUMP_BOTH )
+	    rcv.dumpOSC( OSCDump.Both )
 	    rcv.action = (msg, addr, when) => {
 	    	System.out.println( "Received message '" + msg.name + "'" )
 //	    	OSCPacket.printTextOn( System.out, msg )
@@ -105,9 +105,9 @@ object Test {
       }
 
       try {
-         trns.dumpOSC( OSCChannel.DUMP_TEXT, Console.out )
+         trns.dumpOSC( stream = Console.out )
          trns.connect()
-println( trns.target )
+//println( trns.target )
          trns ! OSCMessage( "/s_new", "default", 1000, 0, 0, "amp", 0f )
          for( i <- (1 to 8) ) {
         	   trns ! OSCMessage( "/n_set", 1000, "freq", i * 333, "amp", 0.5f )
@@ -131,7 +131,7 @@ println( trns.target )
       val c: OSCClient = sys.error( "TODO" ) // = OSCClient( TCP, loopBack = true )
 //      c.target = new InetSocketAddress( "127.0.0.1", 57110 )
 //      c.start()
-      c.dumpOSC(1)
+      c.dumpOSC()
       c ! OSCMessage( "/dumpOSC", 1 )
       c ! OSCMessage( "/notify", 1 )
    }

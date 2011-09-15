@@ -433,18 +433,8 @@ extends OSCChannel {
 		try {
 			byteBuf.flip()
 			val p = codec.decode( byteBuf )
-			
-			if( (dumpMode != DUMP_OFF) && dumpFilter.apply( p )) {
-				printStream.synchronized {
-					printStream.print( "r: " )
-					if( (dumpMode & DUMP_TEXT) != 0 ) OSCPacket.printTextOn( codec, printStream, p )
-					if( (dumpMode & DUMP_HEX)  != 0 ) {
-						byteBuf.flip()
-						OSCPacket.printHexOn( printStream, byteBuf )
-					}
-				}
-			}
-			dispatchPacket( p, sender, OSCBundle.NOW )	// OSCBundles will override this dummy time tag
+         dumpPacket( p )
+			dispatchPacket( p, sender, OSCBundle.Now )	// OSCBundles will override this dummy time tag
 		}
 		catch { case e1: BufferUnderflowException =>
 			if( !wasClosed ) {
@@ -474,59 +464,25 @@ extends OSCChannel {
 //			}
 //		}
 	}
-	
-//	protected def checkBuffer() {
-//		bufSync.synchronized {
-//			if( (byteBuf == null) || (byteBuf.capacity != bufSize) ) {
-//				byteBuf	= ByteBuffer.allocateDirect( bufSize )
-//			}
-////			allocBuf = false;
-//		}
-//	}
 
-//	@throws( classOf[ UnknownHostException ])
-//	protected def getLocalAddress( addr: InetAddress, port: Int ) : InetSocketAddress = {
-//		new InetSocketAddress( if( addr.getHostName == "0.0.0.0" ) InetAddress.getLocalHost else addr, port )
-//	}
-
-//	/**
-//	 *	Establishes connection for transports requiring
-//	 *	connectivity (e.g. TCP). For transports that do not require connectivity (e.g. UDP),
-//	 *	this ensures the communication channel is created and bound.
-//	 *  <P>
-//	 *  Having a connected channel without actually listening to incoming messages
-//	 *  is usually not making sense. You can call <code>startListening</code> without
-//	 *  explicit prior call to <code>connect</code>, because <code>startListening</code>
-//	 *  will establish the connection if necessary.
-//	 *  <P>
-//	 *	When a <B>UDP</B> transmitter
-//	 *	is created without an explicit <code>DatagramChannel</code> &ndash; say by
-//	 *	calling <code>OSCReceiver.newUsing( &quot;udp&quot; )</code>, calling
-//	 *	<code>connect()</code> will actually create and bind a <code>DatagramChannel</code>.
-//	 *	For a <B>UDP</B> receiver which was created with an explicit
-//	 *	<code>DatagramChannel</code>. However, for <B>TCP</B> receivers,
-//	 *	this may throw an <code>IOException</code> if the receiver
-//	 *	was already connected, therefore be sure to check <code>isConnected()</code> before.
-//	 *
-//	 *	@throws	IOException	if a networking error occurs. Possible reasons: - the underlying
-//	 *						network channel had been closed by the server. - the transport
-//	 *						is TCP and the server is not available.
-//	 *
-//	 *	@see	#isConnected()
-//	 *	@see	#startListening()
-//	 *	@throws IOException
-//	 */
-//	@throws( classOf[ IOException ])
-//	def connect() : Unit
-//
-//	/**
-//	 *	Queries the connection state of the receiver.
-//	 *
-//	 *	@return	<code>true</code> if the receiver is connected, <code>false</code> otherwise. For transports that do not use
-//	 *			connectivity (e.g. UDP) this returns <code>false</code>, if the
-//	 *			underlying <code>DatagramChannel</code> has not yet been created.
-//	 *
-//	 *	@see	#connect()
-//	 */
-//	def isConnected : Boolean
+   /**
+    * Callers should have a lock on the buffer!
+    */
+   protected final def dumpPacket( p: OSCPacket ) {
+      if( (dumpMode ne OSCDump.Off) && dumpFilter( p )) {
+         printStream.synchronized {
+            printStream.print( "r: " )
+            dumpMode match {
+               case OSCDump.Text =>
+                  OSCPacket.printTextOn( codec, printStream, p )
+               case OSCDump.Hex =>
+                  OSCPacket.printHexOn( printStream, byteBuf )
+               case OSCDump.Both =>
+                  OSCPacket.printTextOn( codec, printStream, p )
+                  OSCPacket.printHexOn( printStream, byteBuf )
+               case _ =>   // satisfy compiler
+            }
+         }
+      }
+   }
 }

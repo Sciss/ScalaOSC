@@ -38,6 +38,7 @@ object OSCTransport {
       case UDP.name              => UDP
       case TCP.name              => TCP
       case OSCFileTransport.name => OSCFileTransport
+      case _                     => throw new IllegalArgumentException( name )
    }
 }
 
@@ -113,7 +114,7 @@ case object UDP extends OSCTransport.Net {
             @throws( classOf[ IOException ])
             def connect { channel.connect( tgt )}
             def isConnected = channel.isConnected
-            def target = channel.socket().getRemoteSocketAddress
+//            def target = channel.socket().getRemoteSocketAddress
 
             @throws( classOf[ IOException ])
             def !( p: OSCPacket ) {

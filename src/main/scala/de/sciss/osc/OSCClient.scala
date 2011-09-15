@@ -371,8 +371,7 @@ trait OSCClient extends OSCInputChannel with OSCOutputChannel {
 	 *					<code>kDumpText</code> (dump human readable string),
 	 *					<code>kDumpHex</code> (hexdump), or
 	 *					<code>kDumpBoth</code> (both text and hex)
-	 *	@param	stream	the stream to print on, or <code>null</code> which
-	 *					is shorthand for <code>Console.err</code>
+	 *	@param	stream	the stream to print on
 	 *
 	 *	@see	#dumpIncomingOSC( int, PrintStream )
 	 *	@see	#dumpOutgoingOSC( int, PrintStream )
@@ -381,23 +380,23 @@ trait OSCClient extends OSCInputChannel with OSCOutputChannel {
 	 *	@see	#kDumpHex
 	 *	@see	#kDumpBoth
 	 */
-	override def dumpOSC( mode: Int = DUMP_TEXT,
-					     stream: PrintStream = Console.err,
-					     filter: (OSCPacket) => Boolean = NO_FILTER ) {
+	override def dumpOSC( mode: OSCDump = OSCDump.Text,
+					          stream: PrintStream = Console.err,
+					          filter: (OSCPacket) => Boolean = PassAllPackets ) {
 		dumpIncomingOSC( mode, stream, filter )
 		dumpOutgoingOSC( mode, stream, filter )
 	}
 
-	def dumpIncomingOSC( mode: Int = DUMP_TEXT,
-					     stream: PrintStream = Console.err,
-					     filter: (OSCPacket) => Boolean = NO_FILTER ) {
+	def dumpIncomingOSC( mode: OSCDump = OSCDump.Text,
+					         stream: PrintStream = Console.err,
+					         filter: (OSCPacket) => Boolean = PassAllPackets ) {
 
 		rcv.dumpOSC( mode, stream, filter )
 	}
 	
-	def dumpOutgoingOSC( mode: Int = DUMP_TEXT,
-					     stream: PrintStream = Console.err,
-					     filter: (OSCPacket) => Boolean = NO_FILTER ) {
+	def dumpOutgoingOSC( mode: OSCDump = OSCDump.Text,
+					         stream: PrintStream = Console.err,
+					         filter: (OSCPacket) => Boolean = PassAllPackets ) {
 
 		trns.dumpOSC( mode, stream, filter )
 	}

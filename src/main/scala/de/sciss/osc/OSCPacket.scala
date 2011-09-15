@@ -42,8 +42,8 @@ object OSCPacket {
 	 *	Bundles will be printed with each message on a separate
 	 *	line and increasing indent.
 	 *
-	 *	@param	stream	the print stream to use, for example <code>System.out</code>
-	 *	@param	p		the packet to print (either a message or bundle)
+	 *	@param	stream   the print stream to use, for example <code>System.out</code>
+	 *	@param	p        the packet to print (either a message or bundle)
 	 */
 	def printTextOn( c: OSCPacketCodec, stream: PrintStream, p: OSCPacket ) {
 		p.printTextOn( c, stream, 0 )
@@ -57,61 +57,64 @@ object OSCPacket {
 	 *	of <code>OSCPacket</code>.
 	 *
 	 *	@param	stream	the print stream to use, for example <code>System.out</code>
-	 *	@param	b		the byte buffer containing the packet. read position
-	 *					should be at the very beginning of the packet, limit
-	 *					should be at the end of the packet. this method alters
-	 *					the buffer position in a manner that a successive <code>flip()</code>
-	 *					will restore the original position and limit.
+	 *	@param	b		   the byte buffer containing the packet. the current position
+    *	                  is saved, and the printing is performed from position 0 to
+    *	                  the limit of the buffer. the previous position is restored.
 	 *
 	 *	@see	java.nio.Buffer#limit()
 	 *	@see	java.nio.Buffer#position()
 	 */
-	def printHexOn( stream: PrintStream, b: ByteBuffer ) {
-		val lim	= b.limit
-		val	txt	= new Array[ Byte ]( 74 )
+   def printHexOn( stream: PrintStream, b: ByteBuffer ) {
+      val pos0 = b.position
+      try {
+         val lim	= b.limit
+         val txt	= new Array[ Byte ]( 74 )
 
-		var j = 0
-		var k = 0
-		var m = 0  
-		var n = 0
-		var i = 4
-		while( i < 56 ) {
-			txt( i ) = 0x20.toByte
-			i += 1
-        }
-		txt( 56 ) = 0x7C.toByte
-		
-		stream.println()
-		i = b.position
-		while( i < lim ) {
-			j = 0
-			txt( j )	= HEX( (i >> 12) & 0xF ); j += 1
-			txt( j )	= HEX( (i >> 8) & 0xF ); j += 1
-			txt( j )	= HEX( (i >> 4) & 0xF ); j += 1
-			txt( j )	= HEX( i & 0xF ); j += 1
-			m = 57
-			k = 0
-			while( (k < 16) && (i < lim) ) {
-				j += (if( (k & 7) == 0 ) 2 else 1)
-				n			= b.get
-				txt( j )	= HEX( (n >> 4) & 0xF ); j += 1
-				txt( j )	= HEX( n & 0xF ); j += 1
-				txt( m )	= (if( (n > 0x1F) && (n < 0x7F) ) n.toByte else 0x2E.toByte); m += 1
-				k += 1
-				i += 1
-			}
-			txt( m ) = 0x7C.toByte; m += 1
-			while( j < 54 ) {
-				txt( j ) = 0x20.toByte; j += 1
-			}
-			while( m < 74 ) {
-				txt( m ) = 0x20.toByte; m += 1
-			}
-			stream.write( txt, 0, 74 )
-			stream.println()
-        }
-		stream.println()
-    }
+         var j = 0
+         var k = 0
+         var m = 0
+         var n = 0
+         var i = 4
+         while( i < 56 ) {
+            txt( i ) = 0x20.toByte
+            i += 1
+         }
+         txt( 56 ) = 0x7C.toByte
+
+         stream.println()
+         b.position( 0 )
+         i = 0; while( i < lim ) {
+            j = 0
+            txt( j )	= HEX( (i >> 12) & 0xF ); j += 1
+            txt( j )	= HEX( (i >> 8) & 0xF ); j += 1
+            txt( j )	= HEX( (i >> 4) & 0xF ); j += 1
+            txt( j )	= HEX( i & 0xF ); j += 1
+            m = 57
+            k = 0
+            while( (k < 16) && (i < lim) ) {
+               j += (if( (k & 7) == 0 ) 2 else 1)
+               n			= b.get()
+               txt( j )	= HEX( (n >> 4) & 0xF ); j += 1
+               txt( j )	= HEX( n & 0xF ); j += 1
+               txt( m )	= (if( (n > 0x1F) && (n < 0x7F) ) n.toByte else 0x2E.toByte); m += 1
+               k += 1
+               i += 1
+            }
+            txt( m ) = 0x7C.toByte; m += 1
+            while( j < 54 ) {
+               txt( j ) = 0x20.toByte; j += 1
+            }
+            while( m < 74 ) {
+               txt( m ) = 0x20.toByte; m += 1
+            }
+            stream.write( txt, 0, 74 )
+            stream.println()
+         }
+         stream.println()
+      } finally {
+         b.position( pos0 )
+      }
+   }
 	
 	def printEscapedStringOn( stream: PrintStream, str: String ) {
 		stream.print( '\"' )
@@ -316,7 +319,7 @@ object OSCBundle {
    *  to indicate that the bundle be
    *  processed as soon as possible
    */
-  val NOW   = 1
+  val Now   = 1
 
   private val SECONDS_FROM_1900_TO_1970 = 2208988800L
 
@@ -339,7 +342,7 @@ object OSCBundle {
    /**
     * Creates a bundle with special timetag 'now'
     */
-   def apply( packets: OSCPacket* ) : OSCBundle = new OSCBundle( NOW, packets: _* )
+   def apply( packets: OSCPacket* ) : OSCBundle = new OSCBundle( Now, packets: _* )
 
 //   /**
 //    * Creates a bundle with raw formatted timetag
@@ -421,7 +424,7 @@ object OSCBundle {
    }
 
    private def smartTimetagString( timetag: Long ) : String = {
-      if( timetag == NOW ) "<now>" else {
+      if( timetag == Now ) "<now>" else {
          val secsSince1900 = (timetag >> 32) & 0xFFFFFFFFL
          if( secsSince1900 > SECONDS_FROM_1900_TO_1970 ) {
             datef.format( timetagToMillis( timetag ))

@@ -31,37 +31,20 @@ import java.net.{InetAddress, InetSocketAddress, SocketAddress}
 
 object OSCChannel {
 	/**
-	 *	Dump mode: do not dump messages
-	 */
-	val DUMP_OFF		= 0
-	/**
-	 *	Dump mode: dump messages in text formatting
-	 */
-	val DUMP_TEXT		= 1
-	/**
-	 *	Dump mode: dump messages in hex (binary) view
-	 */
-	val DUMP_HEX		= 2
-	/**
-	 *	Dump mode: dump messages both in text and hex view
-	 */
-	val DUMP_BOTH		= 3
-	
-	/**
 	 *	The default buffer size (in bytes) and maximum OSC packet
 	 *	size (8K at the moment).
 	 */
 	val DEFAULTBUFSIZE = 8192
 	
-	private[osc] def NO_FILTER( p: OSCPacket ) = true
+	val PassAllPackets : OSCPacket => Boolean = _ => true
 }
 
 import OSCChannel._
 
 trait OSCChannel extends OSCChannelConfigLike with Channel {
-   protected var dumpMode					= DUMP_OFF
-   protected var printStream : PrintStream	= null
-   protected var dumpFilter : (OSCPacket) => Boolean = NO_FILTER
+   @volatile protected var dumpMode: OSCDump = OSCDump.Off
+   @volatile protected var printStream : PrintStream	= Console.err
+   @volatile protected var dumpFilter : (OSCPacket) => Boolean = PassAllPackets
 
    protected def config : OSCChannelConfig
 
@@ -69,36 +52,20 @@ trait OSCChannel extends OSCChannelConfigLike with Channel {
    final def bufferSize : Int = config.bufferSize
    final def codec : OSCPacketCodec = config.codec
 
-//	/**
-//	 *	Adjusts the buffer size for OSC messages.
-//	 *	This is the maximum size an OSC packet (bundle or message) can grow to.
-//	 *
-//	 *	@param	size					the new size in bytes.
-//	 *
-//	 *	@see	#getBufferSize()
-//	 */
-//	def bufferSize_=( size: Int ) : Unit
-
 	/**
 	 *	Changes the way processed OSC messages are printed to the standard err console.
 	 *	By default messages are not printed.
 	 *
-	 *  @param	mode	one of <code>kDumpOff</code> (don't dump, default),
-	 *					<code>kDumpText</code> (dump human readable string),
-	 *					<code>kDumpHex</code> (hexdump), or
-	 *					<code>kDumpBoth</code> (both text and hex)
-	 *	@param	stream	the stream to print on, or <code>null</code> which
-	 *					is shorthand for <code>Console.err</code>
-	 *
-	 *	@see	#DUMP_OFF
-	 *	@see	#DUMP_TEXT
-	 *	@see	#DUMP_HEX
-	 *	@see	#DUMP_BOTH
+	 *  @param	mode	one of `OSCDump.Off` (don't dump, default),
+	 *					`OSCDump.Text` (dump human readable string),
+	 *					`OSCDump.Hex` (hexdump), or
+	 *					`OSCDump.Both` (both text and hex)
+	 *	@param	stream	the stream to print on
 	 */
-	def dumpOSC( mode: Int = DUMP_TEXT,
-				 stream: PrintStream = Console.err,
-				 filter: (OSCPacket) => Boolean = NO_FILTER ) {
-		dumpMode	= mode
+	def dumpOSC( mode: OSCDump = OSCDump.Text,
+				    stream: PrintStream = Console.err,
+				    filter: (OSCPacket) => Boolean = PassAllPackets ) {
+		dumpMode	   = mode
 		printStream	= stream
 		dumpFilter	= filter
 	}
@@ -108,8 +75,6 @@ trait OSCChannel extends OSCChannelConfigLike with Channel {
 	 *	The object should not be used any more after calling this method.
 	 */
 	def close() : Unit
-	
-//	def codec_=( c: OSCPacketCodec ) : Unit
 }
 
 trait OSCChannelNet extends OSCChannel with OSCChannelNetConfigLike {
@@ -171,15 +136,14 @@ extends OSCChannel {
 	 *	get delivered to registered <code>OSCListener</code>s.
 	 *
 	 *	@param	mode	see <code>dumpOSC( int )</code> for details
-	 *	@param	stream	the stream to print on, or <code>null</code> which
-	 *					is shorthand for <code>Console.err</code>
+	 *	@param	stream	the stream to print on
 	 *
 	 *	@see	#dumpOSC( int, PrintStream )
 	 *	@see	#dumpOutgoingOSC( int, PrintStream )
 	 */
-	def dumpIncomingOSC( mode: Int = DUMP_TEXT,
+	def dumpIncomingOSC( mode: OSCDump = OSCDump.Text,
 					     stream: PrintStream = Console.err,
-					     filter: (OSCPacket) => Boolean = NO_FILTER )
+					     filter: (OSCPacket) => Boolean = PassAllPackets )
 }
 
 trait OSCOutputChannel
@@ -191,13 +155,12 @@ extends OSCChannel {
 	 *	<code>send</code>.
 	 *
 	 *	@param	mode	see <code>dumpOSC( int )</code> for details
-	 *	@param	stream	the stream to print on, or <code>null</code> which
-	 *					is shorthand for <code>Console.err</code>
+	 *	@param	stream	the stream to print on
 	 *
 	 *	@see	#dumpOSC( int, PrintStream )
 	 *	@see	#dumpIncomingOSC( int, PrintStream )
 	 */
-	def dumpOutgoingOSC( mode: Int = DUMP_TEXT,
-						 stream: PrintStream = Console.err,
-					     filter: (OSCPacket) => Boolean = NO_FILTER )
+	def dumpOutgoingOSC( mode: OSCDump = OSCDump.Text,
+						      stream: PrintStream = Console.err,
+					         filter: (OSCPacket) => Boolean = PassAllPackets )
 }
