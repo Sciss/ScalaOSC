@@ -51,7 +51,7 @@ object OSCTransmitter {
 //      }
 //   }
 
-   trait UndirectedNet extends OSCTransmitter with OSCChannel.Net {
+   trait UndirectedNet extends OSCTransmitter with OSCChannel.NetConfigLike { // OSCChannel.Net
       def send( p: OSCPacket, target: SocketAddress ) : Unit
 
       @throws( classOf[ IOException ])

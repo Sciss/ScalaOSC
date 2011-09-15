@@ -52,14 +52,14 @@ case object UDP extends OSCTransport.Net {
       def apply() : ConfigBuilder = new ConfigBuilderImpl
    }
 
-   sealed trait Config extends OSCChannelNetConfig {
+   sealed trait Config extends OSCChannel.NetConfig {
       def openChannel() : DatagramChannel
    }
-   sealed trait ConfigBuilder extends OSCChannelNetConfigBuilder {
+   sealed trait ConfigBuilder extends OSCChannel.NetConfigBuilder {
       override def build : Config
    }
 
-   private final class ConfigBuilderImpl extends OSCChannelNetConfigBuilderImpl with ConfigBuilder {
+   private final class ConfigBuilderImpl extends OSCChannel.NetConfigBuilderImpl with ConfigBuilder {
       def transport = UDP
       def build: Config = ConfigImpl( bufferSize, codec, localSocketAddress )
    }
@@ -142,7 +142,7 @@ case object UDP extends OSCTransport.Net {
       }
    }
 
-   sealed trait Transmitter extends OSCTransmitter with OSCChannel.Net {
+   sealed trait Transmitter extends OSCTransmitter with OSCChannel.NetConfigLike { // OSCChannel.Net
       final override protected val channel: DatagramChannel = config.openChannel()
       override protected def config: Config
       final def transport = config.transport
@@ -162,14 +162,14 @@ case object TCP extends OSCTransport.Net {
       def apply() : ConfigBuilder = new ConfigBuilderImpl
    }
 
-   sealed trait Config extends OSCChannelNetConfig {
+   sealed trait Config extends OSCChannel.NetConfig {
       def openChannel() : SocketChannel
    }
-   sealed trait ConfigBuilder extends OSCChannelNetConfigBuilder {
+   sealed trait ConfigBuilder extends OSCChannel.NetConfigBuilder {
       override def build : Config
    }
 
-   private final class ConfigBuilderImpl extends OSCChannelNetConfigBuilderImpl with ConfigBuilder {
+   private final class ConfigBuilderImpl extends OSCChannel.NetConfigBuilderImpl with ConfigBuilder {
       def transport = UDP
       def build: Config = ConfigImpl( bufferSize, codec, localSocketAddress )
    }
@@ -242,81 +242,4 @@ case object TCP extends OSCTransport.Net {
 
 case object OSCFileTransport extends OSCTransport {
    val name = "File"
-}
-
-/* sealed */ trait OSCChannelConfigLike {
-   /**
-    *	Queries the buffer size used for coding or decoding OSC messages.
-    *	This is the maximum size an OSC packet (bundle or message) can grow to.
-    *
-    *	@return			the buffer size in bytes.
-    *
-    *	@see	#setBufferSize( int )
-    */
-   def bufferSize : Int
-
-   /**
-    *	Queries the transport protocol used by this communicator.
-    *
-    *	@return	the transport, such as <code>UDP</code> or <code>TCP</code>
-    *
-    *	@see	#UDP
-    *	@see	#TCP
-	 */
-   def transport : OSCTransport
-
-   def codec : OSCPacketCodec
-
-}
-sealed trait OSCChannelConfig extends OSCChannelConfigLike
-
-trait OSCChannelNetConfigLike extends OSCChannelConfigLike {
-   override def transport : OSCTransport.Net
-
-   def localSocketAddress : InetSocketAddress
-
-   final def localPort        : Int          = localSocketAddress.getPort
-   final def localAddress     : InetAddress  = localSocketAddress.getAddress
-   final def localIsLoopback  : Boolean      = localSocketAddress.getAddress.isLoopbackAddress
-}
-
-sealed trait OSCChannelNetConfig extends OSCChannelConfig with OSCChannelNetConfigLike
-
-sealed trait OSCChannelConfigBuilder extends OSCChannelConfigLike {
-   def bufferSize_=( size: Int ) : Unit
-   def codec_=( codec: OSCPacketCodec ) : Unit
-   def build : OSCChannelConfig
-}
-
-sealed trait OSCChannelNetConfigBuilder extends OSCChannelConfigBuilder with OSCChannelNetConfigLike {
-   def localPort_=( port: Int ) : Unit
-   def localAddress_=( address: InetAddress ) : Unit
-   def localIsLoopback_=( loopback: Boolean ) : Unit
-
-   override def build : OSCChannelNetConfig
-}
-
-private[osc] sealed trait OSCChannelConfigBuilderImpl extends OSCChannelConfigBuilder {
-   var bufferSize                = 8192
-   var codec : OSCPacketCodec    = OSCPacketCodec.default
-}
-
-private[osc] sealed trait OSCChannelNetConfigBuilderImpl
-extends OSCChannelConfigBuilderImpl with OSCChannelNetConfigBuilder {
-   private var localSocket       = new InetSocketAddress( 0 )
-   def localSocketAddress        = localSocket
-
-   def localPort_=( port: Int ) {
-      localSocket = new InetSocketAddress( localSocket.getAddress, port )
-   }
-
-   def localAddress_=( address: InetAddress ) {
-      localSocket = new InetSocketAddress( address, localSocket.getPort )
-   }
-
-   def localIsLoopback_=( loopback: Boolean ) {
-      if( localSocket.getAddress.isLoopbackAddress != loopback ) {
-         localAddress = InetAddress.getByName( if( loopback ) "127.0.0.1" else "0.0.0.0" )
-      }
-   }
 }

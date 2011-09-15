@@ -31,7 +31,7 @@ import java.nio.{BufferUnderflowException, ByteBuffer}
 import java.nio.channels.{AsynchronousCloseException, InterruptibleChannel, ClosedChannelException}
 
 object OSCReceiver {
-   trait Net extends OSCReceiver with OSCChannel.Net
+   trait Net extends OSCReceiver with OSCChannel.NetConfigLike // OSCChannel.Net
 }
 
 trait OSCReceiver extends OSCChannel {

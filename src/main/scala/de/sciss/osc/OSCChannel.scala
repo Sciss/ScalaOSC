@@ -38,26 +38,10 @@ object OSCChannel {
 	
 	val PassAllPackets : OSCPacket => Boolean = _ => true
 
-   trait Net extends OSCChannel with OSCChannelNetConfigLike {
-      /**
-       *	Queries the communicator's local socket address.
-       *	You can determine the host and port from the returned address
-       *	by calling <code>getHostName()</code> (or for the IP <code>getAddress().getHostAddress()</code>)
-       *	and <code>getPort()</code>.
-       *
-       *	@return				the address of the communicator's local socket.
-       *
-       *	@see	java.net.InetSocketAddress#getHostName()
-       *	@see	java.net.InetSocketAddress#getAddress()
-       *	@see	java.net.InetSocketAddress#getPort()
-       *
-       *	@see	#getProtocol()
-       */
-      @throws( classOf[ IOException ])
-      def localSocketAddress : InetSocketAddress
-   }
+   type Net = OSCChannel with NetConfigLike
+//   trait Net extends OSCChannel with OSCChannelNetConfigLike
 
-   trait DirectedNet extends Net {
+   trait DirectedNet extends OSCChannel with NetConfigLike {
       /**
        * The remote socket address of this channel. Returns `null` if the
        * channel has not yet been connected.
@@ -68,16 +52,93 @@ object OSCChannel {
       final def remotePort    : Int          = remoteSocketAddress.getPort
       final def remoteAddress : InetAddress  = remoteSocketAddress.getAddress
    }
+
+/* sealed */ trait ConfigLike {
+      /**
+       *	Queries the buffer size used for coding or decoding OSC messages.
+       *	This is the maximum size an OSC packet (bundle or message) can grow to.
+       *
+       *	@return			the buffer size in bytes.
+       *
+       *	@see	#setBufferSize( int )
+       */
+      def bufferSize : Int
+
+      /**
+       *	Queries the transport protocol used by this communicator.
+       *
+       *	@return	the transport, such as <code>UDP</code> or <code>TCP</code>
+       *
+       *	@see	#UDP
+       *	@see	#TCP
+       */
+      def transport : OSCTransport
+
+      def codec : OSCPacketCodec
+
+   }
+   trait Config extends ConfigLike
+
+   trait NetConfigLike extends ConfigLike {
+      override def transport : OSCTransport.Net
+
+      def localSocketAddress : InetSocketAddress
+
+      final def localPort        : Int          = localSocketAddress.getPort
+      final def localAddress     : InetAddress  = localSocketAddress.getAddress
+      final def localIsLoopback  : Boolean      = localSocketAddress.getAddress.isLoopbackAddress
+   }
+
+   trait NetConfig extends Config with NetConfigLike
+
+   trait ConfigBuilder extends ConfigLike {
+      def bufferSize_=( size: Int ) : Unit
+      def codec_=( codec: OSCPacketCodec ) : Unit
+      def build : Config
+   }
+
+   trait NetConfigBuilder extends ConfigBuilder with NetConfigLike {
+      def localPort_=( port: Int ) : Unit
+      def localAddress_=( address: InetAddress ) : Unit
+      def localIsLoopback_=( loopback: Boolean ) : Unit
+
+      override def build : NetConfig
+   }
+
+   private[osc] trait ConfigBuilderImpl extends ConfigBuilder {
+      final var bufferSize             = 8192
+      final var codec : OSCPacketCodec = OSCPacketCodec.default
+   }
+
+   private[osc] trait NetConfigBuilderImpl
+   extends ConfigBuilderImpl with NetConfigBuilder {
+      private var localSocket       = new InetSocketAddress( 0 )
+      final def localSocketAddress  = localSocket
+
+      final def localPort_=( port: Int ) {
+         localSocket = new InetSocketAddress( localSocket.getAddress, port )
+      }
+
+      final def localAddress_=( address: InetAddress ) {
+         localSocket = new InetSocketAddress( address, localSocket.getPort )
+      }
+
+      final def localIsLoopback_=( loopback: Boolean ) {
+         if( localSocket.getAddress.isLoopbackAddress != loopback ) {
+            localAddress = InetAddress.getByName( if( loopback ) "127.0.0.1" else "0.0.0.0" )
+         }
+      }
+   }
 }
 
 import OSCChannel._
 
-trait OSCChannel extends OSCChannelConfigLike with Channel {
+trait OSCChannel extends OSCChannel.ConfigLike with Channel {
    @volatile protected var dumpMode: OSCDump = OSCDump.Off
    @volatile protected var printStream : PrintStream	= Console.err
    @volatile protected var dumpFilter : (OSCPacket) => Boolean = PassAllPackets
 
-   protected def config : OSCChannelConfig
+   protected def config : OSCChannel.Config
 
 //   final def transport : OSCTransport = config.transport
    final def bufferSize : Int = config.bufferSize
@@ -112,29 +173,6 @@ trait OSCInputChannel
 extends OSCChannel {
 	def action_=( f: (OSCMessage, SocketAddress, Long) => Unit )
 	def action: (OSCMessage, SocketAddress, Long) => Unit
-	
-//	/**
-//	 *	Starts the communicator.
-//	 *
-//	 *	@throws	IOException	if a networking error occurs
-//	 */
-//	@throws( classOf[ IOException ])
-//	def start() : Unit
-
-//	/**
-//	 *	Checks whether the communicator is active (was started) or not (is stopped).
-//	 *
-//	 *	@return	<code>true</code> if the communicator is active, <code>false</code> otherwise
-//	 */
-//	def isActive : Boolean
-
-//	/**
-//	 *	Stops the communicator.
-//	 *
-//	 *	@throws	IOException	if a networking error occurs
-//	 */
-//	@throws( classOf[ IOException ])
-//	def stop() : Unit
 
 	/**
 	 *	Changes the way incoming messages are dumped
