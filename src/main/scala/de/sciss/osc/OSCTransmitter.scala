@@ -39,7 +39,7 @@ object OSCTransmitter {
       def send( p: OSCPacket, target: SocketAddress ) : Unit
 
       @throws( classOf[ IOException ])
-      final def connect() {}
+      final def connect() {}  // XXX or: if( !isOpen ) throw new ChannelClosedException ?
       final def isConnected = isOpen
    }
 

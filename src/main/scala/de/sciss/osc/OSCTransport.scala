@@ -51,9 +51,11 @@ case object UDP extends OSCTransport.Net {
    }
 
    sealed trait Config extends OSCChannel.NetConfig {
+      override final def toString = name + ".Config"
       def openChannel() : DatagramChannel
    }
    sealed trait ConfigBuilder extends OSCChannel.NetConfigBuilder {
+      override final def toString = name + ".ConfigBuilder"
       override def build : Config
    }
 
@@ -80,11 +82,11 @@ case object UDP extends OSCTransport.Net {
       def apply( implicit config: Config ) : Undirected = {
          val cfg = config
          new Transmitter with OSCTransmitter.UndirectedNet {
-            override def toString = name + ".Transmitter()"
-            protected def config = cfg
+            override final def toString = name + ".Transmitter()"
+            protected final def config = cfg
 
             @throws( classOf[ IOException ])
-            def send( p: OSCPacket, target: SocketAddress ) {
+            final def send( p: OSCPacket, target: SocketAddress ) {
                try {
                   bufSync.synchronized {
                      buf.clear()
@@ -107,19 +109,19 @@ case object UDP extends OSCTransport.Net {
       def apply( target: SocketAddress )( implicit config: Config ) : Directed = {
          val cfg = config
          new Transmitter with OSCTransmitter.Directed with OSCChannel.DirectedNet {
-            override def toString = name + ".Transmitter()"
-            protected def config = cfg
+            override final def toString = name + ".Transmitter()"
+            protected final def config = cfg
 
             @throws( classOf[ IOException ])
-            def connect { channel.connect( target )}
-            def isConnected = channel.isConnected
-            def remoteSocketAddress = {
+            final def connect { channel.connect( target )}
+            final def isConnected = channel.isConnected
+            final def remoteSocketAddress = {
                val so = channel.socket()
                new InetSocketAddress( so.getInetAddress, so.getPort )
             }
 
             @throws( classOf[ IOException ])
-            def !( p: OSCPacket ) {
+            final def !( p: OSCPacket ) {
                try {
                   bufSync.synchronized {
                      buf.clear()
@@ -150,6 +152,45 @@ case object UDP extends OSCTransport.Net {
          new InetSocketAddress( so.getLocalAddress, so.getLocalPort )
       }
    }
+
+   private trait ChannelImpl extends OSCReceiver.Net {
+      protected def config: Config
+      final def transport = config.transport
+      final protected val channel: DatagramChannel = config.openChannel()
+      final def localSocketAddress = {
+         val so = channel.socket()
+         new InetSocketAddress( so.getLocalAddress, so.getLocalPort )
+      }
+      final def isConnected = channel.isConnected
+      final def remoteSocketAddress = {
+         val so = channel.socket()
+         new InetSocketAddress( so.getInetAddress, so.getPort )
+      }
+   }
+
+   object Receiver {
+      type Directed     = Receiver with OSCReceiver.Directed with OSCReceiver.Net
+      type Undirected   = Receiver with OSCReceiver.UndirectedNet
+
+      def apply( target: SocketAddress )( implicit config: Config ) : Directed = new DirectedImpl( target, config )
+
+      private final class DirectedImpl( target: SocketAddress, protected val config: Config )
+      extends Receiver with OSCReceiver.Directed with ChannelImpl {
+         override def toString = name + ".Receiver(" + target + ")"
+
+         protected def connectChannel() { channel.connect( target )}
+
+         protected def receive() {
+            buf.clear()
+            if( channel.receive( buf ) != null ) flipDecodeDispatch()
+         }
+      }
+   }
+
+   sealed trait Receiver extends OSCReceiver with OSCChannel.NetConfigLike {
+//      protected def channel: DatagramChannel
+      override protected def config: Config
+   }
 }
 
 case object TCP extends OSCTransport.Net {
@@ -161,9 +202,11 @@ case object TCP extends OSCTransport.Net {
    }
 
    sealed trait Config extends OSCChannel.NetConfig {
+      override final def toString = name + ".Config"
       def openChannel() : SocketChannel
    }
    sealed trait ConfigBuilder extends OSCChannel.NetConfigBuilder {
+      override final def toString = name + ".ConfigBuilder"
       override def build : Config
    }
 
@@ -184,36 +227,36 @@ case object TCP extends OSCTransport.Net {
    }
 
    object Transmitter {
-      def apply( target: SocketAddress )( implicit config: Config ) : Transmitter = {
-         val cfg = config
-         new Transmitter with ChannelImpl {
-            override def toString = name + ".Transmitter(" + target + ")"
+      def apply( target: SocketAddress )( implicit config: Config ) : Transmitter = new Impl( target, config )
 
-            protected def config = cfg
+      private final class Impl( target: SocketAddress, protected val config: Config )
+      extends Transmitter with ChannelImpl {
+         override def toString = name + ".Transmitter(" + target + ")"
 
-            @throws( classOf[ IOException ])
-            def connect { channel.connect( target )}
+//         protected def config = cfg
 
-            @throws( classOf[ IOException ])
-            def !( p: OSCPacket ) {
-               try {
-                  bufSync.synchronized {
-                     buf.clear()
-                     buf.position( 4 )
-                     p.encode( codec, buf )
-                     val len = buf.position() - 4
-                     buf.flip()
-                     buf.putInt( 0, len )
-                     dumpPacket( p )
-                     channel.write( buf )
-                  }
+         @throws( classOf[ IOException ])
+         def connect { channel.connect( target )}
+
+         @throws( classOf[ IOException ])
+         def !( p: OSCPacket ) {
+            try {
+               bufSync.synchronized {
+                  buf.clear()
+                  buf.position( 4 )
+                  p.encode( codec, buf )
+                  val len = buf.position() - 4
+                  buf.flip()
+                  buf.putInt( 0, len )
+                  dumpPacket( p )
+                  channel.write( buf )
                }
-               catch { case e: BufferOverflowException =>
-                   throw new OSCException( OSCException.BUFFER, p match {
-                      case m: OSCMessage => m.name
-                      case _ => p.getClass.getName
-                   })
-               }
+            }
+            catch { case e: BufferOverflowException =>
+                throw new OSCException( OSCException.BUFFER, p match {
+                   case m: OSCMessage => m.name
+                   case _ => p.getClass.getName
+                })
             }
          }
       }
@@ -240,34 +283,32 @@ case object TCP extends OSCTransport.Net {
    }
 
    object Receiver {
-      def apply( target: SocketAddress )( implicit config: Config ) : Receiver = {
-         val cfg = config
-         new Receiver with ChannelImpl {
-            override def toString = name + ".Receiver(" + target + ")"
+      def apply( target: SocketAddress )( implicit config: Config ) : Receiver = new Impl( target, config )
 
-            def config = cfg
+      private final class Impl( target: SocketAddress, protected val config: Config )
+      extends Receiver with ChannelImpl {
+         override def toString = name + ".Receiver(" + target + ")"
 
-            @throws( classOf[ IOException ])
-            protected def connectChannel { channel.connect( target )}
+         @throws( classOf[ IOException ])
+         protected def connectChannel { channel.connect( target )}
 
-            protected def receive() {
-               buf.rewind().limit( 4 )	// in TCP mode, first four bytes are packet size in bytes
-               do {
-                  val len = channel.read( buf )
-                  if( len == -1 ) return
-               } while( buf.hasRemaining )
+         protected def receive() {
+            buf.rewind().limit( 4 )	// in TCP mode, first four bytes are packet size in bytes
+            do {
+               val len = channel.read( buf )
+               if( len == -1 ) return
+            } while( buf.hasRemaining )
 
-               buf.rewind()
-               val packetSize = buf.getInt()
-               buf.rewind().limit( packetSize )
+            buf.rewind()
+            val packetSize = buf.getInt()
+            buf.rewind().limit( packetSize )
 
-               while( buf.hasRemaining ) {
-                  val len = channel.read( buf )
-                  if( len == -1 ) return
-               }
-
-               flipDecodeDispatch()
+            while( buf.hasRemaining ) {
+               val len = channel.read( buf )
+               if( len == -1 ) return
             }
+
+            flipDecodeDispatch()
          }
       }
    }
