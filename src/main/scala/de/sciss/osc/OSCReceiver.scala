@@ -25,138 +25,12 @@
 
 package de.sciss.osc
 
-import impl.{TCPReceiver, UDPReceiver}
-import java.io.{ IOException, PrintStream }
-import java.net.{ DatagramPacket, DatagramSocket, InetAddress, InetSocketAddress, Socket, SocketAddress,
-                  UnknownHostException }
-import java.nio.{ BufferUnderflowException, ByteBuffer }
-import OSCChannel._
-import ScalaOSC._
-import java.lang.IllegalStateException
-import java.nio.channels.{AsynchronousCloseException, InterruptibleChannel, AlreadyConnectedException, ClosedChannelException, DatagramChannel, SelectableChannel, SocketChannel}
+import java.io.IOException
+import java.net.SocketAddress
+import java.nio.{BufferUnderflowException, ByteBuffer}
+import java.nio.channels.{AsynchronousCloseException, InterruptibleChannel, ClosedChannelException}
 
-/**
- *    @version 0.11, 27-May-10
- */
 object OSCReceiver {
-	/**
-	 *	Creates a new instance of a revivable <code>OSCReceiver</code>, using
-	 *	default codec and a specific transport protocol and port. It
-	 *	uses the local machine's IP or the &quot;loopback&quot; address.
-	 *	Note that the <code>port</code> specifies the
-	 *	local socket (at which the receiver listens), it does not determine the
-	 *	remote sockets from which messages can be received. If you want to filter
-	 *	out a particular remote (or target) socket, this can be done
-	 *	using the <code>setTarget</code> method!
-	 *	<P>
-	 *	<B>TCP</B> receivers are required
-	 *	to be connected to one particular target, so <code>setTarget</code> is
-	 *	must be called prior to <code>connect</code> or <code>startListening</code>! 
-	 *
-	 *	@param	transport	the protocol to use, currently either <code>UDP</code> or <code>TCP</code>
-	 *	@param	port		the port number for the OSC socket, or <code>0</code> to use an arbitrary free port
-	 *	@param	loopBack	if <code>true</code>, the &quot;loopback&quot; address (<code>&quot;127.0.0.0.1&quot;</code>)
-	 *						is used which limits communication to the local machine. If <code>false</code>, the
-	 *						local machine's regular IP address is used.
-	 *	
-	 *	@return				the newly created receiver
-	 *
-	 *	@throws	IOException					if a networking error occurs while creating the socket
-	 *	@throws	IllegalArgumentException	if an illegal protocol is used
-	 */
-//	@throws( classOf[ IOException ])
-//	def apply( transport: OSCTransport, port: Int = 0, loopBack: Boolean = false,
-//              codec: OSCPacketCodec = OSCPacketCodec.default ) : OSCReceiver = {
-//		val localAddress = new InetSocketAddress( if( loopBack ) "127.0.0.1" else "0.0.0.0", port )
-//		withAddress( transport, localAddress, codec )
-//	}
-
-	/**
-	 *	Creates a new instance of a revivable <code>OSCReceiver</code>, using
-	 *	default codec and a specific transport protocol and local socket address.
-	 *	Note that <code>localAdress</code> specifies the
-	 *	local socket (at which the receiver listens), it does not determine the
-	 *	remote sockets from which messages can be received. If you want to filter
-	 *	out a particular remote (or target) socket, this can be done
-	 *	using the <code>setTarget</code> method!
-	 *	<P>
-	 *	<B>TCP</B> receivers are required
-	 *	to be connected to one particular target, so <code>setTarget</code> is
-	 *	must be called prior to <code>connect</code> or <code>startListening</code>! 
-	 *
-	 *	@param	transport		the protocol to use, currently either <code>UDP</code> or <code>TCP</code>
-	 *	@param	localAddress	a valid address to use for the OSC socket. If the port is <code>0</code>,
-	 *							an arbitrary free port is picked when the receiver is started. (you can find out
-	 *							the actual port in this case by calling <code>getLocalAddress()</code> after the
-	 *							receiver was started).
-	 *	
-	 *	@return					the newly created receiver
-	 *
-	 *	@throws	IOException					if a networking error occurs while creating the socket
-	 *	@throws	IllegalArgumentException	if an illegal protocol is used
-	 */
-//	@throws( classOf[ IOException ])
-//	def withAddress( transport: OSCTransport, localAddress: InetSocketAddress,
-//                    codec: OSCPacketCodec = OSCPacketCodec.default ) : OSCReceiver = {
-//      transport match {
-//         case UDP => new UDPReceiver( localAddress, codec )
-//         case TCP => new TCPReceiver( localAddress, codec )
-//      }
-//	}
-
-	/**
-	 *	Creates a new instance of a non-revivable <code>OSCReceiver</code>, using
-	 *	default codec and UDP transport on a given channel. The caller should ensure that
-	 *	the provided channel's socket was bound to a valid address
-	 *	(using <code>dch.socket().bind( SocketAddress )</code>).
-	 *	Note that <code>dch</code> specifies the
-	 *	local socket (at which the receiver listens), it does not determine the
-	 *	remote sockets from which messages can be received. If you want to filter
-	 *	out a particular remote (or target) socket, this can be done
-	 *	using the <code>setTarget</code> method!
-	 *
-	 *	@param	dch			the <code>DatagramChannel</code> to use as UDP socket.
-	 *	@return				the newly created receiver
-	 *
-	 *	@throws	IOException	if a networking error occurs while configuring the socket
-	 */
-//	@throws( classOf[ IOException ])
-//	def withChannel( dch: DatagramChannel ) : OSCReceiver =
-//		new UDPReceiver( dch, OSCPacketCodec.default )
-
-//   @throws( classOf[ IOException ])
-//   def withChannel( dch: DatagramChannel, codec: OSCPacketCodec ) : OSCReceiver =
-//      new UDPReceiver( dch, codec )
-
-	/**
-	 *	Creates a new instance of a non-revivable <code>OSCReceiver</code>, using
-	 *	default codec and TCP transport on a given channel. The caller should ensure that
-	 *	the provided channel's socket was bound to a valid address
-	 *	(using <code>sch.socket().bind( SocketAddress )</code>). Furthermore,
-	 *	the channel must be connected (using <code>connect()</code>) before
-	 *	being able to receive messages. Note that <code>sch</code> specifies the
-	 *	local socket (at which the receiver listens), it does not determine the
-	 *	remote sockets from which messages can be received. The remote (or target)
-	 *	socket must be explicitly specified using <code>setTarget</code> before
-	 *	trying to connect!
-	 *
-	 *	@param	sch			the <code>SocketChannel</code> to use as TCP socket.
-	 *	@return				the newly created receiver
-	 *
-	 *	@throws	IOException	if a networking error occurs while configuring the socket
-	 */
-//	@throws( classOf[ IOException ])
-//	def withChannel( sch: SocketChannel, codec: OSCPacketCodec ) : OSCReceiver =
-//      new TCPReceiver( sch, codec )
-
-//   @throws( classOf[ IOException ])
-//   def withChannel( sch: SocketChannel ) : OSCReceiver =
-//      new TCPReceiver( sch, OSCPacketCodec.default )
-
-	protected def debugTimeString : String = {
-		new java.text.SimpleDateFormat( "HH:mm:ss.SSS" ).format( new java.util.Date )
-	}
-
    trait Net extends OSCReceiver with OSCChannel.Net
 }
 
@@ -169,7 +43,7 @@ trait OSCReceiver extends OSCChannel {
 //   private val bufSync            = new AnyRef
    protected final val byteBuf	   = ByteBuffer.allocateDirect( config.bufferSize )
 
-	protected var	tgt : SocketAddress			= null
+//	protected var	tgt : SocketAddress			= null
 
 	private val thread = new Thread( this.toString ) {
       private def closedException() {
@@ -201,7 +75,7 @@ trait OSCReceiver extends OSCChannel {
    @throws( classOf[ IOException ])
    protected def receive() : Unit
 
-	final def target: SocketAddress = tgt
+//	final def target: SocketAddress = tgt
 
    protected def channel: InterruptibleChannel
 

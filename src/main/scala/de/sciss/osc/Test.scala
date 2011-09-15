@@ -33,45 +33,45 @@ import java.nio.channels.DatagramChannel
  *	   @version	0.11, 24-Nov-09
  */
 object Test {
-	def codec() {
-// NOTE: scalacheck doesn't seem to be compatible with
-//		 scala 2.8 BETA, and i cannot get the sources
-// 		 to compile due to more stupid dependancies.
-// 	     so screw scalacheck for the moment....
-/*
-		import _root_.org.scalacheck._
-		import _root_.org.scalacheck.Arbitrary._
-		import _root_.org.scalacheck.Prop._
-		
-		var c: OSCPacketCodec = null
-		val b = ByteBuffer.allocate( 8192 )
-		val str = arbitrary[String] suchThat (_.indexOf(0) == -1) // null-character not allowed
-		val strictArgGen = Gen.oneOf( arbitrary[Int], arbitrary[Float], str )
-		val strictListGen = Gen.listOf[Any]( strictArgGen )
-		val fatArgGen = Gen.oneOf( arbitrary[Int], arbitrary[Float], arbitrary[Long], arbitrary[Double], str )
-		val fatListGen = Gen.listOf[Any]( fatArgGen )
-// how do we limit the list size? no clue... seems to work nevertheless
-//		val sizedGen = Gen.sized { size => (size < 100) ==> listGen }
-		val checka = (list: List[Any]) => {
-			val msg = OSCMessage( "/test", list:_* )
-			b.clear
-			msg.encode( c, b )
-			b.flip
-			val msgOut = c.decode( b ).asInstanceOf[OSCMessage]
-			val decArgs = msgOut.args
-			(msgOut.name == msg.name) :| "name" &&
-			(decArgs == msg.args) :| ("args before: " + msg.args + " / after: " + decArgs.toList )
-		}
-		c = new OSCPacketCodec( OSCPacketCodec.MODE_STRICT_V1 )
-		val strictProp = forAll( strictListGen )( checka ) 
-		strictProp.check
-		c = new OSCPacketCodec( OSCPacketCodec.MODE_FAT_V1 )
-		val fatProp = forAll( fatListGen )( checka ) 
-		fatProp.check
-*/
-	}
+//	def codec() {
+//// NOTE: scalacheck doesn't seem to be compatible with
+////		 scala 2.8 BETA, and i cannot get the sources
+//// 		 to compile due to more stupid dependancies.
+//// 	     so screw scalacheck for the moment....
+///*
+//		import _root_.org.scalacheck._
+//		import _root_.org.scalacheck.Arbitrary._
+//		import _root_.org.scalacheck.Prop._
+//
+//		var c: OSCPacketCodec = null
+//		val b = ByteBuffer.allocate( 8192 )
+//		val str = arbitrary[String] suchThat (_.indexOf(0) == -1) // null-character not allowed
+//		val strictArgGen = Gen.oneOf( arbitrary[Int], arbitrary[Float], str )
+//		val strictListGen = Gen.listOf[Any]( strictArgGen )
+//		val fatArgGen = Gen.oneOf( arbitrary[Int], arbitrary[Float], arbitrary[Long], arbitrary[Double], str )
+//		val fatListGen = Gen.listOf[Any]( fatArgGen )
+//// how do we limit the list size? no clue... seems to work nevertheless
+////		val sizedGen = Gen.sized { size => (size < 100) ==> listGen }
+//		val checka = (list: List[Any]) => {
+//			val msg = OSCMessage( "/test", list:_* )
+//			b.clear
+//			msg.encode( c, b )
+//			b.flip
+//			val msgOut = c.decode( b ).asInstanceOf[OSCMessage]
+//			val decArgs = msgOut.args
+//			(msgOut.name == msg.name) :| "name" &&
+//			(decArgs == msg.args) :| ("args before: " + msg.args + " / after: " + decArgs.toList )
+//		}
+//		c = new OSCPacketCodec( OSCPacketCodec.MODE_STRICT_V1 )
+//		val strictProp = forAll( strictListGen )( checka )
+//		strictProp.check
+//		c = new OSCPacketCodec( OSCPacketCodec.MODE_FAT_V1 )
+//		val fatProp = forAll( fatListGen )( checka )
+//		fatProp.check
+//*/
+//	}
 	
-  def receiver() {
+  def receiver( transport: OSCTransport.Net ) {
 	    val rcv: OSCReceiver.Net = sys.error( "TODO" ) // = OSCReceiver.apply( UDP, 0, true )
 //	    rcv.start()
 	    

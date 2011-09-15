@@ -213,7 +213,7 @@ trait OSCClient extends OSCInputChannel with OSCOutputChannel {
 //		rcv.target  = target
 //		trns.target = target
 //	}
-	def target: SocketAddress = rcv.target
+	def target: SocketAddress = sys.error( "TODO" ) // rcv.target
 	
 //	def codec_=( c: OSCPacketCodec ) {
 //		rcv.codec	= c
