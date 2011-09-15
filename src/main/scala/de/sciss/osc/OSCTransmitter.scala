@@ -166,15 +166,19 @@ object OSCTransmitter {
       }
    }
 
-   trait UndirectedNet {
+   trait UndirectedNet extends OSCTransmitter with OSCChannelNet {
       def send( p: OSCPacket, target: SocketAddress ) : Unit
+
+      @throws( classOf[ IOException ])
+      def connect() {}
+      def isConnected = isOpen
    }
 
    type DirectedNet = Net with Directed
 }
 
 trait OSCTransmitter extends OSCChannel {
-	protected final val generalSync	   = new AnyRef
+	protected final val bufSync	   = new AnyRef
 //	protected var allocBuf 					= true
 //	private var bufSize						= DEFAULTBUFSIZE
 	protected final val byteBuf : ByteBuffer = ByteBuffer.allocateDirect( config.bufferSize )
@@ -182,30 +186,30 @@ trait OSCTransmitter extends OSCChannel {
  
 //   var target: SocketAddress		      = null
 	
-//	/**
-//	 *	Establishes connection for transports requiring
-//	 *	connectivity (e.g. TCP). For transports that do not require connectivity (e.g. UDP),
-//	 *	this ensures the communication channel is created and bound.
-//	 *  <P>
-//	 *	When a <B>UDP</B> transmitter
-//	 *	is created without an explicit <code>DatagramChannel</code> &ndash; say by
-//	 *	calling <code>OSCTransmitter.newUsing( &quot;udp&quot; )</code>, you are required
-//	 *	to call <code>connect()</code> so that an actual <code>DatagramChannel</code> is
-//	 *	created and bound. For a <B>UDP</B> transmitter which was created with an explicit
-//	 *	<code>DatagramChannel</code>, this method does noting, so it is always safe
-//	 *	to call <code>connect()</code>. However, for <B>TCP</B> transmitters,
-//	 *	this may throw an <code>IOException</code> if the transmitter
-//	 *	was already connected, therefore be sure to check <code>isConnected()</code> before.
-//	 *
-//	 *	@throws	IOException	if a networking error occurs. Possible reasons: - the underlying
-//	 *						network channel had been closed by the server. - the transport
-//	 *						is TCP and the server is not available. - the transport is TCP
-//	 *						and an <code>OSCReceiver</code> sharing the same socket was stopped before (unable to revive).
-//	 *
-//	 *	@see	#isConnected()
-//	 */
-//	@throws( classOf[ IOException ])
-//	def connect() : Unit
+	/**
+	 *	Establishes connection for transports requiring
+	 *	connectivity (e.g. TCP). For transports that do not require connectivity (e.g. UDP),
+	 *	this ensures the communication channel is created and bound.
+	 *  <P>
+	 *	When a <B>UDP</B> transmitter
+	 *	is created without an explicit <code>DatagramChannel</code> &ndash; say by
+	 *	calling <code>OSCTransmitter.newUsing( &quot;udp&quot; )</code>, you are required
+	 *	to call <code>connect()</code> so that an actual <code>DatagramChannel</code> is
+	 *	created and bound. For a <B>UDP</B> transmitter which was created with an explicit
+	 *	<code>DatagramChannel</code>, this method does noting, so it is always safe
+	 *	to call <code>connect()</code>. However, for <B>TCP</B> transmitters,
+	 *	this may throw an <code>IOException</code> if the transmitter
+	 *	was already connected, therefore be sure to check <code>isConnected()</code> before.
+	 *
+	 *	@throws	IOException	if a networking error occurs. Possible reasons: - the underlying
+	 *						network channel had been closed by the server. - the transport
+	 *						is TCP and the server is not available. - the transport is TCP
+	 *						and an <code>OSCReceiver</code> sharing the same socket was stopped before (unable to revive).
+	 *
+	 *	@see	#isConnected()
+	 */
+	@throws( classOf[ IOException ])
+	def connect() : Unit
 
    @throws( classOf[ IOException ])
    final def close() {
@@ -226,16 +230,16 @@ trait OSCTransmitter extends OSCChannel {
 
 //   protected final def isOpenNoSync : Boolean = !wasClosed
 
-//	/**
-//	 *	Queries the connection state of the transmitter.
-//	 *
-//	 *	@return	<code>true</code> if the transmitter is connected, <code>false</code> otherwise. For transports that do not use
-//	 *			connectivity (e.g. UDP) this returns <code>false</code>, if the
-//	 *			underlying <code>DatagramChannel</code> has not yet been created.
-//	 *
-//	 *	@see	#connect()
-//	 */
-//	def isConnected : Boolean
+	/**
+	 *	Queries the connection state of the transmitter.
+	 *
+	 *	@return	<code>true</code> if the transmitter is connected, <code>false</code> otherwise. For transports that do not use
+	 *			connectivity (e.g. UDP) this returns <code>false</code>, if the
+	 *			underlying <code>DatagramChannel</code> has not yet been created.
+	 *
+	 *	@see	#connect()
+	 */
+	def isConnected : Boolean
 
 
 //   def target: SocketAddress

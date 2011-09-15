@@ -24,15 +24,21 @@
  */
 package de.sciss.osc
 
-import java.nio.channels.DatagramChannel
 import java.nio.BufferOverflowException
 import java.net.{SocketAddress, InetAddress, InetSocketAddress}
 import java.io.IOException
+import java.nio.channels.{SocketChannel, DatagramChannel}
 
 sealed trait OSCTransport { def name: String }
 
 object OSCTransport {
    sealed trait Net extends OSCTransport
+
+   def apply( name: String ) : OSCTransport = name.toUpperCase match {
+      case UDP.name              => UDP
+      case TCP.name              => TCP
+      case OSCFileTransport.name => OSCFileTransport
+   }
 }
 
 case object UDP extends OSCTransport.Net {
@@ -80,7 +86,7 @@ case object UDP extends OSCTransport.Net {
             @throws( classOf[ IOException ])
             def send( p: OSCPacket, target: SocketAddress ) {
                try {
-                  generalSync.synchronized {
+                  bufSync.synchronized {
                      byteBuf.clear()
                      p.encode( codec, byteBuf )
                      byteBuf.flip()
@@ -101,14 +107,16 @@ case object UDP extends OSCTransport.Net {
       def apply( target: SocketAddress )( implicit config: Config ) : Directed = {
          val cfg = config
          new Transmitter with OSCTransmitter.Directed {
-            channel.connect( target )
-
             protected def config = cfg
+
+            @throws( classOf[ IOException ])
+            def connect { channel.connect( target )}
+            def isConnected = channel.isConnected
 
             @throws( classOf[ IOException ])
             def !( p: OSCPacket ) {
                try {
-                  generalSync.synchronized {
+                  bufSync.synchronized {
                      byteBuf.clear()
                      p.encode( codec, byteBuf )
                      byteBuf.flip()
@@ -142,7 +150,76 @@ case object UDP extends OSCTransport.Net {
 case object TCP extends OSCTransport.Net {
    val name = "TCP"
 
-   sealed trait Config extends OSCChannelNetConfig
+   object Config {
+      implicit def default = apply().build
+      def apply() : ConfigBuilder = new ConfigBuilderImpl
+   }
+
+   sealed trait Config extends OSCChannelNetConfig {
+      def openChannel() : SocketChannel
+   }
+   sealed trait ConfigBuilder extends OSCChannelNetConfigBuilder {
+      override def build : Config
+   }
+
+   private final class ConfigBuilderImpl extends OSCChannelNetConfigBuilderImpl with ConfigBuilder {
+      def transport = UDP
+      def build: Config = ConfigImpl( bufferSize, codec, localSocketAddress )
+   }
+
+   private final case class ConfigImpl( bufferSize: Int, codec: OSCPacketCodec,
+                                        localSocketAddress: InetSocketAddress )
+   extends Config {
+      def transport = UDP
+      def openChannel() = {
+         val ch = SocketChannel.open()
+         ch.socket().bind( localSocketAddress )
+         ch
+      }
+   }
+
+   object Transmitter {
+      def apply( target: SocketAddress )( implicit config: Config ) : Transmitter = {
+         val cfg = config
+         new Transmitter {
+            protected def config = cfg
+
+            @throws( classOf[ IOException ])
+            def connect { channel.connect( target )}
+            def isConnected = channel.isConnected
+
+            @throws( classOf[ IOException ])
+            def !( p: OSCPacket ) {
+               try { // XXX should factor out common body with UDP.Transmitter
+                  bufSync.synchronized {
+                     byteBuf.clear()
+                     p.encode( codec, byteBuf )
+                     byteBuf.flip()
+                     dumpPacket( p )
+                     channel.write( byteBuf )
+                  }
+               }
+               catch { case e: BufferOverflowException =>
+                   throw new OSCException( OSCException.BUFFER, p match {
+                      case m: OSCMessage => m.name
+                      case _ => p.getClass.getName
+                   })
+               }
+            }
+         }
+      }
+   }
+
+   sealed trait Transmitter extends OSCTransmitter.TCP {
+      final override protected val channel: SocketChannel = config.openChannel()
+      override protected def config: Config
+//      final def transport = config.transport
+//
+//      final def localSocketAddress = {
+//         val so = channel.socket()
+//         new InetSocketAddress( so.getLocalAddress, so.getLocalPort )
+//      }
+   }
 }
 
 case object OSCFileTransport extends OSCTransport {

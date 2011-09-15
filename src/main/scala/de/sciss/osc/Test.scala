@@ -91,12 +91,16 @@ object Test {
 	    sync.synchronized( sync.wait() )
   }
   
-   def transmitter() {
+   def transmitter( transport: OSCTransport.Net ) {
       println( "Test.transmitter\n\n" +
                "  assumes that scsynth is running on" +
-               "  localhost UDP port 57110\n" )
-   
-      val trns = UDP.Transmitter( InetAddress.getLocalHost -> 57110 )
+               "  localhost " + transport.name + " port 57110\n" )
+
+      val tgt  = InetAddress.getLocalHost -> 57110
+      val trns = transport match {
+         case UDP => UDP.Transmitter( tgt )
+         case TCP => TCP.Transmitter( tgt )
+      }
 
       try {
          trns.dumpOSC( OSCChannel.DUMP_TEXT, Console.out )
