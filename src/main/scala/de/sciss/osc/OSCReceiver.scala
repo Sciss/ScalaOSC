@@ -41,7 +41,7 @@ trait OSCReceiver extends OSCChannel {
 	private val	threadSync           = new AnyRef
    @volatile private var wasClosed  = false
 //   private val bufSync            = new AnyRef
-   protected final val byteBuf	   = ByteBuffer.allocateDirect( config.bufferSize )
+   protected final val buf	         = ByteBuffer.allocateDirect( config.bufferSize )
 
 //	protected var	tgt : SocketAddress			= null
 
@@ -171,8 +171,8 @@ trait OSCReceiver extends OSCChannel {
 	@throws( classOf[ IOException ])
 	protected final def flipDecodeDispatch( sender: SocketAddress ) {
 		try {
-			byteBuf.flip()
-			val p = codec.decode( byteBuf )
+			buf.flip()
+			val p = codec.decode( buf )
          dumpPacket( p )
 			dispatchPacket( p, sender, OSCBundle.Now )	// OSCBundles will override this dummy time tag
 		}
@@ -216,10 +216,10 @@ trait OSCReceiver extends OSCChannel {
                case OSCDump.Text =>
                   OSCPacket.printTextOn( codec, printStream, p )
                case OSCDump.Hex =>
-                  OSCPacket.printHexOn( printStream, byteBuf )
+                  OSCPacket.printHexOn( printStream, buf )
                case OSCDump.Both =>
                   OSCPacket.printTextOn( codec, printStream, p )
-                  OSCPacket.printHexOn( printStream, byteBuf )
+                  OSCPacket.printHexOn( printStream, buf )
                case _ =>   // satisfy compiler
             }
          }

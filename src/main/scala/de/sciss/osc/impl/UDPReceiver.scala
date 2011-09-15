@@ -42,8 +42,8 @@ extends OSCReceiver {
 	 *	This is the body of the listening thread
 	 */
 	protected def receive() {
-      byteBuf.clear()
-      val sender = dch.receive( byteBuf )
+      buf.clear()
+      val sender = dch.receive( buf )
       if( sender != null ) flipDecodeDispatch( sender )
    }
 }

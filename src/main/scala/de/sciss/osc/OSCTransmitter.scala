@@ -64,7 +64,7 @@ object OSCTransmitter {
 
 trait OSCTransmitter extends OSCChannel {
 	protected final val bufSync	= new AnyRef
-	protected final val byteBuf   = ByteBuffer.allocateDirect( config.bufferSize )
+	protected final val buf       = ByteBuffer.allocateDirect( config.bufferSize )
 
 	/**
 	 *	Establishes connection for transports requiring
@@ -126,10 +126,10 @@ trait OSCTransmitter extends OSCChannel {
                case OSCDump.Text =>
                   OSCPacket.printTextOn( codec, printStream, p )
                case OSCDump.Hex =>
-                  OSCPacket.printHexOn( printStream, byteBuf )
+                  OSCPacket.printHexOn( printStream, buf )
                case OSCDump.Both =>
                   OSCPacket.printTextOn( codec, printStream, p )
-                  OSCPacket.printHexOn( printStream, byteBuf )
+                  OSCPacket.printHexOn( printStream, buf )
                case _ =>   // satisfy compiler
             }
          }

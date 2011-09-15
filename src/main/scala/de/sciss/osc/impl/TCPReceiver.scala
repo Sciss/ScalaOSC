@@ -40,18 +40,18 @@ extends OSCReceiver {
    protected def channel : InterruptibleChannel = sch
 
    protected def receive() {
-      byteBuf.rewind().limit( 4 )	// in TCP mode, first four bytes are packet size in bytes
+      buf.rewind().limit( 4 )	// in TCP mode, first four bytes are packet size in bytes
       do {
-         val len = sch.read( byteBuf )
+         val len = sch.read( buf )
          if( len == -1 ) return
-      } while( byteBuf.hasRemaining )
+      } while( buf.hasRemaining )
 
-      byteBuf.rewind()
-      val packetSize = byteBuf.getInt()
-      byteBuf.rewind().limit( packetSize )
+      buf.rewind()
+      val packetSize = buf.getInt()
+      buf.rewind().limit( packetSize )
 
-      while( byteBuf.hasRemaining ) {
-         val len = sch.read( byteBuf )
+      while( buf.hasRemaining ) {
+         val len = sch.read( buf )
          if( len == -1 ) return
       }
 
