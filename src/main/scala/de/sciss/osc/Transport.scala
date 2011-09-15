@@ -190,7 +190,7 @@ case object UDP extends Transport.Net {
       }
 
       private final class DirectedImpl( target: SocketAddress, protected val config: Config )
-      extends Receiver with OSCReceiver.Directed with ChannelImpl {
+      extends Receiver with OSCReceiver.DirectedImpl with ChannelImpl {
          override def toString = name + ".Receiver(" + target + ")"
 
          protected def connectChannel() { channel.connect( target )}
@@ -331,7 +331,7 @@ case object TCP extends Transport.Net {
       }
    }
 
-   sealed trait Receiver extends OSCReceiver.Directed with Channel.DirectedNet {
+   sealed trait Receiver extends OSCReceiver.DirectedImpl with Channel.DirectedNet {
 //      protected def channel: SocketChannel
       override protected def config: Config
    }

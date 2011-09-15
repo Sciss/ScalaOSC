@@ -116,11 +116,11 @@ import java.net.{ InetSocketAddress, SocketAddress }
  */
 object Client
 
-trait Client extends Channel.Bidi with Channel.DirectedOutput {
-   var action = Receiver.Directed.NoAction
+trait Client extends Channel.Bidi with Channel.DirectedInput with Channel.DirectedOutput {
+//   var action = Channel.DirectedInput.NoAction
 
-   protected def rcv: Receiver
-   protected def trns: Transmitter.Directed
+   override protected def input: Receiver
+   override protected def output: Transmitter.Directed
 
 //	/**
 //	 *	Sends an OSC packet (bundle or message) to the target

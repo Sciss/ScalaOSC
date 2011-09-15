@@ -161,16 +161,24 @@ object Channel {
       }
    }
 
-   trait DirectedOutput extends OutputLike {
+   object DirectedInput {
+      type Action = Packet => Unit
+      val NoAction : Action = _ => ()
+   }
+   trait DirectedInput /* extends InputLike */ {
+      var action = DirectedInput.NoAction
+   }
+
+   trait DirectedOutput /* extends OutputLike */ {
       def !( p: Packet ) : Unit
    }
-   trait OutputLike
-   trait Output extends Single with OutputLike {
+//   trait OutputLike
+   trait Output extends Single /* with OutputLike */ {
       protected def dumpPacket( p: Packet ) { dumpPacket( p, "s: " )}
    }
 
-   trait InputLike
-   trait Input extends Single with InputLike {
+//   trait InputLike
+   trait Input extends Single /* with InputLike */ {
       protected def dumpPacket( p: Packet ) { dumpPacket( p, "r: " )}
    }
 

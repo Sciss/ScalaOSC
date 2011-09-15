@@ -33,12 +33,14 @@ import java.net.SocketAddress
 object Receiver {
    trait Net extends Receiver with Channel.NetConfigLike // Channel.Net
 
-   object Directed {
-      type Action = Packet => Unit
-      val NoAction : Action = _ => ()
-   }
-   trait Directed extends Receiver {
-      var action = Directed.NoAction
+//   object Directed {
+//      type Action = Packet => Unit
+//      val NoAction : Action = _ => ()
+//   }
+   type Directed = Receiver with Channel.DirectedInput
+
+   private[osc] trait DirectedImpl extends Receiver with Channel.DirectedInput {
+//      var action = Directed.NoAction
 
       @throws( classOf[ IOException ])
       protected final def flipDecodeDispatch() {
