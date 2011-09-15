@@ -35,7 +35,7 @@ object OSCTransmitter {
       def !( p: OSCPacket ) : Unit
    }
 
-   type Net = OSCTransmitter with OSCChannelNet
+   type Net = OSCTransmitter with OSCChannel.Net
 
 //   trait TCP extends DirectedNet {
 //      override protected def config: TCP.Config
@@ -51,7 +51,7 @@ object OSCTransmitter {
 //      }
 //   }
 
-   trait UndirectedNet extends OSCTransmitter with OSCChannelNet {
+   trait UndirectedNet extends OSCTransmitter with OSCChannel.Net {
       def send( p: OSCPacket, target: SocketAddress ) : Unit
 
       @throws( classOf[ IOException ])
@@ -59,17 +59,7 @@ object OSCTransmitter {
       def isConnected = isOpen
    }
 
-   trait DirectedNet extends OSCTransmitter with OSCChannelNet with Directed {
-      /**
-       * The remote socket address of this channel. Returns `null` if the
-       * channel has not yet been connected.
-       *
-       * @see  #connect()
-       */
-      def remoteSocketAddress : InetSocketAddress
-      final def remotePort    : Int          = remoteSocketAddress.getPort
-      final def remoteAddress : InetAddress  = remoteSocketAddress.getAddress
-   }
+   type DirectedNet = Directed with OSCChannel.DirectedNet
 }
 
 trait OSCTransmitter extends OSCChannel {

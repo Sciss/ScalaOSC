@@ -37,6 +37,37 @@ object OSCChannel {
 	val DEFAULTBUFSIZE = 8192
 	
 	val PassAllPackets : OSCPacket => Boolean = _ => true
+
+   trait Net extends OSCChannel with OSCChannelNetConfigLike {
+      /**
+       *	Queries the communicator's local socket address.
+       *	You can determine the host and port from the returned address
+       *	by calling <code>getHostName()</code> (or for the IP <code>getAddress().getHostAddress()</code>)
+       *	and <code>getPort()</code>.
+       *
+       *	@return				the address of the communicator's local socket.
+       *
+       *	@see	java.net.InetSocketAddress#getHostName()
+       *	@see	java.net.InetSocketAddress#getAddress()
+       *	@see	java.net.InetSocketAddress#getPort()
+       *
+       *	@see	#getProtocol()
+       */
+      @throws( classOf[ IOException ])
+      def localSocketAddress : InetSocketAddress
+   }
+
+   trait DirectedNet extends Net {
+      /**
+       * The remote socket address of this channel. Returns `null` if the
+       * channel has not yet been connected.
+       *
+       * @see  #connect()
+       */
+      def remoteSocketAddress : InetSocketAddress
+      final def remotePort    : Int          = remoteSocketAddress.getPort
+      final def remoteAddress : InetAddress  = remoteSocketAddress.getAddress
+   }
 }
 
 import OSCChannel._
@@ -75,29 +106,6 @@ trait OSCChannel extends OSCChannelConfigLike with Channel {
 	 *	The object should not be used any more after calling this method.
 	 */
 	def close() : Unit
-}
-
-trait OSCChannelNet extends OSCChannel with OSCChannelNetConfigLike {
-   /**
-    *	Queries the communicator's local socket address.
-    *	You can determine the host and port from the returned address
-    *	by calling <code>getHostName()</code> (or for the IP <code>getAddress().getHostAddress()</code>)
-    *	and <code>getPort()</code>.
-    *
-    *	@return				the address of the communicator's local socket.
-    *
-    *	@see	java.net.InetSocketAddress#getHostName()
-    *	@see	java.net.InetSocketAddress#getAddress()
-    *	@see	java.net.InetSocketAddress#getPort()
-    *
-    *	@see	#getProtocol()
-    */
-   @throws( classOf[ IOException ])
-   def localSocketAddress : InetSocketAddress
-
-//   final def localPort        : Int          = localSocketAddress.getPort
-//   final def localAddress     : InetAddress  = localSocketAddress.getAddress
-//   final def localIsLoopback  : Boolean      = localSocketAddress.getAddress.isLoopbackAddress
 }
 
 trait OSCInputChannel

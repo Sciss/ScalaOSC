@@ -108,7 +108,7 @@ case object UDP extends OSCTransport.Net {
 
       def apply( target: SocketAddress )( implicit config: Config ) : Directed = {
          val cfg = config
-         new Transmitter with OSCTransmitter.DirectedNet {
+         new Transmitter with OSCTransmitter.Directed with OSCChannel.DirectedNet {
             override def toString = name + ".Transmitter()"
             protected def config = cfg
 
@@ -142,7 +142,7 @@ case object UDP extends OSCTransport.Net {
       }
    }
 
-   sealed trait Transmitter extends OSCTransmitter with OSCChannelNet {
+   sealed trait Transmitter extends OSCTransmitter with OSCChannel.Net {
       final override protected val channel: DatagramChannel = config.openChannel()
       override protected def config: Config
       final def transport = config.transport
@@ -227,7 +227,7 @@ case object TCP extends OSCTransport.Net {
       }
    }
 
-   sealed trait Transmitter extends OSCTransmitter.DirectedNet {
+   sealed trait Transmitter extends OSCTransmitter.Directed with OSCChannel.DirectedNet {
       final def transport = config.transport
 
       final def localSocketAddress = {
