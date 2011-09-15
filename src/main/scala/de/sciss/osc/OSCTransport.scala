@@ -46,7 +46,8 @@ case object UDP extends OSCTransport.Net {
    val name = "UDP"
 
    object Config {
-      implicit def default = apply().build
+      def default : Config = apply().build
+      implicit def build( b: ConfigBuilder ) : Config = b.build
       def apply() : ConfigBuilder = new ConfigBuilderImpl
    }
 
@@ -79,8 +80,10 @@ case object UDP extends OSCTransport.Net {
       type Directed     = Transmitter with OSCTransmitter.DirectedNet
       type Undirected   = Transmitter with OSCTransmitter.UndirectedNet
 
-      def apply( implicit config: Config ) : Undirected = new UndirectedImpl( config )
-      def apply( target: SocketAddress )( implicit config: Config ) : Directed = new DirectedImpl( target, config )
+      def apply() : Undirected = new UndirectedImpl( Config.default )
+      def apply( config: Config ) : Undirected = new UndirectedImpl( config )
+      def apply( target: SocketAddress ) : Directed = new DirectedImpl( target, Config.default )
+      def apply( target: SocketAddress, config: Config ) : Directed = new DirectedImpl( target, config )
 
       private final class UndirectedImpl( protected val config: Config )
       extends Transmitter with OSCTransmitter.UndirectedNet {
@@ -169,14 +172,14 @@ case object UDP extends OSCTransport.Net {
       type Directed     = Receiver with OSCReceiver.Directed with OSCReceiver.Net
       type Undirected   = Receiver with OSCReceiver.UndirectedNet
 
-      def apply()( implicit config: Config ) : Undirected = new UndirectedImpl( config )
-      def apply( target: SocketAddress )( implicit config: Config ) : Directed = new DirectedImpl( target, config )
+      def apply() : Undirected = new UndirectedImpl( Config.default )
+      def apply( config: Config ) : Undirected = new UndirectedImpl( config )
+      def apply( target: SocketAddress ) : Directed = new DirectedImpl( target, Config.default )
+      def apply( target: SocketAddress, config: Config ) : Directed = new DirectedImpl( target, config )
 
       private final class UndirectedImpl( protected val config: Config )
       extends Receiver with OSCReceiver.UndirectedNet with ChannelImpl {
          override def toString = name + ".Receiver()"
-
-         protected def connectChannel() {}   // XXX or throw ChannelClosedException if closed?
 
          protected def receive() {
             buf.clear()
@@ -208,7 +211,8 @@ case object TCP extends OSCTransport.Net {
    val name = "TCP"
 
    object Config {
-      implicit def default = apply().build
+      def default : Config = apply().build
+      implicit def build( b: ConfigBuilder ) : Config = b.build
       def apply() : ConfigBuilder = new ConfigBuilderImpl
    }
 
@@ -238,7 +242,8 @@ case object TCP extends OSCTransport.Net {
    }
 
    object Transmitter {
-      def apply( target: SocketAddress )( implicit config: Config ) : Transmitter = new Impl( target, config )
+      def apply( target: SocketAddress ) : Transmitter = new Impl( target, Config.default )
+      def apply( target: SocketAddress, config: Config ) : Transmitter = new Impl( target, config )
 
       private final class Impl( target: SocketAddress, protected val config: Config )
       extends Transmitter with ChannelImpl {
@@ -294,7 +299,8 @@ case object TCP extends OSCTransport.Net {
    }
 
    object Receiver {
-      def apply( target: SocketAddress )( implicit config: Config ) : Receiver = new Impl( target, config )
+      def apply( target: SocketAddress ) : Receiver = new Impl( target, Config.default )
+      def apply( target: SocketAddress, config: Config ) : Receiver = new Impl( target, config )
 
       private final class Impl( target: SocketAddress, protected val config: Config )
       extends Receiver with ChannelImpl {

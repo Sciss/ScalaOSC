@@ -39,11 +39,8 @@ object ScalaOSC {
                case netTrans: OSCTransport.Net => Test.transmitter( netTrans )
                case _ => sys.error( "Unsupported transport '" + transName + "'" )
             }
-         case Seq( "--testReceiver", transName ) =>
-            OSCTransport( transName ) match {
-               case netTrans: OSCTransport.Net => Test.receiver( netTrans )
-               case _ => sys.error( "Unsupported transport '" + transName + "'" )
-            }
+         case Seq( "--testReceiver" ) =>
+            Test.receiver()
 //         case Seq( "--runChecks" ) =>
 //            Test.codec()
          case Seq( "--testTCPClient" ) =>
@@ -55,7 +52,7 @@ object ScalaOSC {
 The following demos are available:
 
    --testTransmitter (UDP|TCP)"
-   --testReceiver (UDP|TCP)"
+   --testReceiver"
 
 """ )
             sys.exit( 1 )

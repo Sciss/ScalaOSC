@@ -68,6 +68,8 @@ object OSCReceiver {
    trait UndirectedNet extends OSCReceiver {
       var action = Undirected.NoAction
 
+      protected final def connectChannel() {}  // XXX or: if( !isOpen ) throw new ChannelClosedException ?
+
       /**
        * @param   sender   the remote socket from which the packet was sent.
        *                   this may be `null` in which case this method does nothing.

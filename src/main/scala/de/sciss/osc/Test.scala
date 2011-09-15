@@ -70,26 +70,31 @@ private[osc] object Test {
 //*/
 //	}
 	
-  def receiver( transport: OSCTransport.Net ) {
-	    val rcv: OSCReceiver.DirectedNet = sys.error( "TODO" ) // = OSCReceiver.apply( UDP, 0, true )
-//	    rcv.start()
-	    
-	    println( "Test.receiver\n\n" +
-               "  is waiting for an incoming message " +
-               "on UDP port " + rcv.localPort + ".\n" +
-               "  Send \"/quit\" to terminate.\n" )
-	    
-	    val sync = new AnyRef
-	    
-	    rcv.dumpOSC( OSCDump.Both )
-	    rcv.action = {
-          case OSCMessage( name, _ @ _* ) =>
-	    	      println( "Received message '" + name + "'" )
-      	    	if( name == "/quit" ) sync.synchronized( sync.notifyAll() )
-          case _ =>
-	    }
-	    sync.synchronized( sync.wait() )
-  }
+   def receiver() {
+      println( """
+Receiver test
+
+   is waiting for an incoming message
+   on UDP port 21327
+   Send "/quit" to terminate.
+""" )
+
+      val cfg         = UDP.Config()
+      cfg.localPort   = 21327  // 0x53 0x4F or 'SO'
+      val rcv         = UDP.Receiver( cfg )
+
+      val sync = new AnyRef
+
+      rcv.dumpOSC( OSCDump.Both )
+	   rcv.action = {
+         case (OSCMessage( name, _ @ _* ), _) =>
+	    	   println( "Received message '" + name + "'" )
+      	   if( name == "/quit" ) sync.synchronized( sync.notifyAll() )
+         case (p, addr) => println( "Ignoring packet: " + p + " from " + addr )
+	   }
+      rcv.connect()
+	   sync.synchronized( sync.wait() )
+   }
   
    def transmitter( transport: OSCTransport.Net ) {
       println(
