@@ -26,9 +26,9 @@
 package de.sciss.osc
 package impl
 
-import java.nio.channels.{ClosedChannelException, SelectableChannel, DatagramChannel}
 import java.net.{DatagramPacket, DatagramSocket, SocketAddress, InetSocketAddress}
 import java.io.IOException
+import java.nio.channels.{InterruptibleChannel, ClosedChannelException, SelectableChannel, DatagramChannel}
 
 final class UDPReceiver( _addr: InetSocketAddress, dch: DatagramChannel, val config: UDP.Config )
 extends OSCReceiver( _addr ) {
@@ -47,6 +47,8 @@ extends OSCReceiver( _addr ) {
 
    def transport = config.transport
 
+   protected def connectChannel() { if( target != null ) dch.connect( target )} // XXX
+
 //	@throws( classOf[ IOException ])
 //	private[ osc ] def channel_=( ch: SelectableChannel ) {
 //		generalSync.synchronized {
@@ -60,7 +62,7 @@ extends OSCReceiver( _addr ) {
 //			dch = dchTmp
 //		}
 //	}
-	private[ osc ] def channel : SelectableChannel = dch
+	protected def channel : InterruptibleChannel = dch
 
 //	def localSocketAddress : InetSocketAddress = {
 ////		generalSync.synchronized {
@@ -100,55 +102,33 @@ extends OSCReceiver( _addr ) {
 //		}
 //	}
 
-	@throws( classOf[ IOException ])
-	protected def closeChannel() {
-//		if( dch != null ) {
-//			try {
-				dch.close()
-//			}
-//			finally {
-//				dch = null
-//			}
-//		}
-	}
+//	@throws( classOf[ IOException ])
+//	protected def closeChannel() {
+////		if( dch != null ) {
+////			try {
+//				dch.close()
+////			}
+////			finally {
+////				dch = null
+////			}
+////		}
+//	}
 
 	/**
 	 *	This is the body of the listening thread
 	 */
-	protected def receiverLoop() {
-      while( isOpenNoSync ) {
-         try {
-            byteBuf.clear()
-//println( "in run : " + dch )
-            val sender = dch.receive( byteBuf )
-
-            if( isOpenNoSync && (sender != null) &&
-               ((tgt == null) || tgt.equals( sender ))) {
-
-               flipDecodeDispatch( sender )
-            }
-         }
-         catch {
-            case e1: ClosedChannelException =>  // bye bye, we have to quit
-               if( isOpenNoSync ) {
-                  Console.err.println( "OSCReceiver.run : " + e1.getClass.getName + " : " + e1.getLocalizedMessage )
-               }
-               return
-
-            case e2: IOException =>
-               if( isOpenNoSync ) {
-                  Console.err.println( "OSCReceiver.run : " + e2.getClass.getName + " : " + e2.getLocalizedMessage )
-               }
-         }
-      } // while( listening )
+	protected def receive() {
+      byteBuf.clear()
+      val sender = dch.receive( byteBuf )
+      if( sender != null ) flipDecodeDispatch( sender )
    }
 
-	@throws( classOf[ IOException ])
-	protected def sendGuardSignal() {
-		val guard		   = new DatagramSocket
-		val guardPacket	= new DatagramPacket( new Array[ Byte ]( 0 ), 0 )
-		guardPacket.setSocketAddress( localSocketAddress )
-		guard.send( guardPacket )
-		guard.close()
-	}
+//	@throws( classOf[ IOException ])
+//	protected def sendGuardSignal() {
+//		val guard		   = new DatagramSocket
+//		val guardPacket	= new DatagramPacket( new Array[ Byte ]( 0 ), 0 )
+//		guardPacket.setSocketAddress( localSocketAddress )
+//		guard.send( guardPacket )
+//		guard.close()
+//	}
 }

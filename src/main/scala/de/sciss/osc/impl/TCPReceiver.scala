@@ -28,7 +28,7 @@ package impl
 
 import java.io.IOException
 import java.net.InetSocketAddress
-import java.nio.channels.{ClosedChannelException, SelectableChannel, SocketChannel}
+import java.nio.channels.{InterruptibleChannel, ClosedChannelException, SelectableChannel, SocketChannel}
 
 final class TCPReceiver private( _localAddress: InetSocketAddress, sch: SocketChannel, val config: TCP.Config )
 extends OSCReceiver( _localAddress ) {
@@ -38,6 +38,8 @@ extends OSCReceiver( _localAddress ) {
    def transport = config.transport
 
    private val sender = sch.socket().getRemoteSocketAddress
+
+   protected def connectChannel() { sys.error( "TODO" )}
 
    def this( sch: SocketChannel, config: TCP.Config ) =
       this( new InetSocketAddress( sch.socket().getLocalAddress, sch.socket().getLocalPort ), sch, config )
@@ -56,7 +58,7 @@ extends OSCReceiver( _localAddress ) {
 //         }
 //      }
 //   }
-   private[ osc ] def channel : SelectableChannel = sch
+   protected def channel : InterruptibleChannel = sch
 
 //   def localSocketAddress : InetSocketAddress = {
 ////      generalSync.synchronized {
@@ -102,67 +104,45 @@ extends OSCReceiver( _localAddress ) {
 //      }
 //   }
 
-   @throws( classOf[ IOException ])
-   protected def closeChannel() {
-//      if( sch != null ) {
-//         try {
-            sch.close()
-//         }
-//         finally {
-//            sch = null
-//         }
-//      }
-   }
+//   @throws( classOf[ IOException ])
+//   protected def closeChannel() {
+////      if( sch != null ) {
+////         try {
+//            sch.close()
+////         }
+////         finally {
+////            sch = null
+////         }
+////      }
+//   }
 
-   protected def receiverLoop() {
-//      val sender = sch.socket().getRemoteSocketAddress
-//      checkBuffer()
+   protected def receive() {
+      byteBuf.rewind().limit( 4 )	// in TCP mode, first four bytes are packet size in bytes
+      do {
+         val len = sch.read( byteBuf )
+         if( len == -1 ) return
+      } while( byteBuf.hasRemaining )
 
-      while( isOpenNoSync ) {
-         try {
-            byteBuf.rewind().limit( 4 )	// in TCP mode, first four bytes are packet size in bytes
-            do {
-               val len = sch.read( byteBuf )
-               if( len == -1 ) return
-            } while( byteBuf.hasRemaining )
+      byteBuf.rewind()
+      val packetSize = byteBuf.getInt()
+      byteBuf.rewind().limit( packetSize )
 
-            byteBuf.rewind()
-            val packetSize = byteBuf.getInt()
-            byteBuf.rewind().limit( packetSize )
-
-            while( byteBuf.hasRemaining ) {
-               val len = sch.read( byteBuf )
-               if( len == -1 ) return
-            }
-
-            flipDecodeDispatch( sender )
-         }
-         catch {
-            case e1: IllegalArgumentException =>	// thrown on illegal byteBuf.limit() calls
-               if( isOpenNoSync ) {
-                  val e2 = new OSCException( OSCException.RECEIVE, e1.toString )
-                  Console.err.println( "OSCReceiver.run : " + e2.getClass.getName + " : " + e2.getLocalizedMessage )
-               }
-            case e1: ClosedChannelException =>	// bye bye, we have to quit
-               if( isOpenNoSync ) {
-                  Console.err.println( "OSCReceiver.run : " + e1.getClass.getName + " : " + e1.getLocalizedMessage )
-               }
-            case e1: IOException =>
-               if( isOpenNoSync ) {
-                  Console.err.println( "OSCReceiver.run : " + e1.getClass.getName + " : " + e1.getLocalizedMessage )
-               }
-         }
+      while( byteBuf.hasRemaining ) {
+         val len = sch.read( byteBuf )
+         if( len == -1 ) return
       }
+
+      flipDecodeDispatch( sender )
    }
 
-   /**
-    *	@warning	this calls socket().shutdownInput()
-    *				to unblock the listening thread. unfortunately this
-    *				cannot be undone, so it's not possible to revive the
-    *				receiver in TCP mode ;-( have to check for alternative ways
-    */
-   @throws( classOf[ IOException ])
-   protected def sendGuardSignal() {
-      sch.socket().shutdownInput()
-   }
+//   /**
+//    *	@warning	this calls socket().shutdownInput()
+//    *				to unblock the listening thread. unfortunately this
+//    *				cannot be undone, so it's not possible to revive the
+//    *				receiver in TCP mode ;-( have to check for alternative ways
+//    */
+//   @throws( classOf[ IOException ])
+//   protected def sendGuardSignal() {
+//      sch.socket().shutdownInput()
+//   }
 }

@@ -30,10 +30,10 @@ import java.io.{ IOException, PrintStream }
 import java.net.{ DatagramPacket, DatagramSocket, InetAddress, InetSocketAddress, Socket, SocketAddress,
                   UnknownHostException }
 import java.nio.{ BufferUnderflowException, ByteBuffer }
-import java.nio.channels.{ AlreadyConnectedException, ClosedChannelException, DatagramChannel, SelectableChannel,
-	 							   SocketChannel }
 import OSCChannel._
 import ScalaOSC._
+import java.lang.IllegalStateException
+import java.nio.channels.{AsynchronousCloseException, InterruptibleChannel, AlreadyConnectedException, ClosedChannelException, DatagramChannel, SelectableChannel, SocketChannel}
 
 /**
  *    @version 0.11, 27-May-10
@@ -162,271 +162,138 @@ object OSCReceiver {
 
 abstract class OSCReceiver( val localSocketAddress: InetSocketAddress )
 extends OSCChannel {
-//	private val		collListeners   			= new ArrayList[ OSCListener ]
-  	var				action						= (msg: OSCMessage, sender: SocketAddress, time: Long ) => ()
-//	protected var	thread : Thread				= null
+   rcv =>
 
-	protected val	generalSync					= new AnyRef	// mutual exclusion startListening / stopListening
-//	protected val	threadSync					= new AnyRef	// communication with receiver thread
-
-//	protected var	listening					= false
-   private var    wasClosed               = false
-	
-//	private val		bufSync						= new AnyRef	// buffer (re)allocation
-//	private var		bufSize						= DEFAULTBUFSIZE
-//	protected var	byteBuf : ByteBuffer		= null
-   protected final val byteBuf	         = ByteBuffer.allocateDirect( config.bufferSize )
+  	var action                       = (msg: OSCMessage, sender: SocketAddress, time: Long ) => ()
+	private val	threadSync           = new AnyRef
+   @volatile private var wasClosed  = false
+//   private val bufSync            = new AnyRef
+   protected final val byteBuf	   = ByteBuffer.allocateDirect( config.bufferSize )
 
 	protected var	tgt : SocketAddress			= null
 
-   // ---- constructor ----
-//   connect()
-//	listening		      = true
-	protected val thread = new Thread( "OSCReceiver" ) {
+	private val thread = new Thread( this.toString ) {
+      private def closedException() {
+         threadSync.synchronized {
+            if( !wasClosed ) {
+               Console.err.println( rcv.toString + " : Connection closed by remote side." )
+               wasClosed = true
+            }
+         }
+      }
+
       override def run {
          try {
-            receiverLoop()
+            while( !wasClosed ) receive()
+         } catch {
+            case e: AsynchronousCloseException => closedException()
+            case e: ClosedChannelException => closedException()
          } finally {
-            generalSync.synchronized {
+            threadSync.synchronized {
                wasClosed = true
-               generalSync.notifyAll()
+               threadSync.notifyAll()
             }
          }
       }
    }
 	thread.setDaemon( true )
-	thread.start()
+//   thread.start()
 
-//   final def transport  = config.transport
-//   final def codec      = config.codec
-//   final def bufferSize = config.bufferSize
+   @throws( classOf[ IOException ])
+   protected def receive() : Unit
 
-   protected def receiverLoop() : Unit
-
-//	/**
-//	 *	Queries the receiver's local socket address.
-//	 *	You can determine the host and port from the returned address
-//	 *	by calling <code>getHostName()</code> (or for the IP <code>getAddress().getHostAddress()</code>)
-//	 *	and <code>getPort()</code>. This port number may be <code>0</code>
-//	 *	if the receiver was called with an unspecified port and has not yet been
-//	 *	started. In this case, to determine the port actually used, call this
-//	 *	method after the receiver has been started.
-//	 *	
-//	 *	@return				the address of the receiver's local socket.
-//	 *
-//	 *	@see	java.net.InetSocketAddress#getHostName()
-//	 *	@see	java.net.InetSocketAddress#getAddress()
-//	 *	@see	java.net.InetSocketAddress#getPort()
-//	 */
-//	def getLocalAddress : InetSocketAddress
-
-//	var   codec						= OSCPacketCodec.default
-
-//	def getProtocol = protocol
-
-	/**
-	 *	Queries the receiver's local socket address.
-	 *	You can determine the host and port from the returned address
-	 *	by calling <code>getHostName()</code> (or for the IP <code>getAddress().getHostAddress()</code>)
-	 *	and <code>getPort()</code>. This port number may be <code>0</code>
-	 *	if the receiver was called with an unspecified port and has not yet been
-	 *	started. In this case, to determine the port actually used, call this
-	 *	method after the receiver has been started.
-	 *	
-	 *	@return				the address of the receiver's local socket.
-	 *
-	 *	@see	java.net.InetSocketAddress#getHostName()
-	 *	@see	java.net.InetSocketAddress#getAddress()
-	 *	@see	java.net.InetSocketAddress#getPort()
-	 */
-//	def getLocalAddress : InetSocketAddress
-//	def localAddress : InetSocketAddress
-
-//	def setTarget( target: SocketAddress ) : Unit
 	final def target: SocketAddress = tgt
-//	def target_=( t: SocketAddress ) : Unit
-	
-//	def decoder_=( dec: OSCPacketCodec ) {
-//		decoder = dec
-//	}
-	
-//	def getDecoder : OSCPacketCodec = decoder
+
+   protected def channel: InterruptibleChannel
+
+   /**
+    *	Queries whether the <code>OSCReceiver</code> is
+    *	listening or not.
+    */
+   final def isOpen : Boolean = channel.isOpen // generalSync.synchronized { !wasClosed }
 
 //	/**
-//	 *  Registers a listener that gets informed
-//	 *  about incoming messages. You can call this
-//	 *  both when listening was started and stopped.
-//	 *
-//	 *  @param  listener	the listener to register
+//	 *	Queries whether the <code>OSCReceiver</code> is
+//	 *	listening or not.
 //	 */
-//	def addOSCListener( listener: OSCListener ) {
-//		collListeners.synchronized {
-//			collListeners.add( listener )
-//		}
-//	}
+//	final def isOpen : Boolean = generalSync.synchronized { !wasClosed }
 //
-//	/**
-//	 *  Unregisters a listener that gets informed
-//	 *  about incoming messages
-//	 *
-//	 *  @param  listener	the listener to remove from
-//	 *						the list of notified objects.
-//	 */
-//	def removeOSCListener( listener: OSCListener ) {
-//		collListeners.synchronized {
-//			collListeners.remove( listener )
-//		}
-//	}
+//   protected final def isOpenNoSync : Boolean = !wasClosed
+
+   @throws( classOf[ IOException ])
+   final def close() {
+      threadSync.synchronized {
+         wasClosed = true
+         channel.close()
+      }
+   }
+
+   @throws( classOf[ IOException ])
+   protected def connectChannel() : Unit
+
+   @throws( classOf[ IOException ])
+   final def connect() {
+      connectChannel()
+      start()
+   }
+
+   @throws( classOf[ IOException ])
+   private def start() {
+      try {
+         thread.start()
+      } catch {
+         case _: IllegalThreadStateException => throw new ClosedChannelException()
+      }
+   }
 
 //	/**
-//	 *  Starts to wait for incoming messages.
-//	 *	See the class constructor description to learn how
-//	 *	connected and unconnected channels are handled.
-//	 *	You should never modify the
-//	 *	the channel's setup between the constructor and calling
-//	 *	<code>startListening</code>. This method will check
-//	 *	the connection status of the channel, using <code>isConnected</code>
-//	 *	and establish the connection if necessary. Therefore,
-//	 *	calling <code>connect</code> prior to <code>startListening</code>
-//	 *	is not necessary.
-//	 *	<p>
-//	 *	To find out at which port we are listening, call
-//	 *	<code>getLocalAddress().getPort()</code>.
-//	 *	<p>
-//	 *	If the <code>OSCReceiver</code> is already listening,
-//	 *	this method does nothing.
+//	 *  Stops waiting for incoming messages. This
+//	 *	method returns when the receiving thread has terminated.
+//     *  To prevent deadlocks, this method cancels after
+//     *  five seconds, calling <code>close()</code> on the datagram
+//	 *	channel, which causes the listening thread to die because
+//	 *	of a channel-closing exception.
 //     *
-//     *  @throws IOException when an error occurs
-//     *          while establishing the channel connection.
-//     *          In that case, no thread has been started
-//     *          and hence stopListening() needn't be called
+//     *  @throws IOException if an error occurs while shutting down
 //	 *
 //	 *	@throws	IllegalStateException	when trying to call this method from within the OSC receiver thread
 //	 *									(which would obviously cause a loop)
 //	 */
 //	@throws( classOf[ IOException ])
-//	def start() {
-//		generalSync.synchronized {
-//			if( Thread.currentThread == thread ) throw new IllegalStateException( "Cannot be called from reception thread" )
-//
-//			if( listening && ((thread == null) || !thread.isAlive) ) {
-//				listening		= false
-//			}
-//			if( !listening ) {
-//				if( !isConnected ) connect()
-//				listening		= true
-//				thread			= new Thread( this, "OSCReceiver" )
-//				thread.setDaemon( true )
-//				thread.start()
-//			}
+//	private def stop() {
+//      threadSync.synchronized {
+//         if( Thread.currentThread == thread ) throw new IllegalStateException( "Cannot be called from reception thread" )
+//         if( !wasClosed ) {
+//            if( thread.isAlive ) {
+//               try {
+//                  sendGuardSignal()
+//                  threadSync.wait( 5000 )
+//               }
+//               catch { case e2: InterruptedException =>
+//                  e2.printStackTrace()
+//               }
+//               finally {
+//                  if( !wasClosed && thread.isAlive ) {
+//                     try {
+//                        Console.err.println( "OSCReceiver.stopListening : rude task killing (" + this.hashCode + ")" )
+//                        closeChannel()
+//                     }
+//                     catch { case e3: IOException =>
+//                        e3.printStackTrace()
+//                     }
+//                  }
+//                  wasClosed = true
+//               }
+//            }
+//         }
 //		}
 //	}
 
-	/**
-	 *	Queries whether the <code>OSCReceiver</code> is
-	 *	listening or not.
-	 */
-	final def isOpen : Boolean = generalSync.synchronized { !wasClosed }
-
-   protected final def isOpenNoSync : Boolean = !wasClosed
-
-//   protected final def threadTerminates() {
-//      generalSync.synchronized {
-//         wasClosed = true
-//         generalSync.notifyAll()
-//      }
-//   }
-
-   @throws( classOf[ IOException ])
-   final def close() {
-      stop()
-      closeChannel()
-   }
-
-	/**
-	 *  Stops waiting for incoming messages. This
-	 *	method returns when the receiving thread has terminated.
-     *  To prevent deadlocks, this method cancels after
-     *  five seconds, calling <code>close()</code> on the datagram
-	 *	channel, which causes the listening thread to die because
-	 *	of a channel-closing exception.
-     *
-     *  @throws IOException if an error occurs while shutting down
-	 *
-	 *	@throws	IllegalStateException	when trying to call this method from within the OSC receiver thread
-	 *									(which would obviously cause a loop)
-	 */
-	@throws( classOf[ IOException ])
-	private def stop() {
-        generalSync.synchronized {
-			if( Thread.currentThread == thread ) throw new IllegalStateException( "Cannot be called from reception thread" )
-
-			if( !wasClosed ) {
-				if( thread.isAlive ) {
-               try {
-//					   threadSync.synchronized {
-						   sendGuardSignal()
-                     generalSync.wait( 5000 )
-//							threadSync.wait( 5000 )
-//						}
-					}
-					catch { case e2: InterruptedException =>
-						e2.printStackTrace()
-					}
-					finally {
-						if( !wasClosed && thread.isAlive ) {
-							try {
-                        Console.err.println( "OSCReceiver.stopListening : rude task killing (" + this.hashCode + ")" )
-								closeChannel()
-							}
-							catch { case e3: IOException =>
-								e3.printStackTrace()
-							}
-						}
-                  wasClosed = true
-//						thread = null
-					}
-				}
-			}
-		}
-	}
-
-//	def bufferSize_=( size: Int ) {
-//		bufSync.synchronized {
-//			if( listening ) throw new IllegalStateException( "Cannot be called while receiver is active" )
-//			bufSize	= size
-//		}
-//	}
-
-//	def dispose() {
-//		try {
-//			stop()
-//		}
-//		catch { case e1: IOException =>
-//			e1.printStackTrace()
-//		}
-//		try {
-//			closeChannel()
-//		}
-//		catch { case e1: IOException =>
-//			e1.printStackTrace()
-//		}
-////		collListeners.clear
-//		byteBuf	= null
-//	}
-	
-	@throws( classOf[ IOException ])
-	protected def sendGuardSignal() : Unit
+//	@throws( classOf[ IOException ])
+//	protected def sendGuardSignal() : Unit
 	
 //	@throws( classOf[ IOException ])
-//	protected def channel_=( ch: SelectableChannel ) : Unit
-// XXX just to make it compile
-
-//	private[ osc ] def channel_=( ch: SelectableChannel ) : Unit
-	private[ osc ] def channel: SelectableChannel
-
-	@throws( classOf[ IOException ])
-	protected def closeChannel() : Unit
+//	protected def closeChannel() : Unit
 
 	@throws( classOf[ IOException ])
 	protected final def flipDecodeDispatch( sender: SocketAddress ) {
