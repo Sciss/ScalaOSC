@@ -26,18 +26,76 @@
 package de.sciss.osc
 
 import java.io.IOException
-import java.net.SocketAddress
 import java.nio.BufferUnderflowException
 import java.nio.channels.{AsynchronousCloseException, ClosedChannelException}
+import java.net.{InetSocketAddress, SocketAddress}
 
 object OSCReceiver {
    trait Net extends OSCReceiver with OSCChannel.NetConfigLike // OSCChannel.Net
+
+   object Directed {
+      type Action = OSCPacket => Unit
+      val NoAction : Action = _ => ()
+   }
+   trait Directed extends OSCReceiver {
+      var action = Directed.NoAction
+
+      @throws( classOf[ IOException ])
+      protected final def flipDecodeDispatch() {
+         try {
+            buf.flip()
+            val p = codec.decode( buf )
+            try {
+               action.apply( p )
+            } catch {
+               case e => e.printStackTrace() // XXX eventually error handler?
+            }
+         }
+         catch { case e1: BufferUnderflowException =>
+            if( !wasClosed ) {
+               Console.err.println( new OSCException( OSCException.RECEIVE, e1.toString ))
+            }
+         }
+      }
+   }
+
+   type DirectedNet = Directed with Net
+
+   object Undirected {
+      type Action = (OSCPacket, SocketAddress) => Unit
+      val NoAction : Action = (_, _) => ()
+   }
+   trait UndirectedNet extends OSCReceiver {
+      var action = Undirected.NoAction
+
+      /**
+       * @param   sender   the remote socket from which the packet was sent.
+       *                   this may be `null` in which case this method does nothing.
+       */
+      @throws( classOf[ IOException ])
+      protected final def flipDecodeDispatch( sender: SocketAddress ) {
+         if( sender != null ) try {
+            buf.flip()
+            val p = codec.decode( buf )
+            try {
+               action.apply( p, sender )
+            } catch {
+               case e => e.printStackTrace() // XXX eventually error handler?
+            }
+         }
+         catch { case e1: BufferUnderflowException =>
+            if( !wasClosed ) {
+               Console.err.println( new OSCException( OSCException.RECEIVE, e1.toString ))
+            }
+         }
+      }
+   }
 }
 
 trait OSCReceiver extends OSCChannel.Input {
    rcv =>
 
-  	var action                       = (msg: OSCMessage, sender: SocketAddress, time: Long ) => ()
+//  	var action                       = (msg: OSCMessage, sender: SocketAddress, time: Long ) => ()
 	private val	threadSync           = new AnyRef
    @volatile private var wasClosed  = false
 
@@ -95,33 +153,4 @@ trait OSCReceiver extends OSCChannel.Input {
          case _: IllegalThreadStateException => throw new ClosedChannelException()
       }
    }
-
-	@throws( classOf[ IOException ])
-	protected final def flipDecodeDispatch( sender: SocketAddress ) {
-		try {
-			buf.flip()
-			val p = codec.decode( buf )
-         dumpPacket( p )
-			dispatchPacket( p, sender, OSCBundle.Now )	// OSCBundles will override this dummy time tag
-		}
-		catch { case e1: BufferUnderflowException =>
-			if( !wasClosed ) {
-				Console.err.println( new OSCException( OSCException.RECEIVE, e1.toString ))
-			}
-		}
-	}
-
-	private def dispatchPacket( p: OSCPacket, sender: SocketAddress, time: Long ) {
-		if( p.isInstanceOf[ OSCMessage ]) {
-			dispatchMessage( p.asInstanceOf[ OSCMessage ], sender, time )
-		} else {
-			val bndl	= p.asInstanceOf[ OSCBundle ]
-			val time2	= bndl.timetag
-			bndl.foreach( dispatchPacket( _, sender, time2 ))
-		}
-	}
-
-	private def dispatchMessage( msg: OSCMessage, sender: SocketAddress, time: Long ) {
-      action.apply( msg, sender, time )
-	}
 }

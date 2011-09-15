@@ -266,13 +266,13 @@ case object TCP extends OSCTransport.Net {
                   if( len == -1 ) return
                }
 
-               flipDecodeDispatch( target )
+               flipDecodeDispatch()
             }
          }
       }
    }
 
-   sealed trait Receiver extends OSCReceiver with OSCChannel.DirectedNet {
+   sealed trait Receiver extends OSCReceiver.Directed with OSCChannel.DirectedNet {
 //      protected def channel: SocketChannel
       override protected def config: Config
    }

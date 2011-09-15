@@ -124,10 +124,10 @@ trait OSCClient extends OSCChannel.Bidi {
    protected def rcv: OSCReceiver
    protected def trns: OSCTransmitter.Directed
 
-	def action_=( f: (OSCMessage, SocketAddress, Long) => Unit ) {
-		rcv.action = f
-	}
-	def action: (OSCMessage, SocketAddress, Long) => Unit = rcv.action
+//	def action_=( f: (OSCMessage, SocketAddress, Long) => Unit ) {
+//		rcv.action = f
+//	}
+//	def action: (OSCMessage, SocketAddress, Long) => Unit = rcv.action
 
 	def target: SocketAddress = sys.error( "TODO" ) // rcv.target
 

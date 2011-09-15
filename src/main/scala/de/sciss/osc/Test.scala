@@ -26,13 +26,12 @@
 package de.sciss.osc
 
 import java.io.IOException
-import java.net.{InetAddress, InetSocketAddress}
-import java.nio.channels.DatagramChannel
+import java.net.InetAddress
 
 /**
  *	   @version	0.11, 24-Nov-09
  */
-object Test {
+private[osc] object Test {
 //	def codec() {
 //// NOTE: scalacheck doesn't seem to be compatible with
 ////		 scala 2.8 BETA, and i cannot get the sources
@@ -72,7 +71,7 @@ object Test {
 //	}
 	
   def receiver( transport: OSCTransport.Net ) {
-	    val rcv: OSCReceiver.Net = sys.error( "TODO" ) // = OSCReceiver.apply( UDP, 0, true )
+	    val rcv: OSCReceiver.DirectedNet = sys.error( "TODO" ) // = OSCReceiver.apply( UDP, 0, true )
 //	    rcv.start()
 	    
 	    println( "Test.receiver\n\n" +
@@ -83,10 +82,11 @@ object Test {
 	    val sync = new AnyRef
 	    
 	    rcv.dumpOSC( OSCDump.Both )
-	    rcv.action = (msg, addr, when) => {
-	    	System.out.println( "Received message '" + msg.name + "'" )
-//	    	OSCPacket.printTextOn( System.out, msg )
-	    	if( msg.name == "/quit" ) sync.synchronized( sync.notifyAll() )
+	    rcv.action = {
+          case OSCMessage( name, _ @ _* ) =>
+	    	      println( "Received message '" + name + "'" )
+      	    	if( name == "/quit" ) sync.synchronized( sync.notifyAll() )
+          case _ =>
 	    }
 	    sync.synchronized( sync.wait() )
   }
