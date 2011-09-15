@@ -25,5 +25,8 @@ object Dump {
     *	Dump mode: dump messages both in text and hex view
     */
    case object Both extends Dump { val id = 3 }
+
+   type Filter = Packet => Boolean
+   val AllPackets : Filter = _ => true
 }
 sealed trait Dump { val id: Int }

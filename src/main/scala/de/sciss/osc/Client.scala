@@ -173,21 +173,21 @@ trait Client extends Channel.Bidi {
 	 */
 	override def dump( mode: Dump = Dump.Text,
 					       stream: PrintStream = Console.err,
-					       filter: (Packet) => Boolean = PassAllPackets ) {
+					       filter: Dump.Filter = Dump.AllPackets ) {
 		dumpIncoming( mode, stream, filter )
 		dumpOutgoing( mode, stream, filter )
 	}
 
 	def dumpIncoming( mode: Dump = Dump.Text,
 					         stream: PrintStream = Console.err,
-					         filter: (Packet) => Boolean = PassAllPackets ) {
+					         filter: Dump.Filter = Dump.AllPackets ) {
 
 		rcv.dump( mode, stream, filter )
 	}
 	
 	def dumpOutgoing( mode: Dump = Dump.Text,
 					         stream: PrintStream = Console.err,
-					         filter: (Packet) => Boolean = PassAllPackets ) {
+					         filter: Dump.Filter = Dump.AllPackets ) {
 
 		trns.dump( mode, stream, filter )
 	}

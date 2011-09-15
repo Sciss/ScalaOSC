@@ -36,8 +36,6 @@ object Channel {
 //	 *	size (8K at the moment).
 //	 */
 //	val DEFAULTBUFSIZE = 8192
-	
-	val PassAllPackets : Packet => Boolean = _ => true
 
    type Net = Channel with NetConfigLike
 //   trait Net extends Channel with OSCChannelNetConfigLike
@@ -134,14 +132,14 @@ object Channel {
    private[osc] trait Single extends Channel {
       @volatile protected var dumpMode: Dump = Dump.Off
       @volatile protected var printStream : PrintStream	= Console.err
-      @volatile protected var dumpFilter : (Packet) => Boolean = PassAllPackets
+      @volatile protected var dumpFilter : Dump.Filter = Dump.AllPackets
 
       protected val bufSync   = new AnyRef
       protected final val buf	= ByteBuffer.allocateDirect( config.bufferSize )
 
       final def dump( mode: Dump = Dump.Text,
                       stream: PrintStream = Console.err,
-                      filter: (Packet) => Boolean = PassAllPackets ) {
+                      filter: Dump.Filter = Dump.AllPackets ) {
          dumpMode	   = mode
          printStream	= stream
          dumpFilter	= filter
@@ -185,15 +183,15 @@ object Channel {
        *	by the client from the server, before they
        *	get delivered to registered <code>OSCListener</code>s.
        *
-       *	@param	mode	see <code>dumpOSC( int )</code> for details
+       *	@param	mode	see `dump` for details
        *	@param	stream	the stream to print on
        *
-       *	@see	#dumpOSC( int, PrintStream )
-       *	@see	#dumpOutgoing( int, PrintStream )
+       *	@see	#dump( Dump, PrintStream, Dump.Filter )
+       *	@see	#dumpOutgoing( Dump, PrintStream, Dump.Filter )
        */
       def dumpIncoming( mode: Dump = Dump.Text,
                         stream: PrintStream = Console.err,
-                        filter: (Packet) => Boolean = PassAllPackets ) : Unit
+                        filter: Dump.Filter = Dump.AllPackets ) : Unit
 
       /**
        *	Changes the way outgoing messages are dumped
@@ -201,15 +199,15 @@ object Channel {
        *	dumped. Outgoing messages are those send via
        *	<code>send</code>.
        *
-       *	@param	mode	see <code>dumpOSC( int )</code> for details
+       *	@param	mode	see `dump` for details
        *	@param	stream	the stream to print on
        *
-       *	@see	#dumpOSC( int, PrintStream )
-       *	@see	#dumpIncoming( int, PrintStream )
+       *	@see	#dump( Dump, PrintStream, Dump.Filter )
+       *	@see	#dumpIncoming( Dump, PrintStream, Dump.Filter )
        */
       def dumpOutgoing( mode: Dump = Dump.Text,
                         stream: PrintStream = Console.err,
-                        filter: (Packet) => Boolean = PassAllPackets ) : Unit
+                        filter: Dump.Filter = Dump.AllPackets ) : Unit
    }
 }
 
@@ -265,5 +263,5 @@ trait Channel extends Channel.ConfigLike with NIOChannel {
 	 */
 	def dump( mode: Dump = Dump.Text,
 				 stream: PrintStream = Console.err,
-				 filter: (Packet) => Boolean = PassAllPackets ) : Unit
+				 filter: Dump.Filter = Dump.AllPackets ) : Unit
 }
