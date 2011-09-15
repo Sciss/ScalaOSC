@@ -139,9 +139,9 @@ object Channel {
       protected val bufSync   = new AnyRef
       protected final val buf	= ByteBuffer.allocateDirect( config.bufferSize )
 
-      final def dumpOSC( mode: Dump = Dump.Text,
-                         stream: PrintStream = Console.err,
-                         filter: (Packet) => Boolean = PassAllPackets ) {
+      final def dump( mode: Dump = Dump.Text,
+                      stream: PrintStream = Console.err,
+                      filter: (Packet) => Boolean = PassAllPackets ) {
          dumpMode	   = mode
          printStream	= stream
          dumpFilter	= filter
@@ -189,11 +189,11 @@ object Channel {
        *	@param	stream	the stream to print on
        *
        *	@see	#dumpOSC( int, PrintStream )
-       *	@see	#dumpOutgoingOSC( int, PrintStream )
+       *	@see	#dumpOutgoing( int, PrintStream )
        */
-      def dumpIncomingOSC( mode: Dump = Dump.Text,
-                       stream: PrintStream = Console.err,
-                       filter: (Packet) => Boolean = PassAllPackets ) : Unit
+      def dumpIncoming( mode: Dump = Dump.Text,
+                        stream: PrintStream = Console.err,
+                        filter: (Packet) => Boolean = PassAllPackets ) : Unit
 
       /**
        *	Changes the way outgoing messages are dumped
@@ -205,11 +205,11 @@ object Channel {
        *	@param	stream	the stream to print on
        *
        *	@see	#dumpOSC( int, PrintStream )
-       *	@see	#dumpIncomingOSC( int, PrintStream )
+       *	@see	#dumpIncoming( int, PrintStream )
        */
-      def dumpOutgoingOSC( mode: Dump = Dump.Text,
-                           stream: PrintStream = Console.err,
-                           filter: (Packet) => Boolean = PassAllPackets ) : Unit
+      def dumpOutgoing( mode: Dump = Dump.Text,
+                        stream: PrintStream = Console.err,
+                        filter: (Packet) => Boolean = PassAllPackets ) : Unit
    }
 }
 
@@ -263,7 +263,7 @@ trait Channel extends Channel.ConfigLike with NIOChannel {
 	 *					`Dump.Both` (both text and hex)
 	 *	@param	stream	the stream to print on
 	 */
-	def dumpOSC( mode: Dump = Dump.Text,
-				    stream: PrintStream = Console.err,
-				    filter: (Packet) => Boolean = PassAllPackets ) : Unit
+	def dump( mode: Dump = Dump.Text,
+				 stream: PrintStream = Console.err,
+				 filter: (Packet) => Boolean = PassAllPackets ) : Unit
 }

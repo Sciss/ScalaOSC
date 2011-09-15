@@ -83,7 +83,7 @@ Receiver test
 
       val sync = new AnyRef
 
-      rcv.dumpOSC( Dump.Both )
+      rcv.dump( Dump.Both )
 	   rcv.action = {
          case (Message( name, _ @ _* ), _) =>
 	    	   println( "Received message '" + name + "'" )
@@ -108,7 +108,7 @@ Receiver test
       }
 
       try {
-         trns.dumpOSC( stream = Console.out )
+         trns.dump( stream = Console.out )
          trns.connect()
 //println( trns.target )
          trns ! Message( "/s_new", "default", 1000, 0, 0, "amp", 0f )
@@ -134,7 +134,7 @@ Receiver test
       val c: Client = sys.error( "TODO" ) // = Client( TCP, loopBack = true )
 //      c.target = new InetSocketAddress( "127.0.0.1", 57110 )
 //      c.start()
-      c.dumpOSC()
+      c.dump()
       c ! Message( "/dumpOSC", 1 )
       c ! Message( "/notify", 1 )
    }

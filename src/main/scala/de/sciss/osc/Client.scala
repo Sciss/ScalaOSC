@@ -164,31 +164,31 @@ trait Client extends Channel.Bidi {
 	 *					<code>kDumpBoth</code> (both text and hex)
 	 *	@param	stream	the stream to print on
 	 *
-	 *	@see	#dumpIncomingOSC( int, PrintStream )
-	 *	@see	#dumpOutgoingOSC( int, PrintStream )
+	 *	@see	#dumpIncoming( int, PrintStream )
+	 *	@see	#dumpOutgoing( int, PrintStream )
 	 *	@see	#kDumpOff
 	 *	@see	#kDumpText
 	 *	@see	#kDumpHex
 	 *	@see	#kDumpBoth
 	 */
-	override def dumpOSC( mode: Dump = Dump.Text,
-					          stream: PrintStream = Console.err,
-					          filter: (Packet) => Boolean = PassAllPackets ) {
-		dumpIncomingOSC( mode, stream, filter )
-		dumpOutgoingOSC( mode, stream, filter )
+	override def dump( mode: Dump = Dump.Text,
+					       stream: PrintStream = Console.err,
+					       filter: (Packet) => Boolean = PassAllPackets ) {
+		dumpIncoming( mode, stream, filter )
+		dumpOutgoing( mode, stream, filter )
 	}
 
-	def dumpIncomingOSC( mode: Dump = Dump.Text,
+	def dumpIncoming( mode: Dump = Dump.Text,
 					         stream: PrintStream = Console.err,
 					         filter: (Packet) => Boolean = PassAllPackets ) {
 
-		rcv.dumpOSC( mode, stream, filter )
+		rcv.dump( mode, stream, filter )
 	}
 	
-	def dumpOutgoingOSC( mode: Dump = Dump.Text,
+	def dumpOutgoing( mode: Dump = Dump.Text,
 					         stream: PrintStream = Console.err,
 					         filter: (Packet) => Boolean = PassAllPackets ) {
 
-		trns.dumpOSC( mode, stream, filter )
+		trns.dump( mode, stream, filter )
 	}
 }
