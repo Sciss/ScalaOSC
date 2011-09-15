@@ -160,7 +160,7 @@ object OSCClient {
 //   }
 }
 
-trait OSCClient extends OSCInputChannel with OSCOutputChannel {
+trait OSCClient extends OSCChannel.Bidi {
 	import OSCChannel._
 	
 //	private var bufSize = DEFAULTBUFSIZE
@@ -315,16 +315,16 @@ trait OSCClient extends OSCInputChannel with OSCOutputChannel {
 //		rcv.start()
 //	}
 	
-	/**
-	 *	Queries whether the client was activated or not. A client is activated by
-	 *	calling its <code>start()</code> method and deactivated by calling <code>stop()</code>.
-	 *
-	 *	@return	<code>true</code> if the client is active (connected and listening), <code>false</code> otherwise.
-	 *
-	 *	@see	#start()
-	 *	@see	#stop()
-	 */
-	def isOpen: Boolean = rcv.isOpen
+//	/**
+//	 *	Queries whether the client was activated or not. A client is activated by
+//	 *	calling its <code>start()</code> method and deactivated by calling <code>stop()</code>.
+//	 *
+//	 *	@return	<code>true</code> if the client is active (connected and listening), <code>false</code> otherwise.
+//	 *
+//	 *	@see	#start()
+//	 *	@see	#stop()
+//	 */
+//	def isOpen: Boolean = rcv.isOpen
 
 	@throws( classOf[ IOException ])
 	def close() {

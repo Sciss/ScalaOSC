@@ -66,43 +66,12 @@ trait OSCTransmitter extends OSCChannel {
 	protected final val bufSync	= new AnyRef
 	protected final val buf       = ByteBuffer.allocateDirect( config.bufferSize )
 
-	/**
-	 *	Establishes connection for transports requiring
-	 *	connectivity (e.g. TCP). For transports that do not require connectivity (e.g. UDP),
-	 *	this ensures the communication channel is created and bound.
-	 *  <P>
-	 *	When a <B>UDP</B> transmitter
-	 *	is created without an explicit <code>DatagramChannel</code> &ndash; say by
-	 *	calling <code>OSCTransmitter.newUsing( &quot;udp&quot; )</code>, you are required
-	 *	to call <code>connect()</code> so that an actual <code>DatagramChannel</code> is
-	 *	created and bound. For a <B>UDP</B> transmitter which was created with an explicit
-	 *	<code>DatagramChannel</code>, this method does noting, so it is always safe
-	 *	to call <code>connect()</code>. However, for <B>TCP</B> transmitters,
-	 *	this may throw an <code>IOException</code> if the transmitter
-	 *	was already connected, therefore be sure to check <code>isConnected()</code> before.
-	 *
-	 *	@throws	IOException	if a networking error occurs. Possible reasons: - the underlying
-	 *						network channel had been closed by the server. - the transport
-	 *						is TCP and the server is not available. - the transport is TCP
-	 *						and an <code>OSCReceiver</code> sharing the same socket was stopped before (unable to revive).
-	 *
-	 *	@see	#isConnected()
-	 */
-	@throws( classOf[ IOException ])
-	def connect() : Unit
-
    @throws( classOf[ IOException ])
    final def close() {
       channel.close()
    }
 
-   protected def channel: InterruptibleChannel
-
-   /**
-    *	Queries whether the <code>OSCReceiver</code> is
-    *	listening or not.
-    */
-   final def isOpen : Boolean = channel.isOpen // generalSync.synchronized { !wasClosed }
+//   protected def channel: InterruptibleChannel
 
 	/**
 	 *	Queries the connection state of the transmitter.

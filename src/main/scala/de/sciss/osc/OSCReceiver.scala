@@ -34,16 +34,12 @@ object OSCReceiver {
    trait Net extends OSCReceiver with OSCChannel.NetConfigLike // OSCChannel.Net
 }
 
-trait OSCReceiver extends OSCChannel {
+trait OSCReceiver extends OSCChannel.Single {
    rcv =>
 
   	var action                       = (msg: OSCMessage, sender: SocketAddress, time: Long ) => ()
 	private val	threadSync           = new AnyRef
    @volatile private var wasClosed  = false
-//   private val bufSync            = new AnyRef
-   protected final val buf	         = ByteBuffer.allocateDirect( config.bufferSize )
-
-//	protected var	tgt : SocketAddress			= null
 
 	private val thread = new Thread( this.toString ) {
       private def closedException() {
@@ -70,28 +66,9 @@ trait OSCReceiver extends OSCChannel {
       }
    }
 	thread.setDaemon( true )
-//   thread.start()
 
    @throws( classOf[ IOException ])
    protected def receive() : Unit
-
-//	final def target: SocketAddress = tgt
-
-   protected def channel: InterruptibleChannel
-
-   /**
-    *	Queries whether the <code>OSCReceiver</code> is
-    *	listening or not.
-    */
-   final def isOpen : Boolean = channel.isOpen // generalSync.synchronized { !wasClosed }
-
-//	/**
-//	 *	Queries whether the <code>OSCReceiver</code> is
-//	 *	listening or not.
-//	 */
-//	final def isOpen : Boolean = generalSync.synchronized { !wasClosed }
-//
-//   protected final def isOpenNoSync : Boolean = !wasClosed
 
    @throws( classOf[ IOException ])
    final def close() {
@@ -118,55 +95,6 @@ trait OSCReceiver extends OSCChannel {
          case _: IllegalThreadStateException => throw new ClosedChannelException()
       }
    }
-
-//	/**
-//	 *  Stops waiting for incoming messages. This
-//	 *	method returns when the receiving thread has terminated.
-//     *  To prevent deadlocks, this method cancels after
-//     *  five seconds, calling <code>close()</code> on the datagram
-//	 *	channel, which causes the listening thread to die because
-//	 *	of a channel-closing exception.
-//     *
-//     *  @throws IOException if an error occurs while shutting down
-//	 *
-//	 *	@throws	IllegalStateException	when trying to call this method from within the OSC receiver thread
-//	 *									(which would obviously cause a loop)
-//	 */
-//	@throws( classOf[ IOException ])
-//	private def stop() {
-//      threadSync.synchronized {
-//         if( Thread.currentThread == thread ) throw new IllegalStateException( "Cannot be called from reception thread" )
-//         if( !wasClosed ) {
-//            if( thread.isAlive ) {
-//               try {
-//                  sendGuardSignal()
-//                  threadSync.wait( 5000 )
-//               }
-//               catch { case e2: InterruptedException =>
-//                  e2.printStackTrace()
-//               }
-//               finally {
-//                  if( !wasClosed && thread.isAlive ) {
-//                     try {
-//                        Console.err.println( "OSCReceiver.stopListening : rude task killing (" + this.hashCode + ")" )
-//                        closeChannel()
-//                     }
-//                     catch { case e3: IOException =>
-//                        e3.printStackTrace()
-//                     }
-//                  }
-//                  wasClosed = true
-//               }
-//            }
-//         }
-//		}
-//	}
-
-//	@throws( classOf[ IOException ])
-//	protected def sendGuardSignal() : Unit
-	
-//	@throws( classOf[ IOException ])
-//	protected def closeChannel() : Unit
 
 	@throws( classOf[ IOException ])
 	protected final def flipDecodeDispatch( sender: SocketAddress ) {

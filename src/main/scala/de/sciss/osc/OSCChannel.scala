@@ -26,8 +26,9 @@
 package de.sciss.osc
 
 import java.io.{ IOException, PrintStream }
-import java.nio.channels.Channel
 import java.net.{InetAddress, InetSocketAddress, SocketAddress}
+import java.nio.channels.{InterruptibleChannel, Channel}
+import java.nio.ByteBuffer
 
 object OSCChannel {
 	/**
@@ -129,6 +130,46 @@ object OSCChannel {
          }
       }
    }
+
+   private[osc] trait Single extends OSCChannel {
+      protected val bufSync   = new AnyRef
+      protected final val buf	= ByteBuffer.allocateDirect( config.bufferSize )
+   }
+
+   trait Bidi extends OSCChannel {
+      /**
+       *	Changes the way incoming messages are dumped
+       *	to the console. By default incoming messages are not
+       *	dumped. Incoming messages are those received
+       *	by the client from the server, before they
+       *	get delivered to registered <code>OSCListener</code>s.
+       *
+       *	@param	mode	see <code>dumpOSC( int )</code> for details
+       *	@param	stream	the stream to print on
+       *
+       *	@see	#dumpOSC( int, PrintStream )
+       *	@see	#dumpOutgoingOSC( int, PrintStream )
+       */
+      def dumpIncomingOSC( mode: OSCDump = OSCDump.Text,
+                       stream: PrintStream = Console.err,
+                       filter: (OSCPacket) => Boolean = PassAllPackets ) : Unit
+
+      /**
+       *	Changes the way outgoing messages are dumped
+       *	to the console. By default outgoing messages are not
+       *	dumped. Outgoing messages are those send via
+       *	<code>send</code>.
+       *
+       *	@param	mode	see <code>dumpOSC( int )</code> for details
+       *	@param	stream	the stream to print on
+       *
+       *	@see	#dumpOSC( int, PrintStream )
+       *	@see	#dumpIncomingOSC( int, PrintStream )
+       */
+      def dumpOutgoingOSC( mode: OSCDump = OSCDump.Text,
+                           stream: PrintStream = Console.err,
+                           filter: (OSCPacket) => Boolean = PassAllPackets ) : Unit
+   }
 }
 
 import OSCChannel._
@@ -140,9 +181,40 @@ trait OSCChannel extends OSCChannel.ConfigLike with Channel {
 
    protected def config : OSCChannel.Config
 
-//   final def transport : OSCTransport = config.transport
    final def bufferSize : Int = config.bufferSize
    final def codec : OSCPacketCodec = config.codec
+
+   protected def channel: InterruptibleChannel
+
+   /**
+    *	Queries whether the channel is still open.
+    */
+   final def isOpen : Boolean = channel.isOpen // generalSync.synchronized { !wasClosed }
+
+   /**
+    *	Establishes connection for transports requiring
+    *	connectivity (e.g. TCP). For transports that do not require connectivity (e.g. UDP),
+    *	this ensures the communication channel is created and bound.
+    *  <P>
+    *	When a <B>UDP</B> transmitter
+    *	is created without an explicit <code>DatagramChannel</code> &ndash; say by
+    *	calling <code>OSCTransmitter.newUsing( &quot;udp&quot; )</code>, you are required
+    *	to call <code>connect()</code> so that an actual <code>DatagramChannel</code> is
+    *	created and bound. For a <B>UDP</B> transmitter which was created with an explicit
+    *	<code>DatagramChannel</code>, this method does noting, so it is always safe
+    *	to call <code>connect()</code>. However, for <B>TCP</B> transmitters,
+    *	this may throw an <code>IOException</code> if the transmitter
+    *	was already connected, therefore be sure to check <code>isConnected()</code> before.
+    *
+    *	@throws	IOException	if a networking error occurs. Possible reasons: - the underlying
+    *						network channel had been closed by the server. - the transport
+    *						is TCP and the server is not available. - the transport is TCP
+    *						and an <code>OSCReceiver</code> sharing the same socket was stopped before (unable to revive).
+    *
+    *	@see	#isConnected()
+    */
+   @throws( classOf[ IOException ])
+   def connect() : Unit
 
 	/**
 	 *	Changes the way processed OSC messages are printed to the standard err console.
@@ -162,51 +234,9 @@ trait OSCChannel extends OSCChannel.ConfigLike with Channel {
 		dumpFilter	= filter
 	}
 
-	/**
-	 *	Disposes the resources associated with the OSC communicator.
-	 *	The object should not be used any more after calling this method.
-	 */
-	def close() : Unit
-}
-
-trait OSCInputChannel
-extends OSCChannel {
-	def action_=( f: (OSCMessage, SocketAddress, Long) => Unit )
-	def action: (OSCMessage, SocketAddress, Long) => Unit
-
-	/**
-	 *	Changes the way incoming messages are dumped
-	 *	to the console. By default incoming messages are not
-	 *	dumped. Incoming messages are those received
-	 *	by the client from the server, before they
-	 *	get delivered to registered <code>OSCListener</code>s.
-	 *
-	 *	@param	mode	see <code>dumpOSC( int )</code> for details
-	 *	@param	stream	the stream to print on
-	 *
-	 *	@see	#dumpOSC( int, PrintStream )
-	 *	@see	#dumpOutgoingOSC( int, PrintStream )
-	 */
-	def dumpIncomingOSC( mode: OSCDump = OSCDump.Text,
-					     stream: PrintStream = Console.err,
-					     filter: (OSCPacket) => Boolean = PassAllPackets )
-}
-
-trait OSCOutputChannel
-extends OSCChannel {
-	/**
-	 *	Changes the way outgoing messages are dumped
-	 *	to the console. By default outgoing messages are not
-	 *	dumped. Outgoing messages are those send via
-	 *	<code>send</code>.
-	 *
-	 *	@param	mode	see <code>dumpOSC( int )</code> for details
-	 *	@param	stream	the stream to print on
-	 *
-	 *	@see	#dumpOSC( int, PrintStream )
-	 *	@see	#dumpIncomingOSC( int, PrintStream )
-	 */
-	def dumpOutgoingOSC( mode: OSCDump = OSCDump.Text,
-						      stream: PrintStream = Console.err,
-					         filter: (OSCPacket) => Boolean = PassAllPackets )
+//	/**
+//	 *	Disposes the resources associated with the OSC communicator.
+//	 *	The object should not be used any more after calling this method.
+//	 */
+//	def close() : Unit
 }
