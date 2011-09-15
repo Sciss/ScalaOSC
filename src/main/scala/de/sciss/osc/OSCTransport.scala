@@ -79,64 +79,61 @@ case object UDP extends OSCTransport.Net {
       type Directed     = Transmitter with OSCTransmitter.DirectedNet
       type Undirected   = Transmitter with OSCTransmitter.UndirectedNet
 
-      def apply( implicit config: Config ) : Undirected = {
-         val cfg = config
-         new Transmitter with OSCTransmitter.UndirectedNet {
-            override final def toString = name + ".Transmitter()"
-            protected final def config = cfg
+      def apply( implicit config: Config ) : Undirected = new UndirectedImpl( config )
+      def apply( target: SocketAddress )( implicit config: Config ) : Directed = new DirectedImpl( target, config )
 
-            @throws( classOf[ IOException ])
-            final def send( p: OSCPacket, target: SocketAddress ) {
-               try {
-                  bufSync.synchronized {
-                     buf.clear()
-                     p.encode( codec, buf )
-                     buf.flip()
-                     dumpPacket( p )
-                     channel.send( buf, target )
-                  }
+      private final class UndirectedImpl( protected val config: Config )
+      extends Transmitter with OSCTransmitter.UndirectedNet {
+         override def toString = name + ".Transmitter()"
+
+         @throws( classOf[ IOException ])
+         def send( p: OSCPacket, target: SocketAddress ) {
+            try {
+               bufSync.synchronized {
+                  buf.clear()
+                  p.encode( codec, buf )
+                  buf.flip()
+                  dumpPacket( p )
+                  channel.send( buf, target )
                }
-               catch { case e: BufferOverflowException =>
-                   throw new OSCException( OSCException.BUFFER, p match {
-                      case m: OSCMessage => m.name
-                      case _ => p.getClass.getName
-                   })
-               }
+            }
+            catch { case e: BufferOverflowException =>
+                throw new OSCException( OSCException.BUFFER, p match {
+                   case m: OSCMessage => m.name
+                   case _ => p.getClass.getName
+                })
             }
          }
       }
 
-      def apply( target: SocketAddress )( implicit config: Config ) : Directed = {
-         val cfg = config
-         new Transmitter with OSCTransmitter.Directed with OSCChannel.DirectedNet {
-            override final def toString = name + ".Transmitter()"
-            protected final def config = cfg
+      private final class DirectedImpl( target: SocketAddress, protected val config: Config )
+      extends Transmitter with OSCTransmitter.Directed with OSCChannel.DirectedNet {
+         override def toString = name + ".Transmitter()"
 
-            @throws( classOf[ IOException ])
-            final def connect { channel.connect( target )}
-            final def isConnected = channel.isConnected
-            final def remoteSocketAddress = {
-               val so = channel.socket()
-               new InetSocketAddress( so.getInetAddress, so.getPort )
+         @throws( classOf[ IOException ])
+         def connect { channel.connect( target )}
+         def isConnected = channel.isConnected
+         def remoteSocketAddress = {
+            val so = channel.socket()
+            new InetSocketAddress( so.getInetAddress, so.getPort )
+         }
+
+         @throws( classOf[ IOException ])
+         def !( p: OSCPacket ) {
+            try {
+               bufSync.synchronized {
+                  buf.clear()
+                  p.encode( codec, buf )
+                  buf.flip()
+                  dumpPacket( p )
+                  channel.write( buf )
+               }
             }
-
-            @throws( classOf[ IOException ])
-            final def !( p: OSCPacket ) {
-               try {
-                  bufSync.synchronized {
-                     buf.clear()
-                     p.encode( codec, buf )
-                     buf.flip()
-                     dumpPacket( p )
-                     channel.write( buf )
-                  }
-               }
-               catch { case e: BufferOverflowException =>
-                   throw new OSCException( OSCException.BUFFER, p match {
-                      case m: OSCMessage => m.name
-                      case _ => p.getClass.getName
-                   })
-               }
+            catch { case e: BufferOverflowException =>
+                throw new OSCException( OSCException.BUFFER, p match {
+                   case m: OSCMessage => m.name
+                   case _ => p.getClass.getName
+                })
             }
          }
       }
@@ -172,7 +169,21 @@ case object UDP extends OSCTransport.Net {
       type Directed     = Receiver with OSCReceiver.Directed with OSCReceiver.Net
       type Undirected   = Receiver with OSCReceiver.UndirectedNet
 
+      def apply()( implicit config: Config ) : Undirected = new UndirectedImpl( config )
       def apply( target: SocketAddress )( implicit config: Config ) : Directed = new DirectedImpl( target, config )
+
+      private final class UndirectedImpl( protected val config: Config )
+      extends Receiver with OSCReceiver.UndirectedNet with ChannelImpl {
+         override def toString = name + ".Receiver()"
+
+         protected def connectChannel() {}   // XXX or throw ChannelClosedException if closed?
+
+         protected def receive() {
+            buf.clear()
+            val sender = channel.receive( buf )
+            flipDecodeDispatch( sender )
+         }
+      }
 
       private final class DirectedImpl( target: SocketAddress, protected val config: Config )
       extends Receiver with OSCReceiver.Directed with ChannelImpl {

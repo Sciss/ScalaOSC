@@ -28,7 +28,7 @@ package de.sciss.osc
 import java.io.IOException
 import java.nio.BufferUnderflowException
 import java.nio.channels.{AsynchronousCloseException, ClosedChannelException}
-import java.net.{InetSocketAddress, SocketAddress}
+import java.net.SocketAddress
 
 object OSCReceiver {
    trait Net extends OSCReceiver with OSCChannel.NetConfigLike // OSCChannel.Net
@@ -95,7 +95,6 @@ object OSCReceiver {
 trait OSCReceiver extends OSCChannel.Input {
    rcv =>
 
-//  	var action                       = (msg: OSCMessage, sender: SocketAddress, time: Long ) => ()
 	private val	threadSync           = new AnyRef
    @volatile private var wasClosed  = false
 
