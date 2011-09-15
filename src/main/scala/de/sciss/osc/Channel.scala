@@ -161,20 +161,47 @@ object Channel {
       }
    }
 
-   object Output {
-      trait Directed extends Output {
-         def !( p: Packet ) : Unit
-      }
+   trait DirectedOutput extends OutputLike {
+      def !( p: Packet ) : Unit
    }
-   trait Output extends Single {
+   trait OutputLike
+   trait Output extends Single with OutputLike {
       protected def dumpPacket( p: Packet ) { dumpPacket( p, "s: " )}
    }
 
-   trait Input extends Single {
+   trait InputLike
+   trait Input extends Single with InputLike {
       protected def dumpPacket( p: Packet ) { dumpPacket( p, "r: " )}
    }
 
    trait Bidi extends Channel {
+      protected def input: Input
+      protected def output: Output
+
+      /**
+       *	Changes the way incoming and outgoing OSC messages are printed to the standard err console.
+       *	By default messages are not printed.
+       *
+       *  @param	mode	one of <code>kDumpOff</code> (don't dump, default),
+       *					<code>kDumpText</code> (dump human readable string),
+       *					<code>kDumpHex</code> (hexdump), or
+       *					<code>kDumpBoth</code> (both text and hex)
+       *	@param	stream	the stream to print on
+       *
+       *	@see	#dumpIncoming( int, PrintStream )
+       *	@see	#dumpOutgoing( int, PrintStream )
+       *	@see	#kDumpOff
+       *	@see	#kDumpText
+       *	@see	#kDumpHex
+       *	@see	#kDumpBoth
+       */
+      override final def dump( mode: Dump = Dump.Text,
+                         stream: PrintStream = Console.err,
+                         filter: Dump.Filter = Dump.AllPackets ) {
+         dumpIncoming( mode, stream, filter )
+         dumpOutgoing( mode, stream, filter )
+      }
+
       /**
        *	Changes the way incoming messages are dumped
        *	to the console. By default incoming messages are not
@@ -188,9 +215,11 @@ object Channel {
        *	@see	#dump( Dump, PrintStream, Dump.Filter )
        *	@see	#dumpOutgoing( Dump, PrintStream, Dump.Filter )
        */
-      def dumpIncoming( mode: Dump = Dump.Text,
+      final def dumpIncoming( mode: Dump = Dump.Text,
                         stream: PrintStream = Console.err,
-                        filter: Dump.Filter = Dump.AllPackets ) : Unit
+                        filter: Dump.Filter = Dump.AllPackets ) {
+         input.dump( mode, stream, filter )
+      }
 
       /**
        *	Changes the way outgoing messages are dumped
@@ -204,9 +233,11 @@ object Channel {
        *	@see	#dump( Dump, PrintStream, Dump.Filter )
        *	@see	#dumpIncoming( Dump, PrintStream, Dump.Filter )
        */
-      def dumpOutgoing( mode: Dump = Dump.Text,
+      final def dumpOutgoing( mode: Dump = Dump.Text,
                         stream: PrintStream = Console.err,
-                        filter: Dump.Filter = Dump.AllPackets ) : Unit
+                        filter: Dump.Filter = Dump.AllPackets ) {
+         output.dump( mode, stream, filter )
+      }
    }
 }
 

@@ -135,7 +135,7 @@ Receiver test
 //      c.target = new InetSocketAddress( "127.0.0.1", 57110 )
 //      c.start()
       c.dump()
-      c ! Message( "/dumpOSC", 1 )
-      c ! Message( "/notify", 1 )
+//      c ! Message( "/dumpOSC", 1 )
+//      c ! Message( "/notify", 1 )
    }
 }

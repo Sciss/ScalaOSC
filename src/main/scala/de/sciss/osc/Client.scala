@@ -116,70 +116,32 @@ import java.net.{ InetSocketAddress, SocketAddress }
  */
 object Client
 
-trait Client extends Channel.Bidi {
+trait Client extends Channel.Bidi with Channel.DirectedOutput {
    var action = Receiver.Directed.NoAction
 
    protected def rcv: Receiver
    protected def trns: Transmitter.Directed
 
-	/**
-	 *	Sends an OSC packet (bundle or message) to the target
-	 *	network address. Make sure that the client's target
-	 *	has been specified before by calling <code>setTarget()</code>
-	 *
-	 *	@param	p		the packet to send
-	 *
-	 *	@throws	IOException				if a write error, OSC encoding error,
-	 *									buffer overflow error or network error occurs,
-	 *									for example if a TCP client was not connected before.
-	 *	@throws	NullPointerException	for a UDP client if the target has not been specified
-	 *
-	 *	@see	#setTarget( SocketAddress )
-	 */
-	@throws( classOf[ IOException ])
-	def !( p: Packet ) { trns.!( p )}
+//	/**
+//	 *	Sends an OSC packet (bundle or message) to the target
+//	 *	network address. Make sure that the client's target
+//	 *	has been specified before by calling <code>setTarget()</code>
+//	 *
+//	 *	@param	p		the packet to send
+//	 *
+//	 *	@throws	IOException				if a write error, OSC encoding error,
+//	 *									buffer overflow error or network error occurs,
+//	 *									for example if a TCP client was not connected before.
+//	 *	@throws	NullPointerException	for a UDP client if the target has not been specified
+//	 *
+//	 *	@see	#setTarget( SocketAddress )
+//	 */
+//	@throws( classOf[ IOException ])
+//	def !( p: Packet ) { trns.!( p )}
 
 	@throws( classOf[ IOException ])
-	def close() {
-      rcv.close()
-      trns.close()
+	final def close() {
+      input.close()
+      output.close()
    }
-
-	/**
-	 *	Changes the way incoming and outgoing OSC messages are printed to the standard err console.
-	 *	By default messages are not printed.
-	 *
-	 *  @param	mode	one of <code>kDumpOff</code> (don't dump, default),
-	 *					<code>kDumpText</code> (dump human readable string),
-	 *					<code>kDumpHex</code> (hexdump), or
-	 *					<code>kDumpBoth</code> (both text and hex)
-	 *	@param	stream	the stream to print on
-	 *
-	 *	@see	#dumpIncoming( int, PrintStream )
-	 *	@see	#dumpOutgoing( int, PrintStream )
-	 *	@see	#kDumpOff
-	 *	@see	#kDumpText
-	 *	@see	#kDumpHex
-	 *	@see	#kDumpBoth
-	 */
-	override def dump( mode: Dump = Dump.Text,
-					       stream: PrintStream = Console.err,
-					       filter: Dump.Filter = Dump.AllPackets ) {
-		dumpIncoming( mode, stream, filter )
-		dumpOutgoing( mode, stream, filter )
-	}
-
-	def dumpIncoming( mode: Dump = Dump.Text,
-					         stream: PrintStream = Console.err,
-					         filter: Dump.Filter = Dump.AllPackets ) {
-
-		rcv.dump( mode, stream, filter )
-	}
-	
-	def dumpOutgoing( mode: Dump = Dump.Text,
-					         stream: PrintStream = Console.err,
-					         filter: Dump.Filter = Dump.AllPackets ) {
-
-		trns.dump( mode, stream, filter )
-	}
 }

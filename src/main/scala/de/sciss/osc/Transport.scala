@@ -111,7 +111,7 @@ case object UDP extends Transport.Net {
       }
 
       private final class DirectedImpl( target: SocketAddress, protected val config: Config )
-      extends Transmitter with Channel.Output.Directed with Channel.DirectedNet {
+      extends Transmitter with Channel.DirectedOutput with Channel.DirectedNet {
          override def toString = name + ".Transmitter()"
 
          @throws( classOf[ IOException ])
@@ -294,7 +294,7 @@ case object TCP extends Transport.Net {
       }
    }
 
-   sealed trait Transmitter extends OSCTransmitter with Channel.Output.Directed with Channel.DirectedNet {
+   sealed trait Transmitter extends OSCTransmitter with Channel.DirectedOutput with Channel.DirectedNet {
 //      protected def channel: SocketChannel
       override protected def config: Config
    }

@@ -29,7 +29,7 @@ import java.io.IOException
 import java.net.SocketAddress
 
 object Transmitter {
-   type Directed = Transmitter with Channel.Output.Directed
+   type Directed = Transmitter with Channel.DirectedOutput
 //   trait Directed extends Transmitter {
 //      def !( p: Packet ) : Unit
 //   }
