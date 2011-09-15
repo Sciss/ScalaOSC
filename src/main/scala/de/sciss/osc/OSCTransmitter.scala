@@ -26,9 +26,7 @@
 package de.sciss.osc
 
 import java.io.IOException
-import java.nio.channels.{InterruptibleChannel, SocketChannel}
-import java.nio.ByteBuffer
-import java.net.{InetAddress, InetSocketAddress, SocketAddress}
+import java.net.SocketAddress
 
 object OSCTransmitter {
    trait Directed extends OSCTransmitter {
@@ -37,26 +35,12 @@ object OSCTransmitter {
 
    type Net = OSCTransmitter with OSCChannel.Net
 
-//   trait TCP extends DirectedNet {
-//      override protected def config: TCP.Config
-//      override protected def channel: SocketChannel
-//
-////      final def target = channel.socket().getRemoteSocketAddress
-//
-//      final def transport = config.transport
-//
-//      final def localSocketAddress = {
-//         val so = channel.socket()
-//         new InetSocketAddress( so.getLocalAddress, so.getLocalPort )
-//      }
-//   }
-
    trait UndirectedNet extends OSCTransmitter with OSCChannel.NetConfigLike { // OSCChannel.Net
       def send( p: OSCPacket, target: SocketAddress ) : Unit
 
       @throws( classOf[ IOException ])
-      def connect() {}
-      def isConnected = isOpen
+      final def connect() {}
+      final def isConnected = isOpen
    }
 
    type DirectedNet = Directed with OSCChannel.DirectedNet
