@@ -82,6 +82,7 @@ case object UDP extends OSCTransport.Net {
       def apply( implicit config: Config ) : Undirected = {
          val cfg = config
          new Transmitter with OSCTransmitter.UndirectedNet {
+            override def toString = name + ".Transmitter()"
             protected def config = cfg
 
             @throws( classOf[ IOException ])
@@ -107,14 +108,17 @@ case object UDP extends OSCTransport.Net {
 
       def apply( target: SocketAddress )( implicit config: Config ) : Directed = {
          val cfg = config
-         val tgt = target
          new Transmitter with OSCTransmitter.DirectedNet {
+            override def toString = name + ".Transmitter()"
             protected def config = cfg
 
             @throws( classOf[ IOException ])
-            def connect { channel.connect( tgt )}
+            def connect { channel.connect( target )}
             def isConnected = channel.isConnected
-//            def target = channel.socket().getRemoteSocketAddress
+            def remoteSocketAddress = {
+               val so = channel.socket()
+               new InetSocketAddress( so.getInetAddress, so.getPort )
+            }
 
             @throws( classOf[ IOException ])
             def !( p: OSCPacket ) {
@@ -184,13 +188,19 @@ case object TCP extends OSCTransport.Net {
    object Transmitter {
       def apply( target: SocketAddress )( implicit config: Config ) : Transmitter = {
          val cfg = config
-         val tgt = target
+//         val tgt = target
          new Transmitter {
+            override def toString = name + ".Transmitter(" + target + ")"
+
             protected def config = cfg
 
             @throws( classOf[ IOException ])
-            def connect { channel.connect( tgt )}
+            def connect { channel.connect( target )}
             def isConnected = channel.isConnected
+            def remoteSocketAddress = {
+               val so = channel.socket()
+               new InetSocketAddress( so.getInetAddress, so.getPort )
+            }
 
             @throws( classOf[ IOException ])
             def !( p: OSCPacket ) {

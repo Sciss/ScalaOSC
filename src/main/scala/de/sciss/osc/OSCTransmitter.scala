@@ -26,9 +26,9 @@
 package de.sciss.osc
 
 import java.io.IOException
-import java.net.{InetSocketAddress, SocketAddress}
 import java.nio.channels.{InterruptibleChannel, SocketChannel}
 import java.nio.ByteBuffer
+import java.net.{InetAddress, InetSocketAddress, SocketAddress}
 
 object OSCTransmitter {
    trait Directed extends OSCTransmitter {
@@ -60,7 +60,15 @@ object OSCTransmitter {
    }
 
    trait DirectedNet extends OSCTransmitter with OSCChannelNet with Directed {
-//      def target : SocketAddress
+      /**
+       * The remote socket address of this channel. Returns `null` if the
+       * channel has not yet been connected.
+       *
+       * @see  #connect()
+       */
+      def remoteSocketAddress : InetSocketAddress
+      final def remotePort    : Int          = remoteSocketAddress.getPort
+      final def remoteAddress : InetAddress  = remoteSocketAddress.getAddress
    }
 }
 
