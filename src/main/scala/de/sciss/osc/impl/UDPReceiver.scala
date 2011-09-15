@@ -31,7 +31,7 @@ import java.io.IOException
 import java.nio.channels.{InterruptibleChannel, ClosedChannelException, SelectableChannel, DatagramChannel}
 
 final class UDPReceiver( _addr: InetSocketAddress, dch: DatagramChannel, val config: UDP.Config )
-extends OSCReceiver( _addr ) {
+extends OSCReceiver {
 //	def this( localAddress: InetSocketAddress, codec: OSCPacketCodec ) = this( localAddress, null, codec )
 	def this( dch: DatagramChannel, config: UDP.Config ) {
 		this( new InetSocketAddress( dch.socket.getLocalAddress, dch.socket.getLocalPort ), dch, config )

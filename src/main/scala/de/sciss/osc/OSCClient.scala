@@ -198,7 +198,7 @@ trait OSCClient extends OSCInputChannel with OSCOutputChannel {
 //	@throws( classOf[ IOException ])
 //	def localAddress = rcv.localAddress
 
-   final def localSocketAddress = rcv.localSocketAddress
+//   final def localSocketAddress = rcv.localSocketAddress
 
 //	/**
 //	 *	Specifies the client's target address, that is the address of the server to talk to.

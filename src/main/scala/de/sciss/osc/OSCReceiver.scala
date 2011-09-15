@@ -160,8 +160,7 @@ object OSCReceiver {
    trait Net extends OSCReceiver with OSCChannelNet
 }
 
-abstract class OSCReceiver( val localSocketAddress: InetSocketAddress )
-extends OSCChannel {
+trait OSCReceiver extends OSCChannel {
    rcv =>
 
   	var action                       = (msg: OSCMessage, sender: SocketAddress, time: Long ) => ()
@@ -335,7 +334,7 @@ extends OSCChannel {
    /**
     * Callers should have a lock on the buffer!
     */
-   protected final def dumpPacket( p: OSCPacket ) {
+   private def dumpPacket( p: OSCPacket ) {
       if( (dumpMode ne OSCDump.Off) && dumpFilter( p )) {
          printStream.synchronized {
             printStream.print( "r: " )

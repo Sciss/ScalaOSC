@@ -31,7 +31,7 @@ import java.net.InetSocketAddress
 import java.nio.channels.{InterruptibleChannel, ClosedChannelException, SelectableChannel, SocketChannel}
 
 final class TCPReceiver private( _localAddress: InetSocketAddress, sch: SocketChannel, val config: TCP.Config )
-extends OSCReceiver( _localAddress ) {
+extends OSCReceiver {
 //   def this( localAddress: InetSocketAddress, c: OSCChannelConfig ) =
 //      this( localAddress, null, c )
 
