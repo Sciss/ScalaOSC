@@ -29,9 +29,10 @@ import java.io.IOException
 import java.net.SocketAddress
 
 object Transmitter {
-   trait Directed extends Transmitter {
-      def !( p: Packet ) : Unit
-   }
+   type Directed = Transmitter with Channel.Output.Directed
+//   trait Directed extends Transmitter {
+//      def !( p: Packet ) : Unit
+//   }
 
    type Net = Transmitter with Channel.Net
 

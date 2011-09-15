@@ -31,12 +31,6 @@ import java.nio.channels.{InterruptibleChannel, Channel => NIOChannel}
 import java.nio.ByteBuffer
 
 object Channel {
-//	/**
-//	 *	The default buffer size (in bytes) and maximum OSC packet
-//	 *	size (8K at the moment).
-//	 */
-//	val DEFAULTBUFSIZE = 8192
-
    type Net = Channel with NetConfigLike
 //   trait Net extends Channel with OSCChannelNetConfigLike
 
@@ -167,11 +161,16 @@ object Channel {
       }
    }
 
-   private[osc] trait Output extends Single {
+   object Output {
+      trait Directed extends Output {
+         def !( p: Packet ) : Unit
+      }
+   }
+   trait Output extends Single {
       protected def dumpPacket( p: Packet ) { dumpPacket( p, "s: " )}
    }
 
-   private[osc] trait Input extends Single {
+   trait Input extends Single {
       protected def dumpPacket( p: Packet ) { dumpPacket( p, "r: " )}
    }
 

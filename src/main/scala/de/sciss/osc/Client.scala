@@ -117,19 +117,10 @@ import java.net.{ InetSocketAddress, SocketAddress }
 object Client
 
 trait Client extends Channel.Bidi {
-	import Channel._
-	
-//	private var bufSize = DEFAULTBUFSIZE
+   var action = Receiver.Directed.NoAction
 
    protected def rcv: Receiver
    protected def trns: Transmitter.Directed
-
-//	def action_=( f: (Message, SocketAddress, Long) => Unit ) {
-//		rcv.action = f
-//	}
-//	def action: (Message, SocketAddress, Long) => Unit = rcv.action
-
-	def target: SocketAddress = sys.error( "TODO" ) // rcv.target
 
 	/**
 	 *	Sends an OSC packet (bundle or message) to the target
