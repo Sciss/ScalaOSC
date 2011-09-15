@@ -26,16 +26,16 @@
 package de.sciss.osc
 
 import java.io.{ IOException, PrintStream }
-import java.net.{InetAddress, InetSocketAddress, SocketAddress}
+import java.net.{InetAddress, InetSocketAddress}
 import java.nio.channels.{InterruptibleChannel, Channel}
 import java.nio.ByteBuffer
 
 object OSCChannel {
-	/**
-	 *	The default buffer size (in bytes) and maximum OSC packet
-	 *	size (8K at the moment).
-	 */
-	val DEFAULTBUFSIZE = 8192
+//	/**
+//	 *	The default buffer size (in bytes) and maximum OSC packet
+//	 *	size (8K at the moment).
+//	 */
+//	val DEFAULTBUFSIZE = 8192
 	
 	val PassAllPackets : OSCPacket => Boolean = _ => true
 
@@ -132,8 +132,49 @@ object OSCChannel {
    }
 
    private[osc] trait Single extends OSCChannel {
+      @volatile protected var dumpMode: OSCDump = OSCDump.Off
+      @volatile protected var printStream : PrintStream	= Console.err
+      @volatile protected var dumpFilter : (OSCPacket) => Boolean = PassAllPackets
+
       protected val bufSync   = new AnyRef
       protected final val buf	= ByteBuffer.allocateDirect( config.bufferSize )
+
+      final def dumpOSC( mode: OSCDump = OSCDump.Text,
+                         stream: PrintStream = Console.err,
+                         filter: (OSCPacket) => Boolean = PassAllPackets ) {
+         dumpMode	   = mode
+         printStream	= stream
+         dumpFilter	= filter
+      }
+
+      /**
+       * Callers should have a lock on the buffer!
+       */
+      protected final def dumpPacket( p: OSCPacket, prefix: String ) {
+         if( (dumpMode ne OSCDump.Off) && dumpFilter( p )) {
+            printStream.synchronized {
+               printStream.print( prefix )
+               dumpMode match {
+                  case OSCDump.Text =>
+                     OSCPacket.printTextOn( codec, printStream, p )
+                  case OSCDump.Hex =>
+                     OSCPacket.printHexOn( printStream, buf )
+                  case OSCDump.Both =>
+                     OSCPacket.printTextOn( codec, printStream, p )
+                     OSCPacket.printHexOn( printStream, buf )
+                  case _ =>   // satisfy compiler
+               }
+            }
+         }
+      }
+   }
+
+   private[osc] trait Output extends Single {
+      protected def dumpPacket( p: OSCPacket ) { dumpPacket( p, "s: " )}
+   }
+
+   private[osc] trait Input extends Single {
+      protected def dumpPacket( p: OSCPacket ) { dumpPacket( p, "r: " )}
    }
 
    trait Bidi extends OSCChannel {
@@ -175,10 +216,6 @@ object OSCChannel {
 import OSCChannel._
 
 trait OSCChannel extends OSCChannel.ConfigLike with Channel {
-   @volatile protected var dumpMode: OSCDump = OSCDump.Off
-   @volatile protected var printStream : PrintStream	= Console.err
-   @volatile protected var dumpFilter : (OSCPacket) => Boolean = PassAllPackets
-
    protected def config : OSCChannel.Config
 
    final def bufferSize : Int = config.bufferSize
@@ -228,15 +265,5 @@ trait OSCChannel extends OSCChannel.ConfigLike with Channel {
 	 */
 	def dumpOSC( mode: OSCDump = OSCDump.Text,
 				    stream: PrintStream = Console.err,
-				    filter: (OSCPacket) => Boolean = PassAllPackets ) {
-		dumpMode	   = mode
-		printStream	= stream
-		dumpFilter	= filter
-	}
-
-//	/**
-//	 *	Disposes the resources associated with the OSC communicator.
-//	 *	The object should not be used any more after calling this method.
-//	 */
-//	def close() : Unit
+				    filter: (OSCPacket) => Boolean = PassAllPackets ) : Unit
 }

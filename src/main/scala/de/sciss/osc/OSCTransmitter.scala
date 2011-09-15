@@ -62,46 +62,9 @@ object OSCTransmitter {
    type DirectedNet = Directed with OSCChannel.DirectedNet
 }
 
-trait OSCTransmitter extends OSCChannel {
-	protected final val bufSync	= new AnyRef
-	protected final val buf       = ByteBuffer.allocateDirect( config.bufferSize )
-
+trait OSCTransmitter extends OSCChannel.Output {
    @throws( classOf[ IOException ])
    final def close() {
       channel.close()
-   }
-
-//   protected def channel: InterruptibleChannel
-
-	/**
-	 *	Queries the connection state of the transmitter.
-	 *
-	 *	@return	<code>true</code> if the transmitter is connected, <code>false</code> otherwise. For transports that do not use
-	 *			connectivity (e.g. UDP) this returns <code>false</code>, if the
-	 *			underlying <code>DatagramChannel</code> has not yet been created.
-	 *
-	 *	@see	#connect()
-	 */
-	def isConnected : Boolean
-
-   /**
-    * Callers should have a lock on the buffer!
-    */
-   protected final def dumpPacket( p: OSCPacket ) {
-      if( (dumpMode ne OSCDump.Off) && dumpFilter( p )) {
-         printStream.synchronized {
-            printStream.print( "s: " )
-            dumpMode match {
-               case OSCDump.Text =>
-                  OSCPacket.printTextOn( codec, printStream, p )
-               case OSCDump.Hex =>
-                  OSCPacket.printHexOn( printStream, buf )
-               case OSCDump.Both =>
-                  OSCPacket.printTextOn( codec, printStream, p )
-                  OSCPacket.printHexOn( printStream, buf )
-               case _ =>   // satisfy compiler
-            }
-         }
-      }
    }
 }

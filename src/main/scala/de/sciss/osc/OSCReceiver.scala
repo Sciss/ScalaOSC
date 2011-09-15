@@ -27,14 +27,14 @@ package de.sciss.osc
 
 import java.io.IOException
 import java.net.SocketAddress
-import java.nio.{BufferUnderflowException, ByteBuffer}
-import java.nio.channels.{AsynchronousCloseException, InterruptibleChannel, ClosedChannelException}
+import java.nio.BufferUnderflowException
+import java.nio.channels.{AsynchronousCloseException, ClosedChannelException}
 
 object OSCReceiver {
    trait Net extends OSCReceiver with OSCChannel.NetConfigLike // OSCChannel.Net
 }
 
-trait OSCReceiver extends OSCChannel.Single {
+trait OSCReceiver extends OSCChannel.Input {
    rcv =>
 
   	var action                       = (msg: OSCMessage, sender: SocketAddress, time: Long ) => ()
@@ -114,43 +114,14 @@ trait OSCReceiver extends OSCChannel.Single {
 	private def dispatchPacket( p: OSCPacket, sender: SocketAddress, time: Long ) {
 		if( p.isInstanceOf[ OSCMessage ]) {
 			dispatchMessage( p.asInstanceOf[ OSCMessage ], sender, time )
-		} else
-//		if( p.isInstanceOf[ OSCBundle ])
-		{
+		} else {
 			val bndl	= p.asInstanceOf[ OSCBundle ]
 			val time2	= bndl.timetag
 			bndl.foreach( dispatchPacket( _, sender, time2 ))
-//		} else {
-//			assert false : p.getClass().getName();
 		}
 	}
 
 	private def dispatchMessage( msg: OSCMessage, sender: SocketAddress, time: Long ) {
-//		generalSync.synchronized {
-//			if( action != null ) {
-				action.apply( msg, sender, time )
-//			}
-//		}
+      action.apply( msg, sender, time )
 	}
-
-   /**
-    * Callers should have a lock on the buffer!
-    */
-   private def dumpPacket( p: OSCPacket ) {
-      if( (dumpMode ne OSCDump.Off) && dumpFilter( p )) {
-         printStream.synchronized {
-            printStream.print( "r: " )
-            dumpMode match {
-               case OSCDump.Text =>
-                  OSCPacket.printTextOn( codec, printStream, p )
-               case OSCDump.Hex =>
-                  OSCPacket.printHexOn( printStream, buf )
-               case OSCDump.Both =>
-                  OSCPacket.printTextOn( codec, printStream, p )
-                  OSCPacket.printHexOn( printStream, buf )
-               case _ =>   // satisfy compiler
-            }
-         }
-      }
-   }
 }
