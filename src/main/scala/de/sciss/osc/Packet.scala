@@ -32,7 +32,7 @@ import collection.mutable.Builder
 import java.text.{NumberFormat, SimpleDateFormat, DecimalFormat}
 import java.util.Locale
 
-object OSCPacket {
+object Packet {
 	private val HEX				= "0123456789ABCDEF".getBytes
   	private val PAD				= new Array[ Byte ]( 4 )
  
@@ -45,7 +45,7 @@ object OSCPacket {
 	 *	@param	stream   the print stream to use, for example <code>System.out</code>
 	 *	@param	p        the packet to print (either a message or bundle)
 	 */
-	def printTextOn( c: OSCPacketCodec, stream: PrintStream, p: OSCPacket ) {
+	def printTextOn( c: PacketCodec, stream: PrintStream, p: Packet ) {
 		p.printTextOn( c, stream, 0 )
 	}
 
@@ -54,7 +54,7 @@ object OSCPacket {
 	 *	The format is similar to scsynth using dump mode 2.
 	 *	Unlike <code>printTextOn</code> this takes a raw received
 	 *	or encoded byte buffer and not a decoded instance
-	 *	of <code>OSCPacket</code>.
+	 *	of <code>Packet</code>.
 	 *
 	 *	@param	stream	the print stream to use, for example <code>System.out</code>
 	 *	@param	b		   the byte buffer containing the packet. the current position
@@ -147,48 +147,6 @@ object OSCPacket {
 		stream.print( '\"' )
 	}
 
-//	private def printTextOn( stream: PrintStream, p: OSCPacket, nestCount: Int ) {
-//		OSCMessage	msg;
-//		OSCBundle	bndl;
-//		Object		o;
-//		
-//		if( p instanceof OSCMessage ) {
-//			msg = (OSCMessage) p;
-//			for( int i = 0; i < nestCount; i++ ) stream.print( "  " );
-//			stream.print( "[ \"" + msg.getName() + "\"" );
-//			for( int i = 0; i < msg.getArgCount(); i++ ) {
-//				o = msg.getArg( i );
-//				if( o instanceof Number ) {
-//					if( o instanceof Float || o instanceof Double ) {
-//						stream.print( ", " + ((Number) o).floatValue() );
-//					} else {
-//						stream.print( ", " + ((Number) o).longValue() );
-//					}
-//				} else if( o instanceof OSCPacket ) {
-//					stream.println( "," );
-//					printTextOn( stream, (OSCPacket) o, nestCount + 1 );
-//				} else if( o instanceof byte[] ) {
-//					stream.print( ", DATA[" + ((byte[]) o).length + "]" );
-//				} else {
-//					stream.print( ", \"" + o.toString()+"\"" );
-//				}
-//			}
-//			stream.print( " ]" );
-//		} else {
-//			bndl = (OSCBundle) p;
-//			for( int i = 0; i < nestCount; i++ ) stream.print( "  " );
-//			stream.print( "[ \"#bundle\"" );
-//			for( int i = 0; i < bndl.getPacketCount(); i++ ) {
-//				stream.println( "," );
-//				OSCPacket.printTextOn( stream, bndl.getPacket( i ), nestCount + 1 );
-//			}
-//			for( int i = 0; i < nestCount; i++ ) stream.print( "  " );
-//			stream.print( "]" );
-//		}
-//	
-//		if( nestCount == 0 ) stream.println();
-//	}
- 
 	/**
 	 *  Reads a null terminated string from
 	 *  the current buffer position
@@ -281,32 +239,191 @@ object OSCPacket {
         b.position( newPos )
 	}
 
-//	@throws( classOf[ IOException ])
-//	def decode( b: ByteBuffer ) : OSCPacket = {
-//		val name = readString( b )
-//		skipToAlign( b )
-//        
-//        if( name.equals( "#bundle" )) {
-//			OSCBundle.decode( b )
-//        } else {
-//        	OSCMessage.decode( name, b )
-//        }
-//	}
+   object Atom {
+      import scala.{Byte => SByte, Double => SDouble, Float => SFloat, Int => SInt, Long => SLong}
+      import java.lang.{String => SString}
+      import de.sciss.osc.{Packet => OSCPacket}
+
+      object Int extends Atom {
+         def decode( c: PacketCodec, typeTag: SByte, b: ByteBuffer ) : Any = b.getInt()
+
+         def encode( c: PacketCodec, v: Any, tb: ByteBuffer, db: ByteBuffer ) {
+            tb.put( 0x69.toByte )	// 'i'
+            db.putInt( v.asInstanceOf[ SInt ])
+         }
+
+         def getEncodedSize( c: PacketCodec, v: Any ) = 4
+      }
+
+      object Float extends Atom {
+         def decode( c: PacketCodec, typeTag: SByte, b: ByteBuffer ) : Any = b.getFloat()
+
+         def encode( c: PacketCodec, v: Any, tb: ByteBuffer, db: ByteBuffer ) {
+            tb.put( 0x66.toByte )	// 'f'
+            db.putFloat( v.asInstanceOf[ SFloat ] )
+         }
+
+         def getEncodedSize( c: PacketCodec, v: Any ) = 4
+      }
+
+      object Long extends Atom {
+         def decode( c: PacketCodec, typeTag: SByte, b: ByteBuffer ) : Any = b.getLong()
+
+         def encode( c: PacketCodec, v: Any, tb: ByteBuffer, db: ByteBuffer ) {
+            tb.put( 0x68.toByte )	// 'h'
+            db.putLong( v.asInstanceOf[ SLong ])
+         }
+
+         def getEncodedSize( c: PacketCodec, v: Any ) = 8
+      }
+
+      object Double extends Atom {
+         def decode( c: PacketCodec, typeTag: SByte, b: ByteBuffer ) : Any = b.getDouble()
+
+         def encode( c: PacketCodec, v: Any, tb: ByteBuffer, db: ByteBuffer ) {
+            tb.put( 0x64.toByte )	// 'd'
+            db.putDouble( v.asInstanceOf[ SDouble ])
+         }
+
+      //	def getTypeTag( v: Any ) : Byte  = 0x64	// 'd'
+         def getEncodedSize( c: PacketCodec, v: Any ) = 8
+      }
+
+      object DoubleAsFloat extends Atom {
+         def decode( c: PacketCodec, typeTag: SByte, b: ByteBuffer ) : Any = b.getDouble.toFloat
+
+         def encode( c: PacketCodec, v: Any, tb: ByteBuffer, db: ByteBuffer ) {
+            tb.put( 0x66.toByte )	// 'f'
+            db.putFloat( v.asInstanceOf[ SDouble ].toFloat )
+         }
+
+      //	def getTypeTag( v: Any ) : Byte  = 0x66	// 'f'
+         def getEncodedSize( c: PacketCodec, v: Any ) = 4
+      }
+
+      object LongAsInt extends Atom {
+         def decode( c: PacketCodec, typeTag: SByte, b: ByteBuffer ) : Any = b.getLong.toInt
+
+         def encode( c: PacketCodec, v: Any, tb: ByteBuffer, db: ByteBuffer ) {
+            tb.put( 0x69.toByte )	// 'i'
+            db.putInt( v.asInstanceOf[ SLong ].toInt )
+         }
+
+         def getEncodedSize( c: PacketCodec, v: Any ) = 4
+      }
+
+      // parametrized through charsetName
+      object String extends Atom {
+         def decode( c: PacketCodec, typeTag: SByte, b: ByteBuffer ) : Any = {
+            val pos1	= b.position()
+            while( b.get() != 0 ) {}
+            val pos2	= b.position() - 1
+            b.position( pos1 )
+            val len		= pos2 - pos1
+            val bytes	= new Array[ SByte ]( len )
+            b.get( bytes, 0, len )
+            val s = new String( bytes, c.charsetName )
+            b.position( (pos2 + 4) & ~3 )
+            s
+         }
+
+         def encode( c: PacketCodec, v: Any, tb: ByteBuffer, db: ByteBuffer ) {
+            tb.put( 0x73.toByte )	// 's'
+            db.put( v.asInstanceOf[ SString ].getBytes( c.charsetName ))  // faster than using Charset or CharsetEncoder
+            terminateAndPadToAlign( db )
+         }
+
+         def getEncodedSize( c: PacketCodec, v: Any ) = {
+            (v.asInstanceOf[ SString ].getBytes( c.charsetName ).length + 4) & ~3
+         }
+
+         // provide an escaped display
+         override def printTextOn( c: PacketCodec, stream: PrintStream, nestCount: Int, v: Any ) {
+            OSCPacket.printEscapedStringOn( stream, v.asInstanceOf[ SString ])
+         }
+      }
+
+      /**
+       *	Encodes a `java.nio.ByteBuffer` as OSC blob (tag `b`)
+       */
+      object Blob extends Atom {
+         def decode( c: PacketCodec, typeTag: SByte, b: ByteBuffer ) : Any = {
+            val blob = new Array[ SByte ]( b.getInt() )
+            b.get( blob )
+            skipToAlign( b )
+            ByteBuffer.wrap( blob ).asReadOnlyBuffer
+         }
+
+         def encode( c: PacketCodec, v: Any, tb: ByteBuffer, db: ByteBuffer ) {
+            tb.put( 0x62.toByte )	// 'b'
+      //		val blob = v.asInstanceOf[ Array[ Byte ]]
+            val blob = v.asInstanceOf[ ByteBuffer ]
+            db.putInt( blob.remaining )
+            val pos = blob.position
+            db.put( blob )
+            blob.position( pos )
+            padToAlign( db )
+         }
+
+         def getEncodedSize( c: PacketCodec, v: Any ) = {
+            (v.asInstanceOf[ ByteBuffer ].remaining() + 7) & ~3
+         }
+
+         override def printTextOn( c: PacketCodec, stream: PrintStream, nestCount: Int, v: Any ) {
+            stream.print( "DATA[" + (v.asInstanceOf[ ByteBuffer ]).remaining + "]" )
+         }
+      }
+
+      /**
+       * Encodes an `Packet` as OSC blob (tag `b`)
+       */
+      object Packet extends Atom {
+         def decode( c: PacketCodec, typeTag: SByte, b: ByteBuffer ) : Any = {
+            throw new java.io.IOException( "Not supported" )
+         }
+
+         def encode( c: PacketCodec, v: Any, tb: ByteBuffer, db: ByteBuffer ) {
+            tb.put( 0x62.toByte )	// 'b'
+            val pos = db.position
+            val pos2 = pos + 4
+            db.position( pos2 )
+            v.asInstanceOf[ Packet ].encode( c, db )
+            db.putInt( pos, db.position - pos2 )
+         }
+
+         def getEncodedSize( c: PacketCodec, v: Any ) = {
+            v.asInstanceOf[ Packet ].getEncodedSize( c ) + 4
+         }
+
+         override def printTextOn( c: PacketCodec, stream: PrintStream, nestCount: Int, v: Any ) {
+            stream.println()
+            v.asInstanceOf[ Packet ].printTextOn( c, stream, nestCount + 1 )
+         }
+      }
+   }
+   abstract class Atom {
+      def decode( c: PacketCodec, typeTag: Byte, b: ByteBuffer ) : Any
+      def encode( c: PacketCodec, v: Any, tb: ByteBuffer, db: ByteBuffer ) : Unit
+      def getEncodedSize( c: PacketCodec, v: Any ) : Int
+      def printTextOn( c: PacketCodec, stream: PrintStream, nestCount: Int, v: Any ) {
+         stream.print( v )
+      }
+   }
 }
 
-sealed trait OSCPacket {
+sealed trait Packet {
 	def name: String
 	
 	@throws( classOf[ OSCException ])
-	def encode( c: OSCPacketCodec, b: ByteBuffer ) : Unit
+	def encode( c: PacketCodec, b: ByteBuffer ) : Unit
 	
-	def getEncodedSize( c: OSCPacketCodec ) : Int
-	private[osc] def printTextOn( c: OSCPacketCodec, stream: PrintStream, nestCount: Int )
+	def getEncodedSize( c: PacketCodec ) : Int
+	private[osc] def printTextOn( c: PacketCodec, stream: PrintStream, nestCount: Int )
 }
 
 // they need to be in the same file due to the sealed restriction...
 
-object OSCBundle {
+object Bundle {
   /**
    *  This is the initial string
    *  of an OSC bundle datagram
@@ -328,26 +445,26 @@ object OSCBundle {
     * a system clock value in milliseconds since
     * jan 1 1970, as returned by System.currentTimeMillis
     */
-   def millis( abs: Long, packets: OSCPacket* ) : OSCBundle =
-	   new OSCBundle( millisToTimetag( abs ), packets: _* )
+   def millis( abs: Long, packets: Packet* ) : Bundle =
+	   new Bundle( millisToTimetag( abs ), packets: _* )
 
    /**
     * Creates a bundle with timetag given by
     * a relative value in seconds, as required
     * for example for scsynth offline rendering
     */
-   def secs( delta: Double, packets: OSCPacket* ) : OSCBundle =
-	   new OSCBundle( secsToTimetag( delta ), packets: _* )
+   def secs( delta: Double, packets: Packet* ) : Bundle =
+	   new Bundle( secsToTimetag( delta ), packets: _* )
 
    /**
     * Creates a bundle with special timetag 'now'
     */
-   def apply( packets: OSCPacket* ) : OSCBundle = new OSCBundle( Now, packets: _* )
+   def apply( packets: Packet* ) : Bundle = new Bundle( Now, packets: _* )
 
 //   /**
 //    * Creates a bundle with raw formatted timetag
 //    */
-//   def apply( timetag: Long, packets: OSCPacket* ) : OSCBundle = new OSCBundle( timetag, packets: _* )
+//   def apply( timetag: Long, packets: Packet* ) : Bundle = new Bundle( timetag, packets: _* )
 
    /**
     * Converts a time value from the system clock value in milliseconds since
@@ -388,12 +505,12 @@ object OSCBundle {
       secs + frac
    }
 
-//   def unapplySeq( b: OSCBundle ): Option[ Tuple2[ Long, Seq[ OSCPacket ]]]= Some( b.timetag -> b.packets )
+//   def unapplySeq( b: Bundle ): Option[ Tuple2[ Long, Seq[ Packet ]]]= Some( b.timetag -> b.packets )
 
 	@throws( classOf[ IOException ])
-	private[osc] def decode( b: ByteBuffer ) : OSCBundle = {
+	private[osc] def decode( b: ByteBuffer ) : Bundle = {
 		val totalLimit = b.limit
-		val p			   = new scala.collection.mutable.ListBuffer[ OSCPacket ]
+		val p			   = new scala.collection.mutable.ListBuffer[ Packet ]
 		val timetag 	= b.getLong
 
 		try {
@@ -402,7 +519,7 @@ object OSCBundle {
 				p += decode( b )
 				b.limit( totalLimit )
 			}
-			OSCBundle( timetag, p: _* )
+			Bundle( timetag, p: _* )
 		}
 		catch { case e : IllegalArgumentException =>	// throws by b.limit if bundle size is corrupted
 			throw new OSCException( OSCException.DECODE, e.getLocalizedMessage )
@@ -435,32 +552,32 @@ object OSCBundle {
    }
 }
 
-final case class OSCBundle( timetag: Long, packets: OSCPacket* )
-extends OSCPacket
-with LinearSeqLike[ OSCPacket, OSCBundle ] {
-   import OSCBundle._
+final case class Bundle( timetag: Long, packets: Packet* )
+extends Packet
+with LinearSeqLike[ Packet, Bundle ] {
+   import Bundle._
 
 	// ---- getting LinearSeqLike to work properly ----
 
-	def newBuilder : Builder[ OSCPacket, OSCBundle ] = {
-		new scala.collection.mutable.ArrayBuffer[ OSCPacket ] mapResult (buf => new OSCBundle( timetag, packets: _* ))
+	def newBuilder : Builder[ Packet, Bundle ] = {
+		new scala.collection.mutable.ArrayBuffer[ Packet ] mapResult (buf => new Bundle( timetag, packets: _* ))
 	}
 
-	override def iterator : Iterator[ OSCPacket ] = packets.iterator
-	override def drop( n: Int ) : OSCBundle = new OSCBundle( timetag, packets.drop( n ): _* )
+	override def iterator : Iterator[ Packet ] = packets.iterator
+	override def drop( n: Int ) : Bundle = new Bundle( timetag, packets.drop( n ): _* )
    def apply( idx: Int ) = packets( idx )
    def length: Int = packets.length
-   def seq: TraversableOnce[ OSCPacket ] = this // need for Scala 2.9.0
+   def seq: TraversableOnce[ Packet ] = this // need for Scala 2.9.0
 
-	// ---- OSCPacket implementation ----
-	def name: String = OSCBundle.TAG
+	// ---- Packet implementation ----
+	def name: String = Bundle.TAG
 
 	@throws( classOf[ OSCException ])
-	def encode( c: OSCPacketCodec, b: ByteBuffer ) { c.encodeBundle( this, b )}
+	def encode( c: PacketCodec, b: ByteBuffer ) { c.encodeBundle( this, b )}
 
-	def getEncodedSize( c: OSCPacketCodec ) : Int = c.getEncodedBundleSize( this )
+	def getEncodedSize( c: PacketCodec ) : Int = c.getEncodedBundleSize( this )
 
-	private[osc] def printTextOn( c: OSCPacketCodec, stream: PrintStream, nestCount: Int ) {
+	private[osc] def printTextOn( c: PacketCodec, stream: PrintStream, nestCount: Int ) {
 		stream.print( "  " * nestCount )
 		stream.print( "[ #bundle, " + smartTimetagString( timetag ))
 		val ncInc = nestCount + 1
@@ -471,54 +588,54 @@ with LinearSeqLike[ OSCPacket, OSCBundle ] {
 		if( nestCount == 0 ) stream.println( " ]" ) else stream.print( " ]" )
 	}
 
-   override def toString = "OSCBundle(" + smartTimetagString( timetag ) + packets.mkString( ", ", ", ", ")" )
+   override def toString = "Bundle(" + smartTimetagString( timetag ) + packets.mkString( ", ", ", ", ")" )
 //   override def hashCode = timetag.hashCode * 41 + packets.hashCode
 //   override def equals( other: Any ) = other match {
-//      case that: OSCBundle => (that isComparable this) && this.timetag == that.timetag && this.packets == that.packets
+//      case that: Bundle => (that isComparable this) && this.timetag == that.timetag && this.packets == that.packets
 //      case _ => false
 //   }
-//   protected def isComparable( other: Any ) = other.isInstanceOf[ OSCBundle ]
+//   protected def isComparable( other: Any ) = other.isInstanceOf[ Bundle ]
 }
 
 // ------------------------------
 
-object OSCMessage {
-   def apply( name: String, args: Any* ) = new OSCMessage( name, args: _* )
-   def unapplySeq( m: OSCMessage ): Option[ (String, Seq[ Any ])]= Some( m.name -> m.args )
+object Message {
+   def apply( name: String, args: Any* ) = new Message( name, args: _* )
+   def unapplySeq( m: Message ): Option[ (String, Seq[ Any ])]= Some( m.name -> m.args )
 }
 
-class OSCMessage( val name: String, val args: Any* )
-extends OSCPacket
-with LinearSeqLike[ Any, OSCMessage ] {
-   import OSCPacket._
+class Message( val name: String, val args: Any* )
+extends Packet
+with LinearSeqLike[ Any, Message ] {
+   import Packet._
    
 	// ---- getting LinearSeqLike to work properly ----
 
-	def newBuilder : Builder[ Any, OSCMessage ] = {
-		new scala.collection.mutable.ArrayBuffer[ Any ] mapResult (buf => new OSCMessage( name, buf: _* ))
+	def newBuilder : Builder[ Any, Message ] = {
+		new scala.collection.mutable.ArrayBuffer[ Any ] mapResult (buf => new Message( name, buf: _* ))
 	}
 
 	override def iterator : Iterator[ Any ] = args.iterator
-	override def drop( n: Int ) : OSCMessage = new OSCMessage( name, args.drop( n ): _* )
+	override def drop( n: Int ) : Message = new Message( name, args.drop( n ): _* )
    def apply( idx: Int ) = args( idx )
    def length: Int = args.length
    def seq: TraversableOnce[ Any ] = this // need for Scala 2.9.0
 
-	def encode( c: OSCPacketCodec, b: ByteBuffer ) { c.encodeMessage( this, b )}
-	def getEncodedSize( c: OSCPacketCodec ) : Int = c.getEncodedMessageSize( this )
+	def encode( c: PacketCodec, b: ByteBuffer ) { c.encodeMessage( this, b )}
+	def getEncodedSize( c: PacketCodec ) : Int = c.getEncodedMessageSize( this )
 
    // recreate stuff we lost when removing case modifier
-   override def toString = args.mkString( "OSCMessage(" + name + ", ", ", ", ")" )
+   override def toString = args.mkString( "Message(" + name + ", ", ", ", ")" )
    override def hashCode = name.hashCode * 41 + args.hashCode
    override def equals( other: Any ) = other match {
-      case that: OSCMessage => (that isComparable this) && this.name == that.name && this.args == that.args
+      case that: Message => (that isComparable this) && this.name == that.name && this.args == that.args
       case _ => false
    }
-   protected def isComparable( other: Any ) = other.isInstanceOf[ OSCMessage ]
+   protected def isComparable( other: Any ) = other.isInstanceOf[ Message ]
 
-	// ---- OSCPacket implementation ----
+	// ---- Packet implementation ----
 
-	private[osc] def printTextOn( c: OSCPacketCodec, stream: PrintStream, nestCount: Int ) {
+	private[osc] def printTextOn( c: PacketCodec, stream: PrintStream, nestCount: Int ) {
 		stream.print( "  " * nestCount )
 		stream.print( "[ " )
 		printEscapedStringOn( stream, name )

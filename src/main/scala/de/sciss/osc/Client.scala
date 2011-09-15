@@ -42,12 +42,12 @@ import java.net.{ InetSocketAddress, SocketAddress }
  *
  *	<pre>
     final Object        sync = new Object();
-    final OSCClient     c;
-    final OSCBundle     bndl1, bndl2;
+    final Client     c;
+    final Bundle     bndl1, bndl2;
     final Integer       nodeID;
     
     try {
-        c = OSCClient.newUsing( OSCClient.UDP );    // create UDP client with any free port number
+        c = Client.newUsing( Client.UDP );    // create UDP client with any free port number
         c.setTarget( new InetSocketAddress( "127.0.0.1", 57110 ));  // talk to scsynth on the same machine
         c.start();  // open channel and (in the case of TCP) connect, then start listening for replies
     }
@@ -58,7 +58,7 @@ import java.net.{ InetSocketAddress, SocketAddress }
     
     // register a listener for incoming osc messages
     c.addOSCListener( new OSCListener() {
-        public void messageReceived( OSCMessage m, SocketAddress addr, long time )
+        public void messageReceived( Message m, SocketAddress addr, long time )
         {
             // if we get the /n_end message, wake up the main thread
             // ; note: we should better also check for the node ID to make sure
@@ -71,20 +71,20 @@ import java.net.{ InetSocketAddress, SocketAddress }
         }
     });
     // let's see what's going out and coming in
-    c.dumpOSC( OSCChannel.kDumpBoth, Console.err );
+    c.dumpOSC( Channel.kDumpBoth, Console.err );
     
     try {
         // the /notify message tells scsynth to send info messages back to us
-        c.send( new OSCMessage( "/notify", new Object[] { new Integer( 1 )}));
+        c.send( new Message( "/notify", new Object[] { new Integer( 1 )}));
         // two bundles, one immediately (with 50ms delay), the other in 1.5 seconds
-        bndl1   = new OSCBundle( System.currentTimeMillis() + 50 );
-        bndl2   = new OSCBundle( System.currentTimeMillis() + 1550 );
+        bndl1   = new Bundle( System.currentTimeMillis() + 50 );
+        bndl2   = new Bundle( System.currentTimeMillis() + 1550 );
         // this is going to be the node ID of our synth
         nodeID  = new Integer( 1001 + i );
         // this next messages creates the synth
-        bndl1.addPacket( new OSCMessage( "/s_new", new Object[] { "default", nodeID, new Integer( 1 ), new Integer( 0 )}));
+        bndl1.addPacket( new Message( "/s_new", new Object[] { "default", nodeID, new Integer( 1 ), new Integer( 0 )}));
         // this next messages starts to releases the synth in 1.5 seconds (release time is 2 seconds)
-        bndl2.addPacket( new OSCMessage( "/n_set", new Object[] { nodeID, "gate", new Float( -(2f + 1f) )}));
+        bndl2.addPacket( new Message( "/n_set", new Object[] { nodeID, "gate", new Float( -(2f + 1f) )}));
         // send both bundles (scsynth handles their respective timetags)
         c.send( bndl1 );
         c.send( bndl2 );
@@ -96,7 +96,7 @@ import java.net.{ InetSocketAddress, SocketAddress }
         catch( InterruptedException e1 ) {}
         
         // ok, unsubscribe getting info messages
-        c.send( new OSCMessage( "/notify", new Object[] { new Integer( 0 )}));
+        c.send( new Message( "/notify", new Object[] { new Integer( 0 )}));
 
         // ok, stop the client
         // ; this isn't really necessary as we call dispose soon
@@ -110,24 +110,24 @@ import java.net.{ InetSocketAddress, SocketAddress }
     c.dispose();
  *	</pre>
  *
- *	@see		OSCTransmitter
- *	@see		OSCReceiver
+ *	@see		Transmitter
+ *	@see		Receiver
  *	@see		OSCServer
  */
-object OSCClient
+object Client
 
-trait OSCClient extends OSCChannel.Bidi {
-	import OSCChannel._
+trait Client extends Channel.Bidi {
+	import Channel._
 	
 //	private var bufSize = DEFAULTBUFSIZE
 
-   protected def rcv: OSCReceiver
-   protected def trns: OSCTransmitter.Directed
+   protected def rcv: Receiver
+   protected def trns: Transmitter.Directed
 
-//	def action_=( f: (OSCMessage, SocketAddress, Long) => Unit ) {
+//	def action_=( f: (Message, SocketAddress, Long) => Unit ) {
 //		rcv.action = f
 //	}
-//	def action: (OSCMessage, SocketAddress, Long) => Unit = rcv.action
+//	def action: (Message, SocketAddress, Long) => Unit = rcv.action
 
 	def target: SocketAddress = sys.error( "TODO" ) // rcv.target
 
@@ -146,7 +146,7 @@ trait OSCClient extends OSCChannel.Bidi {
 	 *	@see	#setTarget( SocketAddress )
 	 */
 	@throws( classOf[ IOException ])
-	def !( p: OSCPacket ) { trns.!( p )}
+	def !( p: Packet ) { trns.!( p )}
 
 	@throws( classOf[ IOException ])
 	def close() {
@@ -171,23 +171,23 @@ trait OSCClient extends OSCChannel.Bidi {
 	 *	@see	#kDumpHex
 	 *	@see	#kDumpBoth
 	 */
-	override def dumpOSC( mode: OSCDump = OSCDump.Text,
+	override def dumpOSC( mode: Dump = Dump.Text,
 					          stream: PrintStream = Console.err,
-					          filter: (OSCPacket) => Boolean = PassAllPackets ) {
+					          filter: (Packet) => Boolean = PassAllPackets ) {
 		dumpIncomingOSC( mode, stream, filter )
 		dumpOutgoingOSC( mode, stream, filter )
 	}
 
-	def dumpIncomingOSC( mode: OSCDump = OSCDump.Text,
+	def dumpIncomingOSC( mode: Dump = Dump.Text,
 					         stream: PrintStream = Console.err,
-					         filter: (OSCPacket) => Boolean = PassAllPackets ) {
+					         filter: (Packet) => Boolean = PassAllPackets ) {
 
 		rcv.dumpOSC( mode, stream, filter )
 	}
 	
-	def dumpOutgoingOSC( mode: OSCDump = OSCDump.Text,
+	def dumpOutgoingOSC( mode: Dump = Dump.Text,
 					         stream: PrintStream = Console.err,
-					         filter: (OSCPacket) => Boolean = PassAllPackets ) {
+					         filter: (Packet) => Boolean = PassAllPackets ) {
 
 		trns.dumpOSC( mode, stream, filter )
 	}

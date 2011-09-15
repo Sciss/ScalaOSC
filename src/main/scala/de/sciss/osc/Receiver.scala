@@ -30,14 +30,14 @@ import java.nio.BufferUnderflowException
 import java.nio.channels.{AsynchronousCloseException, ClosedChannelException}
 import java.net.SocketAddress
 
-object OSCReceiver {
-   trait Net extends OSCReceiver with OSCChannel.NetConfigLike // OSCChannel.Net
+object Receiver {
+   trait Net extends Receiver with Channel.NetConfigLike // Channel.Net
 
    object Directed {
-      type Action = OSCPacket => Unit
+      type Action = Packet => Unit
       val NoAction : Action = _ => ()
    }
-   trait Directed extends OSCReceiver {
+   trait Directed extends Receiver {
       var action = Directed.NoAction
 
       @throws( classOf[ IOException ])
@@ -62,10 +62,10 @@ object OSCReceiver {
    type DirectedNet = Directed with Net
 
    object Undirected {
-      type Action = (OSCPacket, SocketAddress) => Unit
+      type Action = (Packet, SocketAddress) => Unit
       val NoAction : Action = (_, _) => ()
    }
-   trait UndirectedNet extends OSCReceiver {
+   trait UndirectedNet extends Receiver {
       var action = Undirected.NoAction
 
       protected final def connectChannel() {}  // XXX or: if( !isOpen ) throw new ChannelClosedException ?
@@ -94,7 +94,7 @@ object OSCReceiver {
    }
 }
 
-trait OSCReceiver extends OSCChannel.Input {
+trait Receiver extends Channel.Input {
    rcv =>
 
 	private val	threadSync           = new AnyRef

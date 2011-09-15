@@ -27,22 +27,22 @@ package de.sciss.osc
 
 import java.io.{ IOException, PrintStream }
 import java.net.{InetAddress, InetSocketAddress}
-import java.nio.channels.{InterruptibleChannel, Channel}
+import java.nio.channels.{InterruptibleChannel, Channel => NIOChannel}
 import java.nio.ByteBuffer
 
-object OSCChannel {
+object Channel {
 //	/**
 //	 *	The default buffer size (in bytes) and maximum OSC packet
 //	 *	size (8K at the moment).
 //	 */
 //	val DEFAULTBUFSIZE = 8192
 	
-	val PassAllPackets : OSCPacket => Boolean = _ => true
+	val PassAllPackets : Packet => Boolean = _ => true
 
-   type Net = OSCChannel with NetConfigLike
-//   trait Net extends OSCChannel with OSCChannelNetConfigLike
+   type Net = Channel with NetConfigLike
+//   trait Net extends Channel with OSCChannelNetConfigLike
 
-   trait DirectedNet extends OSCChannel with NetConfigLike {
+   trait DirectedNet extends Channel with NetConfigLike {
       /**
        * The remote socket address of this channel. Returns `null` if the
        * channel has not yet been connected.
@@ -73,15 +73,15 @@ object OSCChannel {
        *	@see	#UDP
        *	@see	#TCP
        */
-      def transport : OSCTransport
+      def transport : Transport
 
-      def codec : OSCPacketCodec
+      def codec : PacketCodec
 
    }
    trait Config extends ConfigLike
 
    trait NetConfigLike extends ConfigLike {
-      override def transport : OSCTransport.Net
+      override def transport : Transport.Net
 
       def localSocketAddress : InetSocketAddress
 
@@ -94,7 +94,7 @@ object OSCChannel {
 
    trait ConfigBuilder extends ConfigLike {
       def bufferSize_=( size: Int ) : Unit
-      def codec_=( codec: OSCPacketCodec ) : Unit
+      def codec_=( codec: PacketCodec ) : Unit
       def build : Config
    }
 
@@ -108,7 +108,7 @@ object OSCChannel {
 
    private[osc] trait ConfigBuilderImpl extends ConfigBuilder {
       final var bufferSize             = 8192
-      final var codec : OSCPacketCodec = OSCPacketCodec.default
+      final var codec : PacketCodec = PacketCodec.default
    }
 
    private[osc] trait NetConfigBuilderImpl
@@ -131,17 +131,17 @@ object OSCChannel {
       }
    }
 
-   private[osc] trait Single extends OSCChannel {
-      @volatile protected var dumpMode: OSCDump = OSCDump.Off
+   private[osc] trait Single extends Channel {
+      @volatile protected var dumpMode: Dump = Dump.Off
       @volatile protected var printStream : PrintStream	= Console.err
-      @volatile protected var dumpFilter : (OSCPacket) => Boolean = PassAllPackets
+      @volatile protected var dumpFilter : (Packet) => Boolean = PassAllPackets
 
       protected val bufSync   = new AnyRef
       protected final val buf	= ByteBuffer.allocateDirect( config.bufferSize )
 
-      final def dumpOSC( mode: OSCDump = OSCDump.Text,
+      final def dumpOSC( mode: Dump = Dump.Text,
                          stream: PrintStream = Console.err,
-                         filter: (OSCPacket) => Boolean = PassAllPackets ) {
+                         filter: (Packet) => Boolean = PassAllPackets ) {
          dumpMode	   = mode
          printStream	= stream
          dumpFilter	= filter
@@ -150,18 +150,18 @@ object OSCChannel {
       /**
        * Callers should have a lock on the buffer!
        */
-      protected final def dumpPacket( p: OSCPacket, prefix: String ) {
-         if( (dumpMode ne OSCDump.Off) && dumpFilter( p )) {
+      protected final def dumpPacket( p: Packet, prefix: String ) {
+         if( (dumpMode ne Dump.Off) && dumpFilter( p )) {
             printStream.synchronized {
                printStream.print( prefix )
                dumpMode match {
-                  case OSCDump.Text =>
-                     OSCPacket.printTextOn( codec, printStream, p )
-                  case OSCDump.Hex =>
-                     OSCPacket.printHexOn( printStream, buf )
-                  case OSCDump.Both =>
-                     OSCPacket.printTextOn( codec, printStream, p )
-                     OSCPacket.printHexOn( printStream, buf )
+                  case Dump.Text =>
+                     Packet.printTextOn( codec, printStream, p )
+                  case Dump.Hex =>
+                     Packet.printHexOn( printStream, buf )
+                  case Dump.Both =>
+                     Packet.printTextOn( codec, printStream, p )
+                     Packet.printHexOn( printStream, buf )
                   case _ =>   // satisfy compiler
                }
             }
@@ -170,14 +170,14 @@ object OSCChannel {
    }
 
    private[osc] trait Output extends Single {
-      protected def dumpPacket( p: OSCPacket ) { dumpPacket( p, "s: " )}
+      protected def dumpPacket( p: Packet ) { dumpPacket( p, "s: " )}
    }
 
    private[osc] trait Input extends Single {
-      protected def dumpPacket( p: OSCPacket ) { dumpPacket( p, "r: " )}
+      protected def dumpPacket( p: Packet ) { dumpPacket( p, "r: " )}
    }
 
-   trait Bidi extends OSCChannel {
+   trait Bidi extends Channel {
       /**
        *	Changes the way incoming messages are dumped
        *	to the console. By default incoming messages are not
@@ -191,9 +191,9 @@ object OSCChannel {
        *	@see	#dumpOSC( int, PrintStream )
        *	@see	#dumpOutgoingOSC( int, PrintStream )
        */
-      def dumpIncomingOSC( mode: OSCDump = OSCDump.Text,
+      def dumpIncomingOSC( mode: Dump = Dump.Text,
                        stream: PrintStream = Console.err,
-                       filter: (OSCPacket) => Boolean = PassAllPackets ) : Unit
+                       filter: (Packet) => Boolean = PassAllPackets ) : Unit
 
       /**
        *	Changes the way outgoing messages are dumped
@@ -207,19 +207,19 @@ object OSCChannel {
        *	@see	#dumpOSC( int, PrintStream )
        *	@see	#dumpIncomingOSC( int, PrintStream )
        */
-      def dumpOutgoingOSC( mode: OSCDump = OSCDump.Text,
+      def dumpOutgoingOSC( mode: Dump = Dump.Text,
                            stream: PrintStream = Console.err,
-                           filter: (OSCPacket) => Boolean = PassAllPackets ) : Unit
+                           filter: (Packet) => Boolean = PassAllPackets ) : Unit
    }
 }
 
-import OSCChannel._
+import Channel._
 
-trait OSCChannel extends OSCChannel.ConfigLike with Channel {
-   protected def config : OSCChannel.Config
+trait Channel extends Channel.ConfigLike with NIOChannel {
+   protected def config : Channel.Config
 
    final def bufferSize : Int = config.bufferSize
-   final def codec : OSCPacketCodec = config.codec
+   final def codec : PacketCodec = config.codec
 
    protected def channel: InterruptibleChannel
 
@@ -235,7 +235,7 @@ trait OSCChannel extends OSCChannel.ConfigLike with Channel {
     *  <P>
     *	When a <B>UDP</B> transmitter
     *	is created without an explicit <code>DatagramChannel</code> &ndash; say by
-    *	calling <code>OSCTransmitter.newUsing( &quot;udp&quot; )</code>, you are required
+    *	calling <code>Transmitter.newUsing( &quot;udp&quot; )</code>, you are required
     *	to call <code>connect()</code> so that an actual <code>DatagramChannel</code> is
     *	created and bound. For a <B>UDP</B> transmitter which was created with an explicit
     *	<code>DatagramChannel</code>, this method does noting, so it is always safe
@@ -246,7 +246,7 @@ trait OSCChannel extends OSCChannel.ConfigLike with Channel {
     *	@throws	IOException	if a networking error occurs. Possible reasons: - the underlying
     *						network channel had been closed by the server. - the transport
     *						is TCP and the server is not available. - the transport is TCP
-    *						and an <code>OSCReceiver</code> sharing the same socket was stopped before (unable to revive).
+    *						and an <code>Receiver</code> sharing the same socket was stopped before (unable to revive).
     *
     *	@see	#isConnected()
     */
@@ -257,13 +257,13 @@ trait OSCChannel extends OSCChannel.ConfigLike with Channel {
 	 *	Changes the way processed OSC messages are printed to the standard err console.
 	 *	By default messages are not printed.
 	 *
-	 *  @param	mode	one of `OSCDump.Off` (don't dump, default),
-	 *					`OSCDump.Text` (dump human readable string),
-	 *					`OSCDump.Hex` (hexdump), or
-	 *					`OSCDump.Both` (both text and hex)
+	 *  @param	mode	one of `Dump.Off` (don't dump, default),
+	 *					`Dump.Text` (dump human readable string),
+	 *					`Dump.Hex` (hexdump), or
+	 *					`Dump.Both` (both text and hex)
 	 *	@param	stream	the stream to print on
 	 */
-	def dumpOSC( mode: OSCDump = OSCDump.Text,
+	def dumpOSC( mode: Dump = Dump.Text,
 				    stream: PrintStream = Console.err,
-				    filter: (OSCPacket) => Boolean = PassAllPackets ) : Unit
+				    filter: (Packet) => Boolean = PassAllPackets ) : Unit
 }

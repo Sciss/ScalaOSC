@@ -29,7 +29,7 @@ import java.io.IOException
 import java.nio.ByteBuffer
 
 import collection.immutable.IntMap
-import OSCPacket._
+import Packet._
 
 /**
  *	A packet codec defines how the translation between Java objects
@@ -58,15 +58,15 @@ import OSCPacket._
  *	<p>
  *	Last but not least, using the <code>putDecoder</code> and <code>putEncoder</code>
  *	methods, the codec can be extended to support additional Java classes or
- *	OSC typetags, without the need to subclass <code>OSCPacketCodec</code>.
+ *	OSC typetags, without the need to subclass <code>PacketCodec</code>.
  *
  *  @author		Hanns Holger Rutz
  *  @version	0.36, 18-Feb-09
  *
  *	@since		NetUtil 0.35
  */
-object OSCPacketCodec {
-	lazy val default = new OSCPacketCodec
+object PacketCodec {
+	lazy val default = new PacketCodec
   	
 	val MODE_READ_DOUBLE			         = 0x0001
 	val MODE_READ_DOUBLE_AS_FLOAT	      = 0x0002
@@ -96,7 +96,7 @@ object OSCPacketCodec {
 	 *	Support mode: like <code>MODE_STRICT_V1</code>, but coder additionally
 	 *	encodes <code>java.lang.Long</code> as a <code>'i'</code>,
 	 *	<code>java.lang.Double</code> as a <code>'f'</code>, and
-	 *	<code>de.sciss.net.OSCPacket</code> as a blob <code>'b'</code>.
+	 *	<code>de.sciss.net.Packet</code> as a blob <code>'b'</code>.
 	 *	The decoder decodes <code>'h'</code> into <code>java.lang.Integer</code>,
 	 *	<code>'d'</code> into <code>java.lang.Float</code>, and
 	 *	<code>'S'</code> (Symbol) into <code>java.lang.String</code>.
@@ -115,7 +115,7 @@ object OSCPacketCodec {
 	 *	<code>'h'</code> &lt;--&gt; <code>java.lang.Long</code>, and
 	 *	<code>'d'</code> &lt;--&gt; <code>java.lang.Double</code>.
 	 *	Also, <code>'S'</code> (Symbol) is decoded into <code>java.lang.String</code>,
-	 *	and <code>de.sciss.net.OSCPacket</code> is encoded as a blob <code>'b'</code>.
+	 *	and <code>de.sciss.net.Packet</code> is encoded as a blob <code>'b'</code>.
 	 */
 	val MODE_FAT_V1					= MODE_READ_DOUBLE | MODE_READ_LONG | MODE_WRITE_DOUBLE | MODE_WRITE_LONG | MODE_READ_SYMBOL_AS_STRING | MODE_WRITE_PACKET_AS_BLOB
 	
@@ -138,8 +138,8 @@ object OSCPacketCodec {
 //	def getDefaultCodec = defaultCodec
 }
 
-class OSCPacketCodec( mode: Int = OSCPacketCodec.MODE_FAT_V1, var charsetName: String = "UTF-8" ) {
-   import OSCPacketCodec._
+class PacketCodec( mode: Int = PacketCodec.MODE_FAT_V1, var charsetName: String = "UTF-8" ) {
+   import PacketCodec._
 
 //	private[scalaosc] var atomEncoders	= Map.empty[ Class[_], Atom ]
    private[osc] var atomDecoders	= IntMap.empty[ Atom ]
@@ -154,7 +154,7 @@ class OSCPacketCodec( mode: Int = OSCPacketCodec.MODE_FAT_V1, var charsetName: S
       // here until encoder list updating is implemented
 
 //		if( (mode & MODE_WRITE_PACKET_AS_BLOB) != 0 ) {
-         case x: OSCPacket  => Atom.Packet
+         case x: Packet  => Atom.Packet
 //		}
 
       case x: Long         => Atom.Long
@@ -187,7 +187,7 @@ class OSCPacketCodec( mode: Int = OSCPacketCodec.MODE_FAT_V1, var charsetName: S
 	 *					must be in the ASCII value range 0 to 127.
 	 *	@param a		the decoder to use
 	 *
-	 *	@see	OSCPacketCodec.Atom
+	 *	@see	PacketCodec.Atom
 	 */
 	def putDecoder( typeTag: Byte, a: Atom ) {
 		atomDecoders += (typeTag, a)
@@ -214,11 +214,11 @@ class OSCPacketCodec( mode: Int = OSCPacketCodec.MODE_FAT_V1, var charsetName: S
 	 *										writing procedures failed.
 	 */
 //	@throws( classOf[ IOException ])
-//	def encode( p: OSCPacket, b: ByteBuffer ) : Unit = p.encode( this, b )
+//	def encode( p: Packet, b: ByteBuffer ) : Unit = p.encode( this, b )
 
 	@throws( classOf[ IOException ])
-	private[ osc ] def encodeBundle( bndl: OSCBundle, b: ByteBuffer ) {
-		b.put( OSCBundle.TAGB ).putLong( bndl.timetag )
+	private[ osc ] def encodeBundle( bndl: Bundle, b: ByteBuffer ) {
+		b.put( Bundle.TAGB ).putLong( bndl.timetag )
 //		bndl.synchronized {
 			bndl.foreach( p => {
 				b.mark()
@@ -249,7 +249,7 @@ class OSCPacketCodec( mode: Int = OSCPacketCodec.MODE_FAT_V1, var charsetName: S
 	 *								(buffer overflow, illegal arguments).
 	 */
 	@throws( classOf[ IOException ])
-	private[ osc ] def encodeMessage( msg: OSCMessage, b: ByteBuffer ) {
+	private[ osc ] def encodeMessage( msg: Message, b: ByteBuffer ) {
 		val numArgs = msg.length
 
 		b.put( msg.name.getBytes )  // this one assumes 7-bit ascii only
@@ -281,7 +281,7 @@ class OSCPacketCodec( mode: Int = OSCPacketCodec.MODE_FAT_V1, var charsetName: S
 	 *
 	 *	@throws IOException	if the message contains invalid arguments
 	 */
-	private[ osc ] def getEncodedMessageSize( msg: OSCMessage ) : Int = {
+	private[ osc ] def getEncodedMessageSize( msg: Message ) : Int = {
 		var result  = ((msg.name.length + 4) & ~3) + ((1+msg.length + 4) & ~3)
 		msg.foreach( v => {
 //			val cl = v.asInstanceOf[ AnyRef ].getClass
@@ -296,7 +296,7 @@ class OSCPacketCodec( mode: Int = OSCPacketCodec.MODE_FAT_V1, var charsetName: S
 	}
 
    // sum of name, timetag and sizes of each bundle element
-	private[ osc ] def getEncodedBundleSize( bndl: OSCBundle ) : Int = {
+	private[ osc ] def getEncodedBundleSize( bndl: Bundle ) : Int = {
 //		var result  = 16 + (bndl.length << 2) // name, timetag, size of each bundle element
 //		bndl.foreach( result += _.getEncodedSize( this ))
 //		result
@@ -308,7 +308,7 @@ class OSCPacketCodec( mode: Int = OSCPacketCodec.MODE_FAT_V1, var charsetName: S
 	/**
 	 * 	Adjusts the support mode for type tag handling. Usually
 	 * 	you specify the mode directly in the instantiation of
-	 * 	<code>OSCPacketCodec</code>, but you can change it later
+	 * 	<code>PacketCodec</code>, but you can change it later
 	 * 	using this method.
 	 * 
 	 *	@param	mode	the new mode to use. A flag field combination
@@ -317,7 +317,7 @@ class OSCPacketCodec( mode: Int = OSCPacketCodec.MODE_FAT_V1, var charsetName: S
 	 *					or a ready made combination such as
 	 *					<code>MODE_FAT_V1</code>.
 	 *
-	 *	@see	#OSCPacketCodec( int )
+	 *	@see	#PacketCodec( int )
 	 */
 	def setSupportMode( mode: Int ) {
 		(mode & MODE_READ_DOUBLE_MASK) match {
@@ -379,15 +379,15 @@ class OSCPacketCodec( mode: Int = OSCPacketCodec.MODE_FAT_V1, var charsetName: S
 		}
 
 //		if( (mode & MODE_WRITE_PACKET_AS_BLOB) != 0 ) {
-//			atomEncoders += classOf[ OSCBundle ] -> PacketAtom
-//			atomEncoders += classOf[ OSCMessage ] -> PacketAtom
-////			putEncoder( OSCBundle.class, a );
-////			putEncoder( OSCMessage.class, a );
+//			atomEncoders += classOf[ Bundle ] -> PacketAtom
+//			atomEncoders += classOf[ Message ] -> PacketAtom
+////			putEncoder( Bundle.class, a );
+////			putEncoder( Message.class, a );
 //		} else {
-//			atomEncoders -= classOf[ OSCBundle ]
-//			atomEncoders -= classOf[ OSCMessage ]
-////			putEncoder( OSCBundle.class, null );
-////			putEncoder( OSCMessage.class, null );
+//			atomEncoders -= classOf[ Bundle ]
+//			atomEncoders -= classOf[ Message ]
+////			putEncoder( Bundle.class, null );
+////			putEncoder( Message.class, null );
 //		}
 	}
 	
@@ -397,10 +397,10 @@ class OSCPacketCodec( mode: Int = OSCPacketCodec.MODE_FAT_V1, var charsetName: S
 	 *  to read a null terminated string at the
 	 *  beginning of the provided buffer. If it
 	 *  equals the bundle identifier, the
-	 *  <code>decode</code> of <code>OSCBundle</code>
+	 *  <code>decode</code> of <code>Bundle</code>
 	 *  is called (which may recursively decode
 	 *  nested bundles), otherwise the one from
-	 *  <code>OSCMessage</code>.
+	 *  <code>Message</code>.
 	 *
 	 *  @param  b   <code>ByteBuffer</code> pointing right at
 	 *				the beginning of the packet. the buffer's
@@ -419,7 +419,7 @@ class OSCPacketCodec( mode: Int = OSCPacketCodec.MODE_FAT_V1, var charsetName: S
 	 *  @throws IllegalArgumentException	occurs in some cases of buffer underflow
 	 */
 	@throws( classOf[ IOException ])
-	def decode( b: ByteBuffer ) : OSCPacket = {
+	def decode( b: ByteBuffer ) : Packet = {
 		val name = readString( b )
 		skipToAlign( b )
         
@@ -442,17 +442,17 @@ class OSCPacketCodec( mode: Int = OSCPacketCodec.MODE_FAT_V1, var charsetName: S
 	 *  @throws IOException if an error occurs during the calculation
 	 */
 //	@throws( classOf[ IOException ])
-//	def getSize( p: OSCPacket ) : Int = {
-//		if( p.isInstanceOf[ OSCBundle ]) {
-//			getBundleSize( p.asInstanceOf[ OSCBundle ])
+//	def getSize( p: Packet ) : Int = {
+//		if( p.isInstanceOf[ Bundle ]) {
+//			getBundleSize( p.asInstanceOf[ Bundle ])
 //		} else {
-//			getMessageSize( p.asInstanceOf[ OSCMessage ])
+//			getMessageSize( p.asInstanceOf[ Message ])
 //		}
 //	}
 	
 //	@throws( classOf[ IOException ])
-//	protected def getBundleSize( bndl: OSCBundle ) : Int = {
-//		var result = /* OSCPacketCodec.TAGB.length + 8 */ 16 + (bndl.packets.length << 2) // name, timetag, size of each bundle element
+//	protected def getBundleSize( bndl: Bundle ) : Int = {
+//		var result = /* PacketCodec.TAGB.length + 8 */ 16 + (bndl.packets.length << 2) // name, timetag, size of each bundle element
 //		for( p <- bndl.packets ) {
 //			result += getSize( p )
 //		}
@@ -467,12 +467,12 @@ class OSCPacketCodec( mode: Int = OSCPacketCodec.MODE_FAT_V1, var charsetName: S
 	 *	@throws IOException	if the message contains invalid arguments
 	 */
 //	@throws( classOf[ IOException ])
-//	protected def getMessageSize( msg: OSCMessage ) : Int = msg.encodedSize
+//	protected def getMessageSize( msg: Message ) : Int = msg.encodedSize
 
 	@throws( classOf[ IOException ])
-	protected def decodeBundle( b: ByteBuffer ) : OSCBundle = {
+	protected def decodeBundle( b: ByteBuffer ) : Bundle = {
 		val	totalLimit  = b.limit
-		val p			= new scala.collection.mutable.ListBuffer[ OSCPacket ]
+		val p			= new scala.collection.mutable.ListBuffer[ Packet ]
 		val timetag 	= b.getLong
 
 		try {
@@ -481,7 +481,7 @@ class OSCPacketCodec( mode: Int = OSCPacketCodec.MODE_FAT_V1, var charsetName: S
 				p += decode( b )
 				b.limit( totalLimit )
 			}
-			OSCBundle( timetag, p: _* )
+			Bundle( timetag, p: _* )
 		}
 		catch { case e : IllegalArgumentException =>	// throws by b.limit if bundle size is corrupted
 			throw new OSCException( OSCException.DECODE, e.getLocalizedMessage )
@@ -491,7 +491,7 @@ class OSCPacketCodec( mode: Int = OSCPacketCodec.MODE_FAT_V1, var charsetName: S
 	/**
 	 *  Creates a new message with arguments decoded
 	 *  from the ByteBuffer. Usually you call
-	 *  <code>decode</code> from the <code>OSCPacket</code> 
+	 *  <code>decode</code> from the <code>Packet</code>
 	 *  superclass which will invoke this method of
 	 *  it finds an OSC message.
 	 *
@@ -513,7 +513,7 @@ class OSCPacketCodec( mode: Int = OSCPacketCodec.MODE_FAT_V1, var charsetName: S
 	 *  @throws IllegalArgumentException	occurs in some cases of buffer underflow
 	 */
 	@throws( classOf[ IOException ])
-	protected def decodeMessage( name: String, b: ByteBuffer ) : OSCMessage = {
+	protected def decodeMessage( name: String, b: ByteBuffer ) : Message = {
 		if( b.get != 0x2C ) throw new OSCException( OSCException.DECODE, null )
 		val b2		= b.slice	// faster to slice than to reposition all the time!
 		val pos1	= b.position
@@ -533,6 +533,6 @@ class OSCPacketCodec( mode: Int = OSCPacketCodec.MODE_FAT_V1, var charsetName: S
 //			args( argIdx ) = codec.decodeAtom( typ, b )
 			argIdx += 1
 		}
-		OSCMessage( name, args: _* )
+		Message( name, args: _* )
 	}
 }

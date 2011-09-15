@@ -27,10 +27,8 @@ package de.sciss.osc
 
 import java.io.IOException
 import java.net.InetAddress
+import Implicits._
 
-/**
- *	   @version	0.11, 24-Nov-09
- */
 private[osc] object Test {
 //	def codec() {
 //// NOTE: scalacheck doesn't seem to be compatible with
@@ -42,7 +40,7 @@ private[osc] object Test {
 //		import _root_.org.scalacheck.Arbitrary._
 //		import _root_.org.scalacheck.Prop._
 //
-//		var c: OSCPacketCodec = null
+//		var c: PacketCodec = null
 //		val b = ByteBuffer.allocate( 8192 )
 //		val str = arbitrary[String] suchThat (_.indexOf(0) == -1) // null-character not allowed
 //		val strictArgGen = Gen.oneOf( arbitrary[Int], arbitrary[Float], str )
@@ -52,19 +50,19 @@ private[osc] object Test {
 //// how do we limit the list size? no clue... seems to work nevertheless
 ////		val sizedGen = Gen.sized { size => (size < 100) ==> listGen }
 //		val checka = (list: List[Any]) => {
-//			val msg = OSCMessage( "/test", list:_* )
+//			val msg = Message( "/test", list:_* )
 //			b.clear
 //			msg.encode( c, b )
 //			b.flip
-//			val msgOut = c.decode( b ).asInstanceOf[OSCMessage]
+//			val msgOut = c.decode( b ).asInstanceOf[Message]
 //			val decArgs = msgOut.args
 //			(msgOut.name == msg.name) :| "name" &&
 //			(decArgs == msg.args) :| ("args before: " + msg.args + " / after: " + decArgs.toList )
 //		}
-//		c = new OSCPacketCodec( OSCPacketCodec.MODE_STRICT_V1 )
+//		c = new PacketCodec( PacketCodec.MODE_STRICT_V1 )
 //		val strictProp = forAll( strictListGen )( checka )
 //		strictProp.check
-//		c = new OSCPacketCodec( OSCPacketCodec.MODE_FAT_V1 )
+//		c = new PacketCodec( PacketCodec.MODE_FAT_V1 )
 //		val fatProp = forAll( fatListGen )( checka )
 //		fatProp.check
 //*/
@@ -85,18 +83,18 @@ Receiver test
 
       val sync = new AnyRef
 
-      rcv.dumpOSC( OSCDump.Both )
+      rcv.dumpOSC( Dump.Both )
 	   rcv.action = {
-         case (OSCMessage( name, _ @ _* ), _) =>
+         case (Message( name, _ @ _* ), _) =>
 	    	   println( "Received message '" + name + "'" )
       	   if( name == "/quit" ) sync.synchronized( sync.notifyAll() )
-         case (p, addr) => println( "Ignoring packet: " + p + " from " + addr )
+         case (p, addr) => println( "Ignoring: " + p + " from " + addr )
 	   }
       rcv.connect()
 	   sync.synchronized( sync.wait() )
    }
   
-   def transmitter( transport: OSCTransport.Net ) {
+   def transmitter( transport: Transport.Net ) {
       println(
 """Transmitter tests
    assume that scsynth is running on
@@ -113,13 +111,13 @@ Receiver test
          trns.dumpOSC( stream = Console.out )
          trns.connect()
 //println( trns.target )
-         trns ! OSCMessage( "/s_new", "default", 1000, 0, 0, "amp", 0f )
+         trns ! Message( "/s_new", "default", 1000, 0, 0, "amp", 0f )
          for( i <- (1 to 8) ) {
-        	   trns ! OSCMessage( "/n_set", 1000, "freq", i * 333, "amp", 0.5f )
+        	   trns ! Message( "/n_set", 1000, "freq", i * 333, "amp", 0.5f )
         	   Thread.sleep( 200 )
          }
 
-         import de.sciss.osc.{ OSCMessage => M }
+         import de.sciss.osc.{ Message => M }
          trns ! M( "/n_free", 1000 )
 
       } catch {
@@ -133,11 +131,11 @@ Receiver test
    }
 
    def tcpClient() {
-      val c: OSCClient = sys.error( "TODO" ) // = OSCClient( TCP, loopBack = true )
+      val c: Client = sys.error( "TODO" ) // = Client( TCP, loopBack = true )
 //      c.target = new InetSocketAddress( "127.0.0.1", 57110 )
 //      c.start()
       c.dumpOSC()
-      c ! OSCMessage( "/dumpOSC", 1 )
-      c ! OSCMessage( "/notify", 1 )
+      c ! Message( "/dumpOSC", 1 )
+      c ! Message( "/notify", 1 )
    }
 }

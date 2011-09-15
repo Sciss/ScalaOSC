@@ -35,8 +35,8 @@ object ScalaOSC {
    def main( args: Array[ String ]) {
 	   args.toSeq match {
          case Seq( "--testTransmitter", transName ) =>
-            OSCTransport( transName ) match {
-               case netTrans: OSCTransport.Net => Test.transmitter( netTrans )
+            Transport( transName ) match {
+               case netTrans: Transport.Net => Test.transmitter( netTrans )
                case _ => sys.error( "Unsupported transport '" + transName + "'" )
             }
          case Seq( "--testReceiver" ) =>

@@ -1,7 +1,7 @@
 package de.sciss.osc
 
-object OSCDump {
-   def apply( id: Int ) : OSCDump = id match {
+object Dump {
+   def apply( id: Int ) : Dump = id match {
       case Off.id    => Off
       case Text.id   => Text
       case Hex.id    => Hex
@@ -12,18 +12,18 @@ object OSCDump {
    /**
     *	Dump mode: do not dump messages
     */
-   case object Off extends OSCDump  { val id = 0 }
+   case object Off extends Dump  { val id = 0 }
    /**
     *	Dump mode: dump messages in text formatting
     */
-   case object Text extends OSCDump { val id = 1 }
+   case object Text extends Dump { val id = 1 }
    /**
     *	Dump mode: dump messages in hex (binary) view
     */
-   case object Hex extends OSCDump  { val id = 2 }
+   case object Hex extends Dump  { val id = 2 }
    /**
     *	Dump mode: dump messages both in text and hex view
     */
-   case object Both extends OSCDump { val id = 3 }
+   case object Both extends Dump { val id = 3 }
 }
-sealed trait OSCDump { val id: Int }
+sealed trait Dump { val id: Int }

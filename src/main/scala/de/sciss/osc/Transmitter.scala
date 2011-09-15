@@ -1,5 +1,5 @@
 /*
- * PackageObject.scala
+ * OSCTransmitter.scala
  * (ScalaOSC)
  *
  * Copyright (c) 2008-2011 Hanns Holger Rutz. All rights reserved.
@@ -23,11 +23,32 @@
  * contact@sciss.de
  */
 
-package de.sciss
+package de.sciss.osc
 
-import java.net.{InetAddress, InetSocketAddress}
+import java.io.IOException
+import java.net.SocketAddress
 
-package object osc {
-   implicit def stringTupleToSocketAddress( tup: (String, Int) )     = new InetSocketAddress( tup._1, tup._2 )
-   implicit def addrTupleToSocketAddress( tup: (InetAddress, Int) )  = new InetSocketAddress( tup._1, tup._2 )
+object Transmitter {
+   trait Directed extends Transmitter {
+      def !( p: Packet ) : Unit
+   }
+
+   type Net = Transmitter with Channel.Net
+
+   trait UndirectedNet extends Transmitter with Channel.NetConfigLike { // Channel.Net
+      def send( p: Packet, target: SocketAddress ) : Unit
+
+      @throws( classOf[ IOException ])
+      final def connect() {}  // XXX or: if( !isOpen ) throw new ChannelClosedException ?
+      final def isConnected = isOpen
+   }
+
+   type DirectedNet = Directed with Channel.DirectedNet
+}
+
+trait Transmitter extends Channel.Output {
+   @throws( classOf[ IOException ])
+   final def close() {
+      channel.close()
+   }
 }
