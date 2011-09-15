@@ -131,6 +131,15 @@ object Channel {
       protected val bufSync   = new AnyRef
       protected final val buf	= ByteBuffer.allocateDirect( config.bufferSize )
 
+      /**
+       * Requests to connect the network channel. This may be called several
+       * times, and the implementation should ignore the call when the channel
+       * is already connected.
+       */
+      @throws( classOf[ IOException ])
+      protected def connectChannel() : Unit
+//      protected def isChannelConnected : Boolean
+
       final def dump( mode: Dump = Dump.Text,
                       stream: PrintStream = Console.err,
                       filter: Dump.Filter = Dump.AllPackets ) {
@@ -186,6 +195,13 @@ object Channel {
       protected def input: Input
       protected def output: Output
 
+      final def connect() {
+         input.connect()
+         output.connect()
+      }
+
+      final def isConnected = input.isConnected && output.isConnected
+
       /**
        *	Changes the way incoming and outgoing OSC messages are printed to the standard err console.
        *	By default messages are not printed.
@@ -196,8 +212,8 @@ object Channel {
        *					<code>kDumpBoth</code> (both text and hex)
        *	@param	stream	the stream to print on
        *
-       *	@see	#dumpIncoming( int, PrintStream )
-       *	@see	#dumpOutgoing( int, PrintStream )
+       *	@see	#dumpIn( int, PrintStream )
+       *	@see	#dumpOut( int, PrintStream )
        *	@see	#kDumpOff
        *	@see	#kDumpText
        *	@see	#kDumpHex
@@ -206,8 +222,8 @@ object Channel {
       override final def dump( mode: Dump = Dump.Text,
                          stream: PrintStream = Console.err,
                          filter: Dump.Filter = Dump.AllPackets ) {
-         dumpIncoming( mode, stream, filter )
-         dumpOutgoing( mode, stream, filter )
+         dumpIn( mode, stream, filter )
+         dumpOut( mode, stream, filter )
       }
 
       /**
@@ -221,9 +237,9 @@ object Channel {
        *	@param	stream	the stream to print on
        *
        *	@see	#dump( Dump, PrintStream, Dump.Filter )
-       *	@see	#dumpOutgoing( Dump, PrintStream, Dump.Filter )
+       *	@see	#dumpOut( Dump, PrintStream, Dump.Filter )
        */
-      final def dumpIncoming( mode: Dump = Dump.Text,
+      final def dumpIn( mode: Dump = Dump.Text,
                         stream: PrintStream = Console.err,
                         filter: Dump.Filter = Dump.AllPackets ) {
          input.dump( mode, stream, filter )
@@ -239,9 +255,9 @@ object Channel {
        *	@param	stream	the stream to print on
        *
        *	@see	#dump( Dump, PrintStream, Dump.Filter )
-       *	@see	#dumpIncoming( Dump, PrintStream, Dump.Filter )
+       *	@see	#dumpIn( Dump, PrintStream, Dump.Filter )
        */
-      final def dumpOutgoing( mode: Dump = Dump.Text,
+      final def dumpOut( mode: Dump = Dump.Text,
                         stream: PrintStream = Console.err,
                         filter: Dump.Filter = Dump.AllPackets ) {
          output.dump( mode, stream, filter )
@@ -249,15 +265,13 @@ object Channel {
    }
 }
 
-import Channel._
-
 trait Channel extends Channel.ConfigLike with NIOChannel {
    protected def config : Channel.Config
 
    final def bufferSize : Int = config.bufferSize
    final def codec : PacketCodec = config.codec
 
-   protected def channel: InterruptibleChannel
+   def channel: InterruptibleChannel
 
    /**
     *	Queries whether the channel is still open.
@@ -288,6 +302,8 @@ trait Channel extends Channel.ConfigLike with NIOChannel {
     */
    @throws( classOf[ IOException ])
    def connect() : Unit
+
+   def isConnected: Boolean
 
 	/**
 	 *	Changes the way processed OSC messages are printed to the standard err console.

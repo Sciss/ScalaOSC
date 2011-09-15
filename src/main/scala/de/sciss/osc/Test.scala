@@ -131,11 +131,54 @@ Receiver test
    }
 
    def tcpClient() {
-      val c: Client = sys.error( "TODO" ) // = Client( TCP, loopBack = true )
+      val c: Client = ScalaOSC.error( "TODO" ) // = Client( TCP, loopBack = true )
 //      c.target = new InetSocketAddress( "127.0.0.1", 57110 )
 //      c.start()
       c.dump()
 //      c ! Message( "/dumpOSC", 1 )
 //      c ! Message( "/notify", 1 )
+   }
+
+   def pingPong() {
+      import de.sciss.osc
+
+      val pingR   = osc.UDP.Receiver()                   // unidirectional, not bound
+      val pingT   = osc.UDP.Transmitter( pingR.channel ) // unidirectional, not bound, same channel
+      val cfg     = osc.UDP.Config()
+//      cfg.localAddress = InetAddress.getByName( "localhost" )
+      cfg.localIsLoopback = true
+      val pong    = osc.UDP.Client( pingR.localSocketAddress, cfg )  // bidirectional, bound
+      pingT.connect()
+      pingR.connect()
+      pong.connect()
+println( "pong local is " + pong.localSocketAddress )
+
+      val t = new java.util.Timer()
+      def delay( secs: Double )( code: => Unit ) {
+         t.schedule( new java.util.TimerTask { def run { code }}, (secs * 1000).toInt )
+      }
+
+      pingR.action = {
+         case (m @ osc.Message( name, cnt: Int ), sender) =>
+            println( "Ping received " + m + " from " + sender )
+            delay( 1 ) { pingT.send( osc.Message( "PONG", cnt ), sender )}
+         case _ =>
+      }
+      var cnt = 0
+      def act() {
+         cnt += 1
+         if( cnt <= 10 ) {
+            delay( 1 ) { pong ! osc.Message( "PING", cnt )}
+         } else {
+            pingT.close()
+            pingR.close()
+            pong.close()
+         }
+      }
+      pong.action = packet => {
+         println( "Pong received: " + packet )
+         act()
+      }
+      act() // start the game
    }
 }

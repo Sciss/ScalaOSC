@@ -40,7 +40,7 @@ object Transmitter {
       def send( p: Packet, target: SocketAddress ) : Unit
 
       @throws( classOf[ IOException ])
-      final def connect() {}  // XXX or: if( !isOpen ) throw new ChannelClosedException ?
+      protected final def connectChannel() {}  // XXX or: if( !isOpen ) throw new ChannelClosedException ?
       final def isConnected = isOpen
    }
 
@@ -51,5 +51,10 @@ trait Transmitter extends Channel.Output {
    @throws( classOf[ IOException ])
    final def close() {
       channel.close()
+   }
+
+   @throws( classOf[ IOException ])
+   final def connect() {
+      connectChannel()
    }
 }

@@ -31,7 +31,8 @@ import java.nio.channels.{AsynchronousCloseException, ClosedChannelException}
 import java.net.SocketAddress
 
 object Receiver {
-   trait Net extends Receiver with Channel.NetConfigLike // Channel.Net
+   type Net = Receiver with Channel.NetConfigLike
+//   trait Net extends Receiver with Channel.NetConfigLike // Channel.Net
 
 //   object Directed {
 //      type Action = Packet => Unit
@@ -70,7 +71,9 @@ object Receiver {
    trait UndirectedNet extends Receiver {
       var action = Undirected.NoAction
 
+      @throws( classOf[ IOException ])
       protected final def connectChannel() {}  // XXX or: if( !isOpen ) throw new ChannelClosedException ?
+      final def isConnected = isOpen
 
       /**
        * @param   sender   the remote socket from which the packet was sent.
@@ -113,12 +116,14 @@ trait Receiver extends Channel.Input {
       }
 
       override def run {
+println( "RECEIVER RUN " + this )
          try {
             while( !wasClosed ) receive()
          } catch {
             case e: AsynchronousCloseException => closedException()
             case e: ClosedChannelException => closedException()
          } finally {
+println( "RECEIVER EXIT " + this )
             threadSync.synchronized {
                wasClosed = true
                threadSync.notifyAll()
@@ -126,7 +131,7 @@ trait Receiver extends Channel.Input {
          }
       }
    }
-	thread.setDaemon( true )
+//	thread.setDaemon( true )
 
    @throws( classOf[ IOException ])
    protected def receive() : Unit
@@ -140,13 +145,12 @@ trait Receiver extends Channel.Input {
    }
 
    @throws( classOf[ IOException ])
-   protected def connectChannel() : Unit
-
-   @throws( classOf[ IOException ])
    final def connect() {
       connectChannel()
       start()
    }
+
+//   final def isConnected : Boolean = isChannelConnected && thread.isAlive
 
    @throws( classOf[ IOException ])
    private def start() {

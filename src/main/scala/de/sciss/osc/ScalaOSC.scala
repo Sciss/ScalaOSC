@@ -32,12 +32,17 @@ object ScalaOSC {
 
    def versionString = (version + 0.001).toString.substring( 0, 4 )
 
+   // sucky change in scala 2.9 makes compiler output warnings
+   private[osc] def error( text: String ) : Nothing = throw new RuntimeException( text )
+
    def main( args: Array[ String ]) {
 	   args.toSeq match {
+         case Seq( "--pingPong" ) =>
+            Test.pingPong()
          case Seq( "--testTransmitter", transName ) =>
             Transport( transName ) match {
                case netTrans: Transport.Net => Test.transmitter( netTrans )
-               case _ => sys.error( "Unsupported transport '" + transName + "'" )
+               case _ => error( "Unsupported transport '" + transName + "'" )
             }
          case Seq( "--testReceiver" ) =>
             Test.receiver()
@@ -48,14 +53,15 @@ object ScalaOSC {
          case _ =>
             printInfo()
 
-            println( """" +
-The following demos are available:
+            println(
+"""The following demos are available:
 
+   --pingPong
    --testTransmitter (UDP|TCP)"
    --testReceiver"
 
 """ )
-            sys.exit( 1 )
+            System.exit( 1 ) // scala 2.9 only: sys.exit( 1 )
 		}
 	}
 
