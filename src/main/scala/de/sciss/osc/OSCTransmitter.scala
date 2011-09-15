@@ -152,7 +152,7 @@ object OSCTransmitter {
 //      def target: SocketAddress
 //   }
 
-   trait TCP extends OSCChannelNet with Directed {
+   trait TCP extends DirectedNet {
       override protected def config: TCP.Config
       override protected def channel: SocketChannel
 
@@ -174,7 +174,9 @@ object OSCTransmitter {
       def isConnected = isOpen
    }
 
-   type DirectedNet = Net with Directed
+   trait DirectedNet extends OSCTransmitter with OSCChannelNet with Directed {
+      def target : SocketAddress
+   }
 }
 
 trait OSCTransmitter extends OSCChannel {

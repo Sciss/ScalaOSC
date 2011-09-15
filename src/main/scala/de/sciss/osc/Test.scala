@@ -92,9 +92,11 @@ object Test {
   }
   
    def transmitter( transport: OSCTransport.Net ) {
-      println( "Test.transmitter\n\n" +
-               "  assumes that scsynth is running on" +
-               "  localhost " + transport.name + " port 57110\n" )
+      println(
+"""Transmitter tests
+   assume that scsynth is running on
+   localhost """ + transport.name + """ port 57110
+""" )
 
       val tgt  = InetAddress.getLocalHost -> 57110
       val trns = transport match {
@@ -104,6 +106,8 @@ object Test {
 
       try {
          trns.dumpOSC( OSCChannel.DUMP_TEXT, Console.out )
+         trns.connect()
+println( trns.target )
          trns ! OSCMessage( "/s_new", "default", 1000, 0, 0, "amp", 0f )
          for( i <- (1 to 8) ) {
         	   trns ! OSCMessage( "/n_set", 1000, "freq", i * 333, "amp", 0.5f )

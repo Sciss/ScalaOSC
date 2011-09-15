@@ -75,7 +75,7 @@ case object UDP extends OSCTransport.Net {
    }
 
    object Transmitter {
-      type Directed     = Transmitter with OSCTransmitter.Directed
+      type Directed     = Transmitter with OSCTransmitter.DirectedNet
       type Undirected   = Transmitter with OSCTransmitter.UndirectedNet
 
       def apply( implicit config: Config ) : Undirected = {
@@ -106,12 +106,14 @@ case object UDP extends OSCTransport.Net {
 
       def apply( target: SocketAddress )( implicit config: Config ) : Directed = {
          val cfg = config
-         new Transmitter with OSCTransmitter.Directed {
+         val tgt = target
+         new Transmitter with OSCTransmitter.DirectedNet {
             protected def config = cfg
 
             @throws( classOf[ IOException ])
-            def connect { channel.connect( target )}
+            def connect { channel.connect( tgt )}
             def isConnected = channel.isConnected
+            def target = channel.socket().getRemoteSocketAddress
 
             @throws( classOf[ IOException ])
             def !( p: OSCPacket ) {
@@ -181,20 +183,24 @@ case object TCP extends OSCTransport.Net {
    object Transmitter {
       def apply( target: SocketAddress )( implicit config: Config ) : Transmitter = {
          val cfg = config
+         val tgt = target
          new Transmitter {
             protected def config = cfg
 
             @throws( classOf[ IOException ])
-            def connect { channel.connect( target )}
+            def connect { channel.connect( tgt )}
             def isConnected = channel.isConnected
 
             @throws( classOf[ IOException ])
             def !( p: OSCPacket ) {
-               try { // XXX should factor out common body with UDP.Transmitter
+               try {
                   bufSync.synchronized {
                      byteBuf.clear()
+                     byteBuf.position( 4 )
                      p.encode( codec, byteBuf )
+                     val len = byteBuf.position() - 4
                      byteBuf.flip()
+                     byteBuf.putInt( 0, len )
                      dumpPacket( p )
                      channel.write( byteBuf )
                   }
