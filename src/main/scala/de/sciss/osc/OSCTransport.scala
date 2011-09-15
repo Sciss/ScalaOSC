@@ -227,15 +227,16 @@ case object TCP extends OSCTransport.Net {
       }
    }
 
-   sealed trait Transmitter extends OSCTransmitter.TCP {
+   sealed trait Transmitter extends OSCTransmitter.DirectedNet {
+      final def transport = config.transport
+
+      final def localSocketAddress = {
+         val so = channel.socket()
+         new InetSocketAddress( so.getLocalAddress, so.getLocalPort )
+      }
+
       final override protected val channel: SocketChannel = config.openChannel()
       override protected def config: Config
-//      final def transport = config.transport
-//
-//      final def localSocketAddress = {
-//         val so = channel.socket()
-//         new InetSocketAddress( so.getLocalAddress, so.getLocalPort )
-//      }
    }
 }
 

@@ -37,19 +37,19 @@ object OSCTransmitter {
 
    type Net = OSCTransmitter with OSCChannelNet
 
-   trait TCP extends DirectedNet {
-      override protected def config: TCP.Config
-      override protected def channel: SocketChannel
-
-//      final def target = channel.socket().getRemoteSocketAddress
-
-      final def transport = config.transport
-
-      final def localSocketAddress = {
-         val so = channel.socket()
-         new InetSocketAddress( so.getLocalAddress, so.getLocalPort )
-      }
-   }
+//   trait TCP extends DirectedNet {
+//      override protected def config: TCP.Config
+//      override protected def channel: SocketChannel
+//
+////      final def target = channel.socket().getRemoteSocketAddress
+//
+//      final def transport = config.transport
+//
+//      final def localSocketAddress = {
+//         val so = channel.socket()
+//         new InetSocketAddress( so.getLocalAddress, so.getLocalPort )
+//      }
+//   }
 
    trait UndirectedNet extends OSCTransmitter with OSCChannelNet {
       def send( p: OSCPacket, target: SocketAddress ) : Unit
