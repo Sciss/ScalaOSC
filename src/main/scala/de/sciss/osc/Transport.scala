@@ -113,20 +113,12 @@ case object UDP extends Transport.Net {
 
          @throws( classOf[ IOException ])
          def send( p: Packet, target: SocketAddress ) {
-            try {
-               bufSync.synchronized {
-                  buf.clear()
-                  p.encode( codec, buf )
-                  buf.flip()
-                  dumpPacket( p )
-                  channel.send( buf, target )
-               }
-            }
-            catch { case e: BufferOverflowException =>
-                throw new OSCException( OSCException.BUFFER, p match {
-                   case m: Message => m.name
-                   case _ => p.getClass.getName
-                })
+            bufSync.synchronized {
+               buf.clear()
+               p.encode( codec, buf )
+               buf.flip()
+               dumpPacket( p )
+               channel.send( buf, target )
             }
          }
       }
@@ -147,7 +139,7 @@ case object UDP extends Transport.Net {
 
          @throws( classOf[ IOException ])
          def !( p: Packet ) {
-            try {
+//            try {
                bufSync.synchronized {
                   buf.clear()
                   p.encode( codec, buf )
@@ -155,13 +147,13 @@ case object UDP extends Transport.Net {
                   dumpPacket( p )
                   channel.write( buf )
                }
-            }
-            catch { case e: BufferOverflowException =>
-                throw new OSCException( OSCException.BUFFER, p match {
-                   case m: Message => m.name
-                   case _ => p.getClass.getName
-                })
-            }
+//            }
+//            catch { case e: BufferOverflowException =>
+//                throw new OSCException( OSCException.BUFFER, p match {
+//                   case m: Message => m.name
+//                   case _ => p.getClass.getName
+//                })
+//            }
          }
       }
    }
@@ -333,23 +325,17 @@ case object TCP extends Transport.Net {
 
          @throws( classOf[ IOException ])
          def !( p: Packet ) {
-            try {
-               bufSync.synchronized {
-                  buf.clear()
-                  buf.position( 4 )
-                  p.encode( codec, buf )
-                  val len = buf.position() - 4
-                  buf.flip()
-                  buf.putInt( 0, len )
-                  dumpPacket( p )
-                  channel.write( buf )
-               }
-            }
-            catch { case e: BufferOverflowException =>
-                throw new OSCException( OSCException.BUFFER, p match {
-                   case m: Message => m.name
-                   case _ => p.getClass.getName
-                })
+            // config ensures that buf size is at least 16!
+//            if( buf.limit < 4 ) throw PacketCodec.BufferOverflow( p.name )
+            bufSync.synchronized {
+               buf.clear()
+               buf.position( 4 )
+               p.encode( codec, buf )
+               val len = buf.position() - 4
+               buf.flip()
+               buf.putInt( 0, len )
+               dumpPacket( p )
+               channel.write( buf )
             }
          }
       }

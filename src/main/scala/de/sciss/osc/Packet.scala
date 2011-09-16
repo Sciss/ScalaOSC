@@ -233,11 +233,11 @@ object Packet {
 	 *										the provided buffer limit
 	 */
 	@throws( classOf[ BufferUnderflowException ]) 
-	def skipToAlign( b: ByteBuffer ) {
-		val newPos = (b.position + 3) & ~3
-		if( newPos > b.limit ) throw new BufferUnderflowException
-        b.position( newPos )
-	}
+   def skipToAlign( b: ByteBuffer ) {
+      val newPos = (b.position + 3) & ~3
+      if( newPos > b.limit ) throw new BufferUnderflowException
+      b.position( newPos )
+   }
 
    object Atom {
       import scala.{Byte => SByte, Double => SDouble, Float => SFloat, Int => SInt, Long => SLong}
@@ -315,15 +315,17 @@ object Packet {
       // parametrized through charsetName
       object String extends Atom {
          def decode( c: PacketCodec, typeTag: SByte, b: ByteBuffer ) : Any = {
-            val pos1	= b.position()
+            val pos1	   = b.position
             while( b.get() != 0 ) {}
-            val pos2	= b.position() - 1
+            val pos2	   = b.position - 1
             b.position( pos1 )
             val len		= pos2 - pos1
             val bytes	= new Array[ SByte ]( len )
             b.get( bytes, 0, len )
-            val s = new String( bytes, c.charsetName )
-            b.position( (pos2 + 4) & ~3 )
+            val s       = new String( bytes, c.charsetName )
+            val pos3    = (pos2 + 4) & ~3
+            if( pos3 > b.limit ) throw new BufferUnderflowException
+            b.position( pos3 )
             s
          }
 
@@ -379,14 +381,15 @@ object Packet {
        */
       object Packet extends Atom {
          def decode( c: PacketCodec, typeTag: SByte, b: ByteBuffer ) : Any = {
-            throw new java.io.IOException( "Not supported" )
+            throw PacketCodec.UnsupportedAtom( typeTag.toChar.toString ) // java.io.IOException( "Not supported" )
          }
 
          def encode( c: PacketCodec, v: Any, tb: ByteBuffer, db: ByteBuffer ) {
             tb.put( 0x62.toByte )	// 'b'
-            val pos = db.position
+            val pos  = db.position
             val pos2 = pos + 4
-            db.position( pos2 )
+//            db.position( pos2 )
+            db.putInt( 0 ) // dummy to skip to data; properly throws BufferOverflowException
             v.asInstanceOf[ Packet ].encode( c, db )
             db.putInt( pos, db.position - pos2 )
          }
@@ -414,7 +417,7 @@ object Packet {
 sealed trait Packet {
 	def name: String
 	
-	@throws( classOf[ OSCException ])
+	@throws( classOf[ PacketCodec.Exception ])
 	def encode( c: PacketCodec, b: ByteBuffer ) : Unit
 	
 	def getEncodedSize( c: PacketCodec ) : Int
@@ -507,24 +510,24 @@ object Bundle {
 
 //   def unapplySeq( b: Bundle ): Option[ Tuple2[ Long, Seq[ Packet ]]]= Some( b.timetag -> b.packets )
 
-	@throws( classOf[ IOException ])
-	private[osc] def decode( b: ByteBuffer ) : Bundle = {
-		val totalLimit = b.limit
-		val p			   = new scala.collection.mutable.ListBuffer[ Packet ]
-		val timetag 	= b.getLong
-
-		try {
-			while( b.hasRemaining ) {
-				b.limit( b.getInt + b.position )   // msg size
-				p += decode( b )
-				b.limit( totalLimit )
-			}
-			Bundle( timetag, p: _* )
-		}
-		catch { case e : IllegalArgumentException =>	// throws by b.limit if bundle size is corrupted
-			throw new OSCException( OSCException.DECODE, e.getLocalizedMessage )
-		}
-	}
+//	@throws( classOf[ IOException ])
+//	private[osc] def decode( b: ByteBuffer ) : Bundle = {
+//		val totalLimit = b.limit
+//		val p			   = new scala.collection.mutable.ListBuffer[ Packet ]
+//		val timetag 	= b.getLong
+//
+//		try {
+//			while( b.hasRemaining ) {
+//				b.limit( b.getInt + b.position )   // msg size
+//				p += decode( b )
+//				b.limit( totalLimit )
+//			}
+//			Bundle( timetag, p: _* )
+//		}
+//		catch { case e : IllegalArgumentException =>	// throws by b.limit if bundle size is corrupted
+//			throw new OSCException( OSCException.DECODE, e.getLocalizedMessage )
+//		}
+//	}
 
    private val datef    = new SimpleDateFormat( "HH:mm:ss.SSS", Locale.US )
    private val decimf   = {
@@ -572,7 +575,7 @@ with LinearSeqLike[ Packet, Bundle ] {
 	// ---- Packet implementation ----
 	def name: String = Bundle.TAG
 
-	@throws( classOf[ OSCException ])
+	@throws( classOf[ Exception ])
 	def encode( c: PacketCodec, b: ByteBuffer ) { c.encodeBundle( this, b )}
 
 	def getEncodedSize( c: PacketCodec ) : Int = c.getEncodedBundleSize( this )

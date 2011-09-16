@@ -44,9 +44,9 @@ object Receiver {
 //      var action = Directed.NoAction
       final var action = Channel.DirectedInput.NoAction
 
-      @throws( classOf[ IOException ])
+      @throws( classOf[ PacketCodec.Exception ])
       protected final def flipDecodeDispatch() {
-         try {
+//         try {
             buf.flip()
             val p = codec.decode( buf )
             dumpPacket( p )
@@ -55,12 +55,12 @@ object Receiver {
             } catch {
                case e => e.printStackTrace() // XXX eventually error handler?
             }
-         }
-         catch { case e1: BufferUnderflowException =>
-            if( !wasClosed ) {
-               Console.err.println( new OSCException( OSCException.RECEIVE, e1.toString ))
-            }
-         }
+//         }
+//         catch { case e1: BufferUnderflowException =>
+//            if( !wasClosed ) {
+//               Console.err.println( new OSCException( OSCException.RECEIVE, e1.toString ))
+//            }
+//         }
       }
    }
 
@@ -81,9 +81,9 @@ object Receiver {
        * @param   sender   the remote socket from which the packet was sent.
        *                   this may be `null` in which case this method does nothing.
        */
-      @throws( classOf[ IOException ])
+      @throws( classOf[ Exception ])
       protected final def flipDecodeDispatch( sender: SocketAddress ) {
-         if( sender != null ) try {
+         if( sender != null ) /* try */ {
             buf.flip()
             val p = codec.decode( buf )
             dumpPacket( p )
@@ -93,11 +93,11 @@ object Receiver {
                case e => e.printStackTrace() // XXX eventually error handler?
             }
          }
-         catch { case e1: BufferUnderflowException =>
-            if( !wasClosed ) {
-               Console.err.println( new OSCException( OSCException.RECEIVE, e1.toString ))
-            }
-         }
+//         catch { case e1: BufferUnderflowException =>
+//            if( !wasClosed ) {
+//               Console.err.println( new OSCException( OSCException.RECEIVE, e1.toString ))
+//            }
+//         }
       }
    }
 }

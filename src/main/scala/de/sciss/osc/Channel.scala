@@ -86,6 +86,12 @@ object Channel {
    trait NetConfig extends Config with NetConfigLike
 
    trait ConfigBuilder extends ConfigLike {
+      /**
+       * Adjusts the buffer size used by the future channel.
+       * The minimum allowed size is 16 bytes. Typically, OSC
+       * applications handle packets up to 8 KB. SuperCollider
+       * Server handles packets up the 64 KB by default (?).
+       */
       def bufferSize_=( size: Int ) : Unit
       def codec_=( codec: PacketCodec ) : Unit
       def build : Config
@@ -101,7 +107,13 @@ object Channel {
    }
 
    private[osc] trait ConfigBuilderImpl extends ConfigBuilder {
-      final var bufferSize             = 8192
+//      final var bufferSize             = 8192
+      private var bufferSizeVar  = 8192
+      final def bufferSize = bufferSizeVar
+      final def bufferSize_=( size: Int ) {
+         require( size >= 16 )
+         bufferSizeVar = size
+      }
       final var codec : PacketCodec = PacketCodec.default
    }
 

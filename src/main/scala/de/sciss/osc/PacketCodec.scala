@@ -26,10 +26,10 @@
 package de.sciss.osc
 
 import java.io.IOException
-import java.nio.ByteBuffer
-
 import collection.immutable.IntMap
 import Packet._
+import collection.mutable.ListBuffer
+import java.nio.{BufferUnderflowException, BufferOverflowException, ByteBuffer}
 
 /**
  *	A packet codec defines how the translation between Java objects
@@ -136,6 +136,31 @@ object PacketCodec {
 	 *	@see	#MODE_GRACEFUL
 	 */
 //	def getDefaultCodec = defaultCodec
+
+   sealed abstract class Exception( message: String, cause: Throwable )
+   extends IOException( message, cause )
+
+   /**
+    * An exception thrown during encoding or decoding,
+    * indicating that the buffer is too small to
+    * encode that packet.
+    */
+   final case class BufferOverflow( message: String, cause: Throwable )
+   extends Exception( message, cause )
+
+   /**
+    * An exception thrown during encoding or decoding,
+    * indicating that no atom exists to encode or decode
+    * a particular type.
+    */
+   final case class UnsupportedAtom( name: String ) extends Exception( name, null )
+
+   /**
+    * An exception thrown during decoding, indicating that
+    * the received packet is malformed and does not comply
+    * with the OSC standard.
+    */
+   final case class MalformedPacket( name: String ) extends Exception( name, null )
 }
 
 class PacketCodec( mode: Int = PacketCodec.MODE_FAT_V1, var charsetName: String = "UTF-8" ) {
@@ -159,6 +184,7 @@ class PacketCodec( mode: Int = PacketCodec.MODE_FAT_V1, var charsetName: String 
 
       case x: Long         => Atom.Long
       case x: Double       => Atom.Double
+      case x               => throw UnsupportedAtom( x.getClass.getName )
    }
 
 	// ---- constructor ----
@@ -218,8 +244,8 @@ class PacketCodec( mode: Int = PacketCodec.MODE_FAT_V1, var charsetName: String 
 
 	@throws( classOf[ IOException ])
 	private[ osc ] def encodeBundle( bndl: Bundle, b: ByteBuffer ) {
-		b.put( Bundle.TAGB ).putLong( bndl.timetag )
-//		bndl.synchronized {
+      try {
+   		b.put( Bundle.TAGB ).putLong( bndl.timetag )
 			bndl.foreach( p => {
 				b.mark()
 				b.putInt( 0 )			// calculate size later
@@ -230,7 +256,10 @@ class PacketCodec( mode: Int = PacketCodec.MODE_FAT_V1, var charsetName: String 
 				b.reset()
 				b.putInt( pos2 - pos1 ).position( pos2 )			
 			})
-//		}
+		}
+      catch { case e: BufferOverflowException =>
+         throw PacketCodec.BufferOverflow( bndl.name, e )
+      }
 	}
 
 		/**
@@ -248,30 +277,29 @@ class PacketCodec( mode: Int = PacketCodec.MODE_FAT_V1, var charsetName: String 
 	 *								writing procedures failed
 	 *								(buffer overflow, illegal arguments).
 	 */
-	@throws( classOf[ IOException ])
+	@throws( classOf[ Exception ])
 	private[ osc ] def encodeMessage( msg: Message, b: ByteBuffer ) {
-		val numArgs = msg.length
-
-		b.put( msg.name.getBytes )  // this one assumes 7-bit ascii only
-		terminateAndPadToAlign( b )
-		// it's important to slice at a 4-byte boundary because
-		// the position will become 0 and terminateAndPadToAlign
-		// will be malfunctioning otherwise
-		val b2 = b.slice
-		b2.put( 0x2C.toByte )		// ',' to announce type string
-		b.position( b.position + ((numArgs + 5) & ~3) )	// comma + numArgs + zero + align
-//		try {
-			msg.foreach( v => {
-//				val cl = v.asInstanceOf[ AnyRef ].getClass
-//				val a = atomEncoders( cl )
+      try {
+         val numArgs = msg.size
+         b.put( msg.name.getBytes )  // this one assumes 7-bit ascii only
+         terminateAndPadToAlign( b )
+         // it's important to slice at a 4-byte boundary because
+         // the position will become 0 and terminateAndPadToAlign
+         // will be malfunctioning otherwise
+         val b2 = b.slice
+         b2.put( 0x2C.toByte )		// ',' to announce type string
+         val pos = b.position + ((numArgs + 5) & ~3)
+         if( pos > b.limit ) throw new BufferOverflowException
+         b.position( pos )	// comma + numArgs + zero + align
+			msg.foreach { v =>
 				val a = atomEncoders( v )
 				a.encode( this, v, b2, b )
-			})
-//		}
-//		catch( NullPointerException e1 ) {
-//			throw new OSCException( OSCException.JAVACLASS, o == null ? "null" : cl.getName() );
-//		}
-		terminateAndPadToAlign( b2 )
+			}
+         terminateAndPadToAlign( b2 )
+		}
+		catch { case e: BufferOverflowException =>
+         throw BufferOverflow( msg.name, e )
+		}
 	}
 	
 	/**
@@ -283,15 +311,9 @@ class PacketCodec( mode: Int = PacketCodec.MODE_FAT_V1, var charsetName: String 
 	 */
 	private[ osc ] def getEncodedMessageSize( msg: Message ) : Int = {
 		var result  = ((msg.name.length + 4) & ~3) + ((1+msg.length + 4) & ~3)
-		msg.foreach( v => {
-//			val cl = v.asInstanceOf[ AnyRef ].getClass
-//			try {
-				result += atomEncoders( v ).getEncodedSize( this, v )
-//			}
-//			catch( NullPointerException e1 ) {
-//				throw new OSCException( OSCException.JAVACLASS, cl.getName() );
-//			}
-		})
+		msg.foreach { v =>
+         result += atomEncoders( v ).getEncodedSize( this, v )
+		}
 		result
 	}
 
@@ -418,16 +440,19 @@ class PacketCodec( mode: Int = PacketCodec.MODE_FAT_V1, var charsetName: String 
 	 *										method to read past the buffer limit
 	 *  @throws IllegalArgumentException	occurs in some cases of buffer underflow
 	 */
-	@throws( classOf[ IOException ])
-	def decode( b: ByteBuffer ) : Packet = {
-		val name = readString( b )
-		skipToAlign( b )
-        
-        if( name == "#bundle" ) {
-			decodeBundle( b )
-        } else {
-        	decodeMessage( name, b )
-        }
+   @throws( classOf[ Exception ])
+   def decode( b: ByteBuffer ) : Packet = {
+      try {
+         val name = readString( b )
+         skipToAlign( b )
+         if( name == "#bundle" ) {
+            decodeBundle( b )
+         } else {
+            decodeMessage( name, b )
+         }
+      } catch { case e: BufferUnderflowException =>
+         throw BufferOverflow( "decode", e )
+      }
 	}
 	
 	/**
@@ -469,22 +494,24 @@ class PacketCodec( mode: Int = PacketCodec.MODE_FAT_V1, var charsetName: String 
 //	@throws( classOf[ IOException ])
 //	protected def getMessageSize( msg: Message ) : Int = msg.encodedSize
 
-	@throws( classOf[ IOException ])
-	protected def decodeBundle( b: ByteBuffer ) : Bundle = {
-		val	totalLimit  = b.limit
-		val p			= new scala.collection.mutable.ListBuffer[ Packet ]
-		val timetag 	= b.getLong
+   @throws( classOf[ Exception ])
+   protected def decodeBundle( b: ByteBuffer ) : Bundle = {
+      try {
+         val totalLimit = b.limit
+         val p			   = new ListBuffer[ Packet ]
+         val timetag    = b.getLong()
 
-		try {
-			while( b.hasRemaining ) {
-				b.limit( b.getInt + b.position )   // msg size
-				p += decode( b )
-				b.limit( totalLimit )
-			}
-			Bundle( timetag, p: _* )
+         while( b.hasRemaining ) {
+            val sz = b.getInt + b.position // msg size
+            if( sz > totalLimit ) throw new BufferUnderflowException
+            b.limit( sz )
+            p += decode( b )
+            b.limit( totalLimit )
+         }
+         Bundle( timetag, p: _* )
 		}
-		catch { case e : IllegalArgumentException =>	// throws by b.limit if bundle size is corrupted
-			throw new OSCException( OSCException.DECODE, e.getLocalizedMessage )
+		catch { case e : BufferUnderflowException =>
+			throw BufferOverflow( Bundle.TAG, e )
 		}
 	}
 
@@ -512,27 +539,35 @@ class PacketCodec( mode: Int = PacketCodec.MODE_FAT_V1, var charsetName: String 
 	 *										method to read past the buffer limit
 	 *  @throws IllegalArgumentException	occurs in some cases of buffer underflow
 	 */
-	@throws( classOf[ IOException ])
-	protected def decodeMessage( name: String, b: ByteBuffer ) : Message = {
-		if( b.get != 0x2C ) throw new OSCException( OSCException.DECODE, null )
-		val b2		= b.slice	// faster to slice than to reposition all the time!
-		val pos1	= b.position
-		while( b.get != 0x00 ) ()
-		val numArgs	= b.position - pos1 - 1
-		val args	= new Array[ Any ]( numArgs )
-		skipToAlign( b )
-	
-		var argIdx = 0
-		while( argIdx < numArgs ) {
-			val typ = b2.get
-			try {
-				val dec = atomDecoders( typ )
-				args( argIdx ) = dec.decode( this, typ, b )
-			}
-			catch { case _ => throw new OSCException( OSCException.DECODE, String.valueOf( typ.toChar ))}
-//			args( argIdx ) = codec.decodeAtom( typ, b )
-			argIdx += 1
-		}
-		Message( name, args: _* )
-	}
+   @throws( classOf[ Exception ])
+   protected def decodeMessage( name: String, b: ByteBuffer ) : Message = {
+      try {
+         if( b.get() != 0x2C ) throw MalformedPacket( name )
+         val b2      = b.slice	// faster to slice than to reposition all the time!
+         val pos1	   = b.position
+         while( b.get() != 0x00 ) ()
+         val numArgs	= b.position - pos1 - 1
+         // note: Array filling is much faster than ListBuffer
+         // (with numArgs == 6, the whole thing should be approx. 4x faster)
+//         val args	   = new ListBuffer[ Any ]
+         val args	   = new Array[ Any ]( numArgs )
+         skipToAlign( b )
+
+         var argIdx = 0
+         while( argIdx < numArgs ) {
+            val typ = b2.get()
+            if( !atomDecoders.contains( typ )) throw UnsupportedAtom( typ.toChar.toString )
+            val dec = atomDecoders( typ )
+//            } catch { // note: IntMap throws RuntimeException, _not_ NoSuchElementException!!!
+//               case e => throw UnsupportedAtom( typ.toChar.toString )
+//            }
+            args( argIdx ) = dec.decode( this, typ, b )
+            argIdx += 1
+         }
+         Message( name, args: _* )
+      }
+      catch { case e: BufferUnderflowException =>
+         throw BufferOverflow( name, e )
+      }
+   }
 }
