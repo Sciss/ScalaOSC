@@ -45,7 +45,7 @@ object Packet {
 	 *	@param	stream   the print stream to use, for example <code>System.out</code>
 	 *	@param	p        the packet to print (either a message or bundle)
 	 */
-	def printTextOn( c: PacketCodec, stream: PrintStream, p: Packet ) {
+	def printTextOn( p: Packet, c: PacketCodec, stream: PrintStream ) {
 		p.printTextOn( c, stream, 0 )
 	}
 
@@ -64,7 +64,7 @@ object Packet {
 	 *	@see	java.nio.Buffer#limit()
 	 *	@see	java.nio.Buffer#position()
 	 */
-   def printHexOn( stream: PrintStream, b: ByteBuffer ) {
+   def printHexOn( b: ByteBuffer, stream: PrintStream ) {
       val pos0 = b.position
       try {
          val lim	= b.limit
@@ -340,7 +340,7 @@ object Packet {
          }
 
          // provide an escaped display
-         override def printTextOn( c: PacketCodec, stream: PrintStream, nestCount: Int, v: Any ) {
+         override def printTextOn( c: PacketCodec, v: Any, stream: PrintStream, nestCount: Int ) {
             OSCPacket.printEscapedStringOn( stream, v.asInstanceOf[ SString ])
          }
       }
@@ -371,7 +371,7 @@ object Packet {
             (v.asInstanceOf[ ByteBuffer ].remaining() + 7) & ~3
          }
 
-         override def printTextOn( c: PacketCodec, stream: PrintStream, nestCount: Int, v: Any ) {
+         override def printTextOn( c: PacketCodec, v: Any, stream: PrintStream, nestCount: Int ) {
             stream.print( "DATA[" + (v.asInstanceOf[ ByteBuffer ]).remaining + "]" )
          }
       }
@@ -398,7 +398,7 @@ object Packet {
             v.asInstanceOf[ Packet ].getEncodedSize( c ) + 4
          }
 
-         override def printTextOn( c: PacketCodec, stream: PrintStream, nestCount: Int, v: Any ) {
+         override def printTextOn( c: PacketCodec, v: Any, stream: PrintStream, nestCount: Int ) {
             stream.println()
             v.asInstanceOf[ Packet ].printTextOn( c, stream, nestCount + 1 )
          }
@@ -408,7 +408,7 @@ object Packet {
       def decode( c: PacketCodec, typeTag: Byte, b: ByteBuffer ) : Any
       def encode( c: PacketCodec, v: Any, tb: ByteBuffer, db: ByteBuffer ) : Unit
       def getEncodedSize( c: PacketCodec, v: Any ) : Int
-      def printTextOn( c: PacketCodec, stream: PrintStream, nestCount: Int, v: Any ) {
+      def printTextOn( c: PacketCodec, v: Any, stream: PrintStream, nestCount: Int ) {
          stream.print( v )
       }
    }
@@ -648,7 +648,9 @@ with LinearSeqLike[ Any, Message ] {
 			// and hence we would integrate the printing of the incoming messages
 			// directly into the decoder!
 //			c.atomEncoders( v.asInstanceOf[ AnyRef ].getClass ).printTextOn( c, stream, nestCount, v )
-			c.atomEncoders( v ).printTextOn( c, stream, nestCount, v )
+
+//			c.atomEncoders( v ).printTextOn( c, stream, nestCount, v )
+         c.printAtom( v, stream, nestCount )
 		}
 		if( nestCount == 0 ) stream.println( " ]" ) else stream.print( " ]" )
 	}

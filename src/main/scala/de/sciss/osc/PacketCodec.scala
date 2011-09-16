@@ -25,11 +25,11 @@
 
 package de.sciss.osc
 
-import java.io.IOException
 import collection.immutable.IntMap
 import Packet._
 import collection.mutable.ListBuffer
 import java.nio.{BufferUnderflowException, BufferOverflowException, ByteBuffer}
+import java.io.{PrintStream, IOException}
 
 /**
  *	A packet codec defines how the translation between Java objects
@@ -66,14 +66,14 @@ import java.nio.{BufferUnderflowException, BufferOverflowException, ByteBuffer}
  *	@since		NetUtil 0.35
  */
 object PacketCodec {
-	lazy val default = new PacketCodec
+	lazy val default = new PacketCodecX
   	
 	val MODE_READ_DOUBLE			         = 0x0001
 	val MODE_READ_DOUBLE_AS_FLOAT	      = 0x0002
-	private val MODE_READ_DOUBLE_MASK	= 0x0003
+	/* private */ val MODE_READ_DOUBLE_MASK	= 0x0003
 	val MODE_READ_LONG				      = 0x0004
 	val MODE_READ_LONG_AS_INTEGER	      = 0x0008
-	private val MODE_READ_LONG_MASK		= 0x000C
+	/* private */ val MODE_READ_LONG_MASK		= 0x000C
 	val MODE_WRITE_DOUBLE			      = 0x0010
 	val MODE_WRITE_DOUBLE_AS_FLOAT	   = 0x0020
 //	private val MODE_WRITE_DOUBLE_MASK	= 0x0030
@@ -161,9 +161,176 @@ object PacketCodec {
     * with the OSC standard.
     */
    final case class MalformedPacket( name: String ) extends Exception( name, null )
+
+   object Builder {
+      def apply() : Builder = sys.error( "TODO" )
+   }
+   sealed trait Builder {
+      def build: PacketCodec
+   }
+
+   implicit def build( b: Builder ) : PacketCodec = b.build
 }
 
-class PacketCodec( mode: Int = PacketCodec.MODE_FAT_V1, var charsetName: String = "UTF-8" ) {
+trait PacketCodec {
+   /**
+    * The character set used to encode and decode strings.
+    * Unfortunately, this has not been specified in the OSC
+    * standard. We recommend to either restrict characters
+    * to 7-bit ascii range or to use UTF-8. The default
+    * implementation initially uses UTF-8.
+    */
+   def charsetName: String
+
+   /**
+    * Prints a textual representation of the given atom
+    * to the given print stream. Implementations should use the
+    * atom encoder suitable for the given value.
+    *
+    * @param   value       the atom to encode
+    * @param   stream      the stream to print on
+    * @param   nestCount   should only be used if the printing
+    *    requires line breaks. Indentation should be 2x nestCount
+    *    space characters.
+    */
+   @throws( classOf[ Exception ])
+   def printAtom( value: Any, stream: PrintStream, nestCount: Int ) : Unit
+
+   /**
+    * Encodes the given bundle
+    * into the provided <code>ByteBuffer</code>,
+    *	beginning at the buffer's current position. To write the
+    *	encoded packet, you will typically call <code>flip()</code>
+    *	on the buffer, then <code>write()</code> on the channel.
+    *
+    *  @param  b  <code>ByteBuffer</code> pointing right at
+    *					the beginning of the osc packet.
+    *					buffer position will be right after the end
+    *				   of the packet when the method returns.
+    */
+   @throws( classOf[ IOException ])
+   def encodeBundle( bndl: Bundle, b: ByteBuffer ) : Unit
+
+   /**
+	 *	Encodes the message onto the given <code>ByteBuffer</code>,
+	 *	beginning at the buffer's current position. To write the
+	 *	encoded message, you will typically call <code>flip()</code>
+	 *	on the buffer, then <code>write()</code> on the channel.
+	 *
+	 *  @param  b	<code>ByteBuffer</code> pointing right at
+	 *					the beginning of the osc packet.
+	 *					buffer position will be right after the end
+	 *					of the message when the method returns.
+	 */
+	@throws( classOf[ Exception ])
+	def encodeMessage( msg: Message, b: ByteBuffer ) : Unit
+
+   /**
+    *	Calculates the byte size of the encoded message
+    *
+    *	@return	the size of the OSC message in bytes
+    */
+   def getEncodedMessageSize( msg: Message ) : Int
+
+   /**
+    * Calculates the byte size of the encoded bundle.
+    * This method is final. The size is the sum
+    * of the bundle name, its timetag and the sizes of
+    * each bundle element.
+    *
+    * For contained messages,
+    * `getEncodedMessageSize` will be called, thus for
+    * implementations of `PacketCodec`, it is sufficient
+    * to overwrite `getEncodedMessageSize.
+    */
+	final def getEncodedBundleSize( bndl: Bundle ) : Int = {
+                 // overhead: name, timetag
+      bndl.foldLeft( 16 + (bndl.size << 2) )( (sum, p) => sum + p.getEncodedSize( this ))
+	}
+
+   /**
+    * Creates a new packet decoded
+    * from the ByteBuffer. This method tries
+    * to read a null terminated string at the
+    * beginning of the provided buffer. If it
+    * equals the bundle identifier, the
+    * <code>decode</code> of <code>Bundle</code>
+    * is called (which may recursively decode
+    * nested bundles), otherwise the one from
+    * <code>Message</code>.
+    *
+    * This method is final. For messages encountered,
+    * `decodeMessage` is called, , thus for
+    * implementations of `PacketCodec`, it is sufficient
+    * to overwrite `decodeMessage.
+    *
+    *  @param  b   <code>ByteBuffer</code> pointing right at
+    *				the beginning of the packet. the buffer's
+    *				limited should be set appropriately to
+    *				allow the complete packet to be read. when
+    *				the method returns, the buffer's position
+    *				is right after the end of the packet.
+    *
+    *  @return		new decoded OSC packet
+    */
+   @throws( classOf[ Exception ])
+   final def decode( b: ByteBuffer ) : Packet = {
+      try {
+         val name = readString( b )
+         skipToAlign( b )
+         if( name eq /* == */ "#bundle" ) {
+            decodeBundle( b )
+         } else {
+            decodeMessage( name, b )
+         }
+      } catch { case e: BufferUnderflowException =>
+         throw PacketCodec.BufferOverflow( "decode", e )
+      }
+   }
+
+   @throws( classOf[ Exception ])
+   protected final def decodeBundle( b: ByteBuffer ) : Bundle = {
+      try {
+         val totalLimit = b.limit
+         val p			   = new ListBuffer[ Packet ]
+         val timetag    = b.getLong()
+
+         while( b.hasRemaining ) {
+            val sz = b.getInt + b.position // msg size
+            if( sz > totalLimit ) throw new BufferUnderflowException
+            b.limit( sz )
+            p += decode( b )
+            b.limit( totalLimit )
+         }
+         Bundle( timetag, p: _* )
+		}
+		catch { case e : BufferUnderflowException =>
+			throw PacketCodec.BufferOverflow( Bundle.TAG, e )
+		}
+	}
+
+   /**
+    * Decodes a message with a given name and buffer holding
+    * its arguments.
+    *
+    * Implementations should be careful to
+    * catch potential instances of `BufferUnderflowException`
+    * or other runtime exception such as `IllegalArgumentException`
+    * and cast them into instances of `PacketCodec.Exception`,
+    * such that the caller can be safe to catch any error by
+    * matching against `PacketCodec.Exception`.
+    *
+    * @param   name  the name of the message which has already
+    *                been decoded when this method is called.
+    * @param   b     the buffer, positioned at the type tags
+    *                list (beginning with `','`).
+    */
+   @throws( classOf[ Exception ])
+   protected def decodeMessage( name: String, b: ByteBuffer ) : Message
+}
+
+final class PacketCodecX( mode: Int = PacketCodec.MODE_FAT_V1, var charsetName: String = "UTF-8" )
+extends PacketCodec {
    import PacketCodec._
 
 //	private[scalaosc] var atomEncoders	= Map.empty[ Class[_], Atom ]
@@ -224,26 +391,8 @@ class PacketCodec( mode: Int = PacketCodec.MODE_FAT_V1, var charsetName: String 
 //		atomEncoders += (clazz, a)
 //	}
 
-	/**
-	 *  Encodes the contents of this packet
-	 *  into the provided <code>ByteBuffer</code>,
-	 *	beginning at the buffer's current position. To write the
-	 *	encoded packet, you will typically call <code>flip()</code>
-	 *	on the buffer, then <code>write()</code> on the channel.
-	 *
-	 *  @param  b							<code>ByteBuffer</code> pointing right at
-	 *										the beginning of the osc packet.
-	 *										buffer position will be right after the end
-	 *										of the packet when the method returns.
-	 *
-	 *  @throws IOException					in case some of the
-	 *										writing procedures failed.
-	 */
-//	@throws( classOf[ IOException ])
-//	def encode( p: Packet, b: ByteBuffer ) : Unit = p.encode( this, b )
-
 	@throws( classOf[ IOException ])
-	private[ osc ] def encodeBundle( bndl: Bundle, b: ByteBuffer ) {
+	final def encodeBundle( bndl: Bundle, b: ByteBuffer ) {
       try {
    		b.put( Bundle.TAGB ).putLong( bndl.timetag )
 			bndl.foreach( p => {
@@ -262,23 +411,8 @@ class PacketCodec( mode: Int = PacketCodec.MODE_FAT_V1, var charsetName: String 
       }
 	}
 
-		/**
-	 *	Encodes the message onto the given <code>ByteBuffer</code>,
-	 *	beginning at the buffer's current position. To write the
-	 *	encoded message, you will typically call <code>flip()</code>
-	 *	on the buffer, then <code>write()</code> on the channel.
-	 *
-	 *  @param  b		<code>ByteBuffer</code> pointing right at
-	 *					the beginning of the osc packet.
-	 *					buffer position will be right after the end
-	 *					of the message when the method returns.
-	 *
-	 *  @throws IOException			in case some of the
-	 *								writing procedures failed
-	 *								(buffer overflow, illegal arguments).
-	 */
 	@throws( classOf[ Exception ])
-	private[ osc ] def encodeMessage( msg: Message, b: ByteBuffer ) {
+	final def encodeMessage( msg: Message, b: ByteBuffer ) {
       try {
          val numArgs = msg.size
          b.put( msg.name.getBytes )  // this one assumes 7-bit ascii only
@@ -302,14 +436,7 @@ class PacketCodec( mode: Int = PacketCodec.MODE_FAT_V1, var charsetName: String 
 		}
 	}
 	
-	/**
-	 *	Calculates the byte size of the encoded message
-	 *
-	 *	@return	the size of the OSC message in bytes
-	 *
-	 *	@throws IOException	if the message contains invalid arguments
-	 */
-	private[ osc ] def getEncodedMessageSize( msg: Message ) : Int = {
+	final def getEncodedMessageSize( msg: Message ) : Int = {
 		var result  = ((msg.name.length + 4) & ~3) + ((1+msg.length + 4) & ~3)
 		msg.foreach { v =>
          result += atomEncoders( v ).getEncodedSize( this, v )
@@ -317,16 +444,6 @@ class PacketCodec( mode: Int = PacketCodec.MODE_FAT_V1, var charsetName: String 
 		result
 	}
 
-   // sum of name, timetag and sizes of each bundle element
-	private[ osc ] def getEncodedBundleSize( bndl: Bundle ) : Int = {
-//		var result  = 16 + (bndl.length << 2) // name, timetag, size of each bundle element
-//		bndl.foreach( result += _.getEncodedSize( this ))
-//		result
-//
-                 // overhead: name, timetag
-      bndl.foldLeft( 16 + (bndl.size << 2) )( (sum, p) => sum + p.getEncodedSize( this ))
-	}
-	
 	/**
 	 * 	Adjusts the support mode for type tag handling. Usually
 	 * 	you specify the mode directly in the instantiation of
@@ -412,49 +529,7 @@ class PacketCodec( mode: Int = PacketCodec.MODE_FAT_V1, var charsetName: String 
 ////			putEncoder( Message.class, null );
 //		}
 	}
-	
-	/**
-	 *  Creates a new packet decoded
-	 *  from the ByteBuffer. This method tries
-	 *  to read a null terminated string at the
-	 *  beginning of the provided buffer. If it
-	 *  equals the bundle identifier, the
-	 *  <code>decode</code> of <code>Bundle</code>
-	 *  is called (which may recursively decode
-	 *  nested bundles), otherwise the one from
-	 *  <code>Message</code>.
-	 *
-	 *  @param  b   <code>ByteBuffer</code> pointing right at
-	 *				the beginning of the packet. the buffer's
-	 *				limited should be set appropriately to
-	 *				allow the complete packet to be read. when
-	 *				the method returns, the buffer's position
-	 *				is right after the end of the packet.
-	 *
-	 *  @return		new decoded OSC packet
-	 *  
-	 *  @throws IOException					in case some of the
-	 *										reading or decoding procedures failed.
-	 *  @throws BufferUnderflowException	in case of a parsing
-	 *										error that causes the
-	 *										method to read past the buffer limit
-	 *  @throws IllegalArgumentException	occurs in some cases of buffer underflow
-	 */
-   @throws( classOf[ Exception ])
-   def decode( b: ByteBuffer ) : Packet = {
-      try {
-         val name = readString( b )
-         skipToAlign( b )
-         if( name == "#bundle" ) {
-            decodeBundle( b )
-         } else {
-            decodeMessage( name, b )
-         }
-      } catch { case e: BufferUnderflowException =>
-         throw BufferOverflow( "decode", e )
-      }
-	}
-	
+
 	/**
 	 *  Calculates and returns
 	 *  the packet's size in bytes
@@ -494,27 +569,6 @@ class PacketCodec( mode: Int = PacketCodec.MODE_FAT_V1, var charsetName: String 
 //	@throws( classOf[ IOException ])
 //	protected def getMessageSize( msg: Message ) : Int = msg.encodedSize
 
-   @throws( classOf[ Exception ])
-   protected def decodeBundle( b: ByteBuffer ) : Bundle = {
-      try {
-         val totalLimit = b.limit
-         val p			   = new ListBuffer[ Packet ]
-         val timetag    = b.getLong()
-
-         while( b.hasRemaining ) {
-            val sz = b.getInt + b.position // msg size
-            if( sz > totalLimit ) throw new BufferUnderflowException
-            b.limit( sz )
-            p += decode( b )
-            b.limit( totalLimit )
-         }
-         Bundle( timetag, p: _* )
-		}
-		catch { case e : BufferUnderflowException =>
-			throw BufferOverflow( Bundle.TAG, e )
-		}
-	}
-
 	/**
 	 *  Creates a new message with arguments decoded
 	 *  from the ByteBuffer. Usually you call
@@ -540,7 +594,7 @@ class PacketCodec( mode: Int = PacketCodec.MODE_FAT_V1, var charsetName: String 
 	 *  @throws IllegalArgumentException	occurs in some cases of buffer underflow
 	 */
    @throws( classOf[ Exception ])
-   protected def decodeMessage( name: String, b: ByteBuffer ) : Message = {
+   protected final def decodeMessage( name: String, b: ByteBuffer ) : Message = {
       try {
          if( b.get() != 0x2C ) throw MalformedPacket( name )
          val b2      = b.slice	// faster to slice than to reposition all the time!
@@ -569,5 +623,9 @@ class PacketCodec( mode: Int = PacketCodec.MODE_FAT_V1, var charsetName: String 
       catch { case e: BufferUnderflowException =>
          throw BufferOverflow( name, e )
       }
+   }
+
+   final def printAtom( value: Any, stream: PrintStream, nestCount: Int ) {
+      atomEncoders( value ).printTextOn( this, value, stream, nestCount )
    }
 }

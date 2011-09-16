@@ -172,12 +172,12 @@ object Channel {
                printStream.print( prefix )
                dumpMode match {
                   case Dump.Text =>
-                     Packet.printTextOn( codec, printStream, p )
+                     Packet.printTextOn( p, codec, printStream )
                   case Dump.Hex =>
-                     Packet.printHexOn( printStream, buf )
+                     Packet.printHexOn( buf, printStream )
                   case Dump.Both =>
-                     Packet.printTextOn( codec, printStream, p )
-                     Packet.printHexOn( printStream, buf )
+                     Packet.printTextOn( p, codec, printStream )
+                     Packet.printHexOn( buf, printStream )
                   case _ =>   // satisfy compiler
                }
             }
