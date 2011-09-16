@@ -66,7 +66,7 @@ import java.io.{PrintStream, IOException}
  *	@since		NetUtil 0.35
  */
 object PacketCodec {
-	lazy val default = new PacketCodecX
+	val default: PacketCodec = Builder().build
   	
 	val MODE_READ_DOUBLE			         = 0x0001
 	val MODE_READ_DOUBLE_AS_FLOAT	      = 0x0002
@@ -163,13 +163,354 @@ object PacketCodec {
    final case class MalformedPacket( name: String ) extends Exception( name, null )
 
    object Builder {
-      def apply() : Builder = sys.error( "TODO" )
+      /**
+       * Creates a new codec builder, initialized
+       * to strict OSC 1_0 spec.
+       */
+      def apply() : Builder = new BuilderImpl
    }
    sealed trait Builder {
       def build: PacketCodec
+
+      var charsetName = "UTF-8"
+
+      /**
+       * Resets the builder to strict OSC 1.0 spec,
+       * meaning that it accepts only the pairs
+       * `Int` - `i`, `Float` - `f`, `String` - `s`,
+       * and `ByteBuffer` - `b`.
+       */
+      def v1_0() : Builder
+
+      /**
+       * Resets the builder to strict OSC 1.1 spec,
+       * meaning that it accepts only the OSC 1.0 pairs,
+       * as well as `Boolean` - `T` and `F`, `None` - `N`,
+       * `Unit` - `I`, `java.util.Date` - `t`.
+       *
+       * Note that this does not affect the way that
+       * packets are encoded with on a TCP stream
+       * (see the `TCP` documentation for more information).
+       */
+      final def v1_1() : Builder = v1_0().booleans().none().impulse().timetags()
+
+      /**
+       * Resets the builder to SuperCollider server spec.
+       * That is, strict OSC 1.0, plus down-casting of
+       * 64-bit numbers to 32-bit, encoding booleans as integers,
+       * and packet arguments as blobs, and.
+       */
+      final def scsynth() : Builder =
+         v1_0().doubleToSinglePrecision().booleansAsInts().packetsAsBlobs()
+
+      // ---- optional OSC 1.0 types ----
+
+      def doubles() : Builder
+      def longs() : Builder
+      final def doublePrecision() : Builder = doubles().longs()
+
+      def symbols() : Builder
+      def chars() : Builder
+      def arrays() : Builder
+
+      // ---- OSC 1.1 types ----
+
+      def booleans() : Builder
+      def none() : Builder
+      def impulse() : Builder
+      def timetags() : Builder
+
+      // ---- SuperCollider types ----
+      def doublesAsFloats() : Builder
+      def longsAsInts() : Builder
+      final def doubleToSinglePrecision() : Builder = doublesAsFloats().longsAsInts()
+      def booleansAsInts() : Builder
+      def packetsAsBlobs() : Builder
    }
 
    implicit def build( b: Builder ) : PacketCodec = b.build
+
+   private final class BuilderImpl extends Builder {
+      var useDoubles       = false
+      var useLongs         = false
+      var doubleToFloat    = false
+      var longToInt        = false
+      var useSymbols       = false
+      var useChars         = false
+      var useArrays        = false
+      var useBooleans      = false
+      var booleanToInt     = false
+      var useNone          = false
+      var useImpulse       = false
+      var useTimetags      = false
+      var usePackets       = false
+
+      def v1_0 = {
+         useDoubles        = false
+         useLongs          = false
+         doubleToFloat     = false
+         longToInt         = false
+         useSymbols        = false
+         useChars          = false
+         useArrays         = false
+         useBooleans       = false
+         booleanToInt      = false
+         useNone           = false
+         useImpulse        = false
+         useTimetags       = false
+         usePackets        = false
+         this
+      }
+
+      def doubles() = {
+         useDoubles        = true
+         doubleToFloat     = false
+         this
+      }
+
+      def longs() = {
+         useLongs          = true
+         longToInt         = false
+         this
+      }
+
+      def symbols()  = {
+         useSymbols        = true
+         this
+      }
+
+      def chars() = {
+         useChars          = true
+         this
+      }
+
+      def arrays() = {
+         useArrays         = true
+         this
+      }
+
+      def booleans() = sys.error( "TODO" )
+      def none() = sys.error( "TODO" )
+      def impulse() = sys.error( "TODO" )
+      def timetags() = sys.error( "TODO" )
+
+      // ---- SuperCollider types ----
+      def doublesAsFloats() = sys.error( "TODO" )
+      def longsAsInts() = sys.error( "TODO" )
+      def booleansAsInts() = sys.error( "TODO" )
+      def packetsAsBlobs() = sys.error( "TODO" )
+
+      def build: PacketCodec = new Impl( charsetName )
+   }
+
+   private final class Impl( val charsetName: String )
+   extends PacketCodec {
+      val mode: Int = PacketCodec.MODE_FAT_V1
+
+      override def toString = "PacketCodec"
+
+//	private[scalaosc] var atomEncoders	= Map.empty[ Class[_], Atom ]
+      private var atomDecoders = IntMap.empty[ Atom ]
+
+      private val atomEncoders: Any => Atom = {
+         case x: Int          => Atom.Int
+         case x: Float        => Atom.Float
+         case x: String       => Atom.String
+         case x: ByteBuffer   => Atom.Blob
+
+         // XXX use 64-bit fat types
+         // here until encoder list updating is implemented
+
+//		if( (mode & MODE_WRITE_PACKET_AS_BLOB) != 0 ) {
+            case x: Packet  => Atom.Packet
+//		}
+
+         case x: Long         => Atom.Long
+         case x: Double       => Atom.Double
+         case x               => throw UnsupportedAtom( x.getClass.getName )
+      }
+
+      // ---- constructor ----
+      // OSC version 1.0 strict type tag support
+      atomDecoders += 0x69 -> Atom.Int
+//	atomEncoders += classOf[ Int ] -> IntAtom
+//	atomEncoders += classOf[ java.lang.Integer ] -> IntAtom
+      atomDecoders += 0x66 -> Atom.Float
+//	atomEncoders += classOf[ Float ] -> FloatAtom
+//	atomEncoders += classOf[ java.lang.Float ] -> FloatAtom
+      atomDecoders += 0x73 -> Atom.String
+// atomEncoders += classOf[ String ] -> StringAtom
+      atomDecoders += 0x62 -> Atom.Blob
+//	atomEncoders += classOf[ ByteBuffer ] -> BlobAtom
+
+//	setStringCharsetCodec( charset )
+      setSupportMode( mode )
+
+      def putDecoder( typeTag: Byte, a: Atom ) {
+         atomDecoders += (typeTag, a)
+      }
+
+      @throws( classOf[ IOException ])
+      final def encodeBundle( bndl: Bundle, b: ByteBuffer ) {
+         try {
+            b.put( Bundle.TAGB ).putLong( bndl.timetag )
+            bndl.foreach( p => {
+               b.mark()
+               b.putInt( 0 )			// calculate size later
+               val pos1 = b.position
+//				encode( p, b )
+               p.encode( this, b )
+               val pos2 = b.position
+               b.reset()
+               b.putInt( pos2 - pos1 ).position( pos2 )
+            })
+         }
+         catch { case e: BufferOverflowException =>
+            throw PacketCodec.BufferOverflow( bndl.name, e )
+         }
+      }
+
+      @throws( classOf[ Exception ])
+      final def encodeMessage( msg: Message, b: ByteBuffer ) {
+         try {
+            val numArgs = msg.size
+            b.put( msg.name.getBytes )  // this one assumes 7-bit ascii only
+            terminateAndPadToAlign( b )
+            // it's important to slice at a 4-byte boundary because
+            // the position will become 0 and terminateAndPadToAlign
+            // will be malfunctioning otherwise
+            val b2 = b.slice
+            b2.put( 0x2C.toByte )		// ',' to announce type string
+            val pos = b.position + ((numArgs + 5) & ~3)
+            if( pos > b.limit ) throw new BufferOverflowException
+            b.position( pos )	// comma + numArgs + zero + align
+            msg.foreach { v =>
+               val a = atomEncoders( v )
+               a.encode( this, v, b2, b )
+            }
+            terminateAndPadToAlign( b2 )
+         }
+         catch { case e: BufferOverflowException =>
+            throw BufferOverflow( msg.name, e )
+         }
+      }
+
+      final def getEncodedMessageSize( msg: Message ) : Int = {
+         var result  = ((msg.name.length + 4) & ~3) + ((1+msg.length + 4) & ~3)
+         msg.foreach { v =>
+            result += atomEncoders( v ).getEncodedSize( this, v )
+         }
+         result
+      }
+
+      def setSupportMode( mode: Int ) {
+         (mode & MODE_READ_DOUBLE_MASK) match {
+            case MODE_STRICT_V1 => atomDecoders -= 0x64	// 'd' double
+            case MODE_READ_DOUBLE => atomDecoders += 0x64 -> Atom.Double
+            case MODE_READ_DOUBLE_AS_FLOAT => atomDecoders += 0x64 -> Atom.DoubleAsFloat
+            case _ => throw new IllegalArgumentException( String.valueOf( mode ))
+         }
+
+         (mode & MODE_READ_LONG_MASK) match {
+            case MODE_STRICT_V1 => atomDecoders -= 0x68	// 'h' long
+            case MODE_READ_LONG => atomDecoders += 0x68 -> Atom.Long
+            case MODE_READ_LONG_AS_INTEGER => atomDecoders += 0x68 -> Atom.LongAsInt
+            case _ => throw new IllegalArgumentException( String.valueOf( mode ))
+         }
+
+//		(mode & MODE_WRITE_DOUBLE_MASK) match {
+//			case MODE_STRICT_V1 => {
+//				atomEncoders -= classOf[ Double ]
+//				atomEncoders -= classOf[ java.lang.Double ]
+////				putEncoder( Double.class, null );
+//			}
+//			case MODE_WRITE_DOUBLE => {
+//				atomEncoders += classOf[ Double ] -> DoubleAtom
+//				atomEncoders += classOf[ java.lang.Double ] -> DoubleAtom
+////				putEncoder( Double.class, new DoubleAtom() );
+//			}
+//			case MODE_WRITE_DOUBLE_AS_FLOAT => {
+//				atomEncoders += classOf[ Double ] -> DoubleAsFloatAtom
+//				atomEncoders += classOf[ java.lang.Double ] -> DoubleAsFloatAtom
+////				putEncoder( Double.class, new DoubleAsFloatAtom() );
+//			}
+//			case _ => throw new IllegalArgumentException( String.valueOf( mode ))
+//		}
+//
+//		(mode & MODE_WRITE_LONG_MASK) match {
+//			case MODE_STRICT_V1 => {
+//				atomEncoders -= classOf[ Long ]
+//				atomEncoders -= classOf[ java.lang.Long ]
+////				putEncoder( Long.class, null );
+//			}
+//			case MODE_WRITE_LONG => {
+//				atomEncoders += classOf[ Long ] -> LongAtom
+//				atomEncoders += classOf[ java.lang.Long ] -> LongAtom
+////				putEncoder( Long.class, new LongAtom() );
+//			}
+//			case MODE_WRITE_LONG_AS_INTEGER => {
+//				atomEncoders += classOf[ Long ] -> LongAsIntAtom
+//				atomEncoders += classOf[ java.lang.Long ] -> LongAsIntAtom
+////				putEncoder( Long.class, new LongAsIntAtom() );
+//			}
+//			case _ => throw new IllegalArgumentException( String.valueOf( mode ))
+//		}
+
+         if( (mode & MODE_READ_SYMBOL_AS_STRING) != 0 ) {
+            atomDecoders += 0x53 -> Atom.String // 'S' symbol
+         } else {
+            atomDecoders -= 0x53
+         }
+
+//		if( (mode & MODE_WRITE_PACKET_AS_BLOB) != 0 ) {
+//			atomEncoders += classOf[ Bundle ] -> PacketAtom
+//			atomEncoders += classOf[ Message ] -> PacketAtom
+////			putEncoder( Bundle.class, a );
+////			putEncoder( Message.class, a );
+//		} else {
+//			atomEncoders -= classOf[ Bundle ]
+//			atomEncoders -= classOf[ Message ]
+////			putEncoder( Bundle.class, null );
+////			putEncoder( Message.class, null );
+//		}
+      }
+
+      @throws( classOf[ Exception ])
+      protected final def decodeMessage( name: String, b: ByteBuffer ) : Message = {
+         try {
+            if( b.get() != 0x2C ) throw MalformedPacket( name )
+            val b2      = b.slice	// faster to slice than to reposition all the time!
+            val pos1	   = b.position
+            while( b.get() != 0x00 ) ()
+            val numArgs	= b.position - pos1 - 1
+            // note: Array filling is much faster than ListBuffer
+            // (with numArgs == 6, the whole thing should be approx. 4x faster)
+//         val args	   = new ListBuffer[ Any ]
+            val args	   = new Array[ Any ]( numArgs )
+            skipToAlign( b )
+
+            var argIdx = 0
+            while( argIdx < numArgs ) {
+               val typ = b2.get()
+               if( !atomDecoders.contains( typ )) throw UnsupportedAtom( typ.toChar.toString )
+               val dec = atomDecoders( typ )
+//            } catch { // note: IntMap throws RuntimeException, _not_ NoSuchElementException!!!
+//               case e => throw UnsupportedAtom( typ.toChar.toString )
+//            }
+               args( argIdx ) = dec.decode( this, typ, b )
+               argIdx += 1
+            }
+            Message( name, args: _* )
+         }
+         catch { case e: BufferUnderflowException =>
+            throw BufferOverflow( name, e )
+         }
+      }
+
+      final def printAtom( value: Any, stream: PrintStream, nestCount: Int ) {
+         atomEncoders( value ).printTextOn( this, value, stream, nestCount )
+      }
+   }
 }
 
 trait PacketCodec {
@@ -327,305 +668,4 @@ trait PacketCodec {
     */
    @throws( classOf[ Exception ])
    protected def decodeMessage( name: String, b: ByteBuffer ) : Message
-}
-
-final class PacketCodecX( mode: Int = PacketCodec.MODE_FAT_V1, var charsetName: String = "UTF-8" )
-extends PacketCodec {
-   import PacketCodec._
-
-//	private[scalaosc] var atomEncoders	= Map.empty[ Class[_], Atom ]
-   private[osc] var atomDecoders	= IntMap.empty[ Atom ]
-
-   private[osc] val atomEncoders: Any => Atom = {
-      case x: Int          => Atom.Int
-      case x: Float        => Atom.Float
-      case x: String       => Atom.String
-      case x: ByteBuffer   => Atom.Blob
-
-      // XXX use 64-bit fat types
-      // here until encoder list updating is implemented
-
-//		if( (mode & MODE_WRITE_PACKET_AS_BLOB) != 0 ) {
-         case x: Packet  => Atom.Packet
-//		}
-
-      case x: Long         => Atom.Long
-      case x: Double       => Atom.Double
-      case x               => throw UnsupportedAtom( x.getClass.getName )
-   }
-
-	// ---- constructor ----
-	// OSC version 1.0 strict type tag support
-   atomDecoders += 0x69 -> Atom.Int
-//	atomEncoders += classOf[ Int ] -> IntAtom
-//	atomEncoders += classOf[ java.lang.Integer ] -> IntAtom
-   atomDecoders += 0x66 -> Atom.Float
-//	atomEncoders += classOf[ Float ] -> FloatAtom
-//	atomEncoders += classOf[ java.lang.Float ] -> FloatAtom
-   atomDecoders += 0x73 -> Atom.String
-// atomEncoders += classOf[ String ] -> StringAtom
-   atomDecoders += 0x62 -> Atom.Blob
-//	atomEncoders += classOf[ ByteBuffer ] -> BlobAtom
-
-//	setStringCharsetCodec( charset )
-	setSupportMode( mode )
-
-	/**
-	 * 	Registers an atomic decoder with the packet codec. This
-	 * 	decoder is called whenever an OSC message with the
-	 * 	given typetag is encountered.
-	 * 
-	 *	@param typeTag	the typetag which is to be decoded with the
-	 *					new <code>Atom</code>. <code>typeTag</code>
-	 *					must be in the ASCII value range 0 to 127.
-	 *	@param a		the decoder to use
-	 *
-	 *	@see	PacketCodec.Atom
-	 */
-	def putDecoder( typeTag: Byte, a: Atom ) {
-		atomDecoders += (typeTag, a)
-	}
-
-// ??? why doesn't that get compiled ???
-//	def putEncoder( clazz: Class[_], a: Atom ) {
-//		atomEncoders += (clazz, a)
-//	}
-
-	@throws( classOf[ IOException ])
-	final def encodeBundle( bndl: Bundle, b: ByteBuffer ) {
-      try {
-   		b.put( Bundle.TAGB ).putLong( bndl.timetag )
-			bndl.foreach( p => {
-				b.mark()
-				b.putInt( 0 )			// calculate size later
-				val pos1 = b.position
-//				encode( p, b )
-				p.encode( this, b )
-				val pos2 = b.position
-				b.reset()
-				b.putInt( pos2 - pos1 ).position( pos2 )			
-			})
-		}
-      catch { case e: BufferOverflowException =>
-         throw PacketCodec.BufferOverflow( bndl.name, e )
-      }
-	}
-
-	@throws( classOf[ Exception ])
-	final def encodeMessage( msg: Message, b: ByteBuffer ) {
-      try {
-         val numArgs = msg.size
-         b.put( msg.name.getBytes )  // this one assumes 7-bit ascii only
-         terminateAndPadToAlign( b )
-         // it's important to slice at a 4-byte boundary because
-         // the position will become 0 and terminateAndPadToAlign
-         // will be malfunctioning otherwise
-         val b2 = b.slice
-         b2.put( 0x2C.toByte )		// ',' to announce type string
-         val pos = b.position + ((numArgs + 5) & ~3)
-         if( pos > b.limit ) throw new BufferOverflowException
-         b.position( pos )	// comma + numArgs + zero + align
-			msg.foreach { v =>
-				val a = atomEncoders( v )
-				a.encode( this, v, b2, b )
-			}
-         terminateAndPadToAlign( b2 )
-		}
-		catch { case e: BufferOverflowException =>
-         throw BufferOverflow( msg.name, e )
-		}
-	}
-	
-	final def getEncodedMessageSize( msg: Message ) : Int = {
-		var result  = ((msg.name.length + 4) & ~3) + ((1+msg.length + 4) & ~3)
-		msg.foreach { v =>
-         result += atomEncoders( v ).getEncodedSize( this, v )
-		}
-		result
-	}
-
-	/**
-	 * 	Adjusts the support mode for type tag handling. Usually
-	 * 	you specify the mode directly in the instantiation of
-	 * 	<code>PacketCodec</code>, but you can change it later
-	 * 	using this method.
-	 * 
-	 *	@param	mode	the new mode to use. A flag field combination
-	 *					of <code>MODE_READ_DOUBLE</code> or
-	 *					<code>MODE_READ_DOUBLE_AS_FLOAT</code> etc.,
-	 *					or a ready made combination such as
-	 *					<code>MODE_FAT_V1</code>.
-	 *
-	 *	@see	#PacketCodec( int )
-	 */
-	def setSupportMode( mode: Int ) {
-		(mode & MODE_READ_DOUBLE_MASK) match {
-			case MODE_STRICT_V1 => atomDecoders -= 0x64	// 'd' double
-			case MODE_READ_DOUBLE => atomDecoders += 0x64 -> Atom.Double
-			case MODE_READ_DOUBLE_AS_FLOAT => atomDecoders += 0x64 -> Atom.DoubleAsFloat
-			case _ => throw new IllegalArgumentException( String.valueOf( mode ))
-		}
-		
-		(mode & MODE_READ_LONG_MASK) match {
-			case MODE_STRICT_V1 => atomDecoders -= 0x68	// 'h' long
-			case MODE_READ_LONG => atomDecoders += 0x68 -> Atom.Long
-			case MODE_READ_LONG_AS_INTEGER => atomDecoders += 0x68 -> Atom.LongAsInt
-			case _ => throw new IllegalArgumentException( String.valueOf( mode ))
-		}
-
-//		(mode & MODE_WRITE_DOUBLE_MASK) match {
-//			case MODE_STRICT_V1 => {
-//				atomEncoders -= classOf[ Double ]
-//				atomEncoders -= classOf[ java.lang.Double ]
-////				putEncoder( Double.class, null );
-//			}
-//			case MODE_WRITE_DOUBLE => {
-//				atomEncoders += classOf[ Double ] -> DoubleAtom
-//				atomEncoders += classOf[ java.lang.Double ] -> DoubleAtom
-////				putEncoder( Double.class, new DoubleAtom() );
-//			}
-//			case MODE_WRITE_DOUBLE_AS_FLOAT => {
-//				atomEncoders += classOf[ Double ] -> DoubleAsFloatAtom
-//				atomEncoders += classOf[ java.lang.Double ] -> DoubleAsFloatAtom
-////				putEncoder( Double.class, new DoubleAsFloatAtom() );
-//			}
-//			case _ => throw new IllegalArgumentException( String.valueOf( mode ))
-//		}
-//		
-//		(mode & MODE_WRITE_LONG_MASK) match {
-//			case MODE_STRICT_V1 => {
-//				atomEncoders -= classOf[ Long ]
-//				atomEncoders -= classOf[ java.lang.Long ]
-////				putEncoder( Long.class, null );
-//			}
-//			case MODE_WRITE_LONG => {
-//				atomEncoders += classOf[ Long ] -> LongAtom
-//				atomEncoders += classOf[ java.lang.Long ] -> LongAtom
-////				putEncoder( Long.class, new LongAtom() );
-//			}
-//			case MODE_WRITE_LONG_AS_INTEGER => {
-//				atomEncoders += classOf[ Long ] -> LongAsIntAtom
-//				atomEncoders += classOf[ java.lang.Long ] -> LongAsIntAtom
-////				putEncoder( Long.class, new LongAsIntAtom() );
-//			}
-//			case _ => throw new IllegalArgumentException( String.valueOf( mode ))
-//		}
-		
-		if( (mode & MODE_READ_SYMBOL_AS_STRING) != 0 ) {
-			atomDecoders += 0x53 -> Atom.String // 'S' symbol
-		} else {
-			atomDecoders -= 0x53
-		}
-
-//		if( (mode & MODE_WRITE_PACKET_AS_BLOB) != 0 ) {
-//			atomEncoders += classOf[ Bundle ] -> PacketAtom
-//			atomEncoders += classOf[ Message ] -> PacketAtom
-////			putEncoder( Bundle.class, a );
-////			putEncoder( Message.class, a );
-//		} else {
-//			atomEncoders -= classOf[ Bundle ]
-//			atomEncoders -= classOf[ Message ]
-////			putEncoder( Bundle.class, null );
-////			putEncoder( Message.class, null );
-//		}
-	}
-
-	/**
-	 *  Calculates and returns
-	 *  the packet's size in bytes
-	 *
-	 *  @return the size of the packet in bytes, including the initial
-	 *			osc command and aligned to 4-byte boundary. this
-	 *			is the amount of bytes written by the <code>encode</code>
-	 *			method.
-	 *	 
-	 *  @throws IOException if an error occurs during the calculation
-	 */
-//	@throws( classOf[ IOException ])
-//	def getSize( p: Packet ) : Int = {
-//		if( p.isInstanceOf[ Bundle ]) {
-//			getBundleSize( p.asInstanceOf[ Bundle ])
-//		} else {
-//			getMessageSize( p.asInstanceOf[ Message ])
-//		}
-//	}
-	
-//	@throws( classOf[ IOException ])
-//	protected def getBundleSize( bndl: Bundle ) : Int = {
-//		var result = /* PacketCodec.TAGB.length + 8 */ 16 + (bndl.packets.length << 2) // name, timetag, size of each bundle element
-//		for( p <- bndl.packets ) {
-//			result += getSize( p )
-//		}
-//		result
-//	}
-	
-	/**
-	 *	Calculates the byte size of the encoded message
-	 *
-	 *	@return	the size of the OSC message in bytes
-	 *
-	 *	@throws IOException	if the message contains invalid arguments
-	 */
-//	@throws( classOf[ IOException ])
-//	protected def getMessageSize( msg: Message ) : Int = msg.encodedSize
-
-	/**
-	 *  Creates a new message with arguments decoded
-	 *  from the ByteBuffer. Usually you call
-	 *  <code>decode</code> from the <code>Packet</code>
-	 *  superclass which will invoke this method of
-	 *  it finds an OSC message.
-	 *
-	 *  @param  b   ByteBuffer pointing right at
-	 *				the beginning of the type
-	 *				declaration section of the
-	 *				OSC message, i.e. the name
-	 *				was skipped before.
-	 *
-	 *  @return		new OSC message representing
-	 *				the received message described
-	 *				by the ByteBuffer.
-	 *  
-	 *  @throws IOException					in case some of the
-	 *										reading or decoding procedures failed.
-	 *  @throws BufferUnderflowException	in case of a parsing
-	 *										error that causes the
-	 *										method to read past the buffer limit
-	 *  @throws IllegalArgumentException	occurs in some cases of buffer underflow
-	 */
-   @throws( classOf[ Exception ])
-   protected final def decodeMessage( name: String, b: ByteBuffer ) : Message = {
-      try {
-         if( b.get() != 0x2C ) throw MalformedPacket( name )
-         val b2      = b.slice	// faster to slice than to reposition all the time!
-         val pos1	   = b.position
-         while( b.get() != 0x00 ) ()
-         val numArgs	= b.position - pos1 - 1
-         // note: Array filling is much faster than ListBuffer
-         // (with numArgs == 6, the whole thing should be approx. 4x faster)
-//         val args	   = new ListBuffer[ Any ]
-         val args	   = new Array[ Any ]( numArgs )
-         skipToAlign( b )
-
-         var argIdx = 0
-         while( argIdx < numArgs ) {
-            val typ = b2.get()
-            if( !atomDecoders.contains( typ )) throw UnsupportedAtom( typ.toChar.toString )
-            val dec = atomDecoders( typ )
-//            } catch { // note: IntMap throws RuntimeException, _not_ NoSuchElementException!!!
-//               case e => throw UnsupportedAtom( typ.toChar.toString )
-//            }
-            args( argIdx ) = dec.decode( this, typ, b )
-            argIdx += 1
-         }
-         Message( name, args: _* )
-      }
-      catch { case e: BufferUnderflowException =>
-         throw BufferOverflow( name, e )
-      }
-   }
-
-   final def printAtom( value: Any, stream: PrintStream, nestCount: Int ) {
-      atomEncoders( value ).printTextOn( this, value, stream, nestCount )
-   }
 }

@@ -25,7 +25,7 @@
 
 package de.sciss.osc
 
-import java.io.{ IOException, PrintStream }
+import java.io.PrintStream
 import java.nio.{ BufferOverflowException, BufferUnderflowException, ByteBuffer }
 import collection.LinearSeqLike
 import collection.mutable.Builder
@@ -33,8 +33,8 @@ import java.text.{NumberFormat, SimpleDateFormat, DecimalFormat}
 import java.util.Locale
 
 object Packet {
-	private val HEX				= "0123456789ABCDEF".getBytes
-  	private val PAD				= new Array[ Byte ]( 4 )
+	private val HEX   = "0123456789ABCDEF".getBytes
+  	private val PAD   = new Array[ Byte ]( 4 )
  
 	/**
 	 *	Prints a text version of a packet to a given stream.
@@ -116,36 +116,36 @@ object Packet {
       }
    }
 	
-	def printEscapedStringOn( stream: PrintStream, str: String ) {
-		stream.print( '\"' )
-		val numChars = str.length
-		var i = 0
-		while( i < numChars ) {
-			val ch = str.charAt( i )
-			stream.print(
-			    if( ch >= 32 ) {
-			    	if( ch < 0x80 ) {
-			    		if( ch == '"' ) "\\\"" else if( ch == '\\' ) "\\\\" else ch
-			    	} else {
-			    		(if( ch < 0x100 ) "\\u00" else if( ch < 0x1000) "\\u0" else "\\u") +
-							Integer.toHexString( ch ).toUpperCase
-			    	}
-			    } else {
-			    	ch match {
-                		case '\b' => "\\b"
-                		case '\n' => "\\n"
-                		case '\t' => "\\t"
-                		case '\f' => "\\f"
-                		case '\r' => "\\r"
-                		case _ => (if( ch > 0xF) "\\u00" else "\\u000") +
-                			Integer.toHexString( ch ).toUpperCase
-					}
-                }
-			)
-			i += 1
-        }
-		stream.print( '\"' )
-	}
+   def printEscapedStringOn( stream: PrintStream, str: String ) {
+      stream.print( '\"' )
+      val numChars = str.length
+      var i = 0
+      while( i < numChars ) {
+         val ch = str.charAt( i )
+         stream.print(
+            if( ch >= 32 ) {
+               if( ch < 0x80 ) {
+                  if( ch == '"' ) "\\\"" else if( ch == '\\' ) "\\\\" else ch
+               } else {
+                  (if( ch < 0x100 ) "\\u00" else if( ch < 0x1000) "\\u0" else "\\u") +
+                  Integer.toHexString( ch ).toUpperCase
+               }
+            } else {
+               ch match {
+                     case '\b' => "\\b"
+                     case '\n' => "\\n"
+                     case '\t' => "\\t"
+                     case '\f' => "\\f"
+                     case '\r' => "\\r"
+                     case _ => (if( ch > 0xF) "\\u00" else "\\u000") +
+                        Integer.toHexString( ch ).toUpperCase
+               }
+            }
+         )
+         i += 1
+      }
+      stream.print( '\"' )
+   }
 
 	/**
 	 *  Reads a null terminated string from

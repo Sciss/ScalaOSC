@@ -256,6 +256,15 @@ case object UDP extends Transport.Net {
 //   }
 }
 
+/**
+ * `TCP` as a transport for OSC. At the moment, packets
+ * are encoded in the OSC 1.0 format, regardless of
+ * of the configuration's packet codec. That means
+ * the 32-bit Int size followed by the actual plain packet is
+ * encoded. The OSC 1.1 draft suggests SLIP
+ * (cf. http://www.faqs.org/rfcs/rfc1055.html).
+ * This may be configurable in the future.
+ */
 case object TCP extends Transport.Net {
    val name = "TCP"
 
