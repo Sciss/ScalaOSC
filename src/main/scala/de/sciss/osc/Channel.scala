@@ -106,7 +106,7 @@ object Channel {
 
    private[osc] trait NetConfigBuilderImpl
    extends ConfigBuilderImpl with NetConfigBuilder {
-      private var localSocket       = new InetSocketAddress( 0 )
+      private var localSocket       = new InetSocketAddress( "0.0.0.0", 0 )
       final def localSocketAddress  = localSocket
       final def localSocketAddress_=( addr: InetSocketAddress ) { localSocket = addr }
 
