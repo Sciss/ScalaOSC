@@ -49,6 +49,7 @@ object Receiver {
          try {
             buf.flip()
             val p = codec.decode( buf )
+            dumpPacket( p )
             try {
                action.apply( p )
             } catch {
@@ -85,6 +86,7 @@ object Receiver {
          if( sender != null ) try {
             buf.flip()
             val p = codec.decode( buf )
+            dumpPacket( p )
             try {
                action.apply( p, sender )
             } catch {

@@ -27,7 +27,6 @@ package de.sciss.osc
 
 import java.io.IOException
 import java.net.InetAddress
-import Implicits._
 
 private[osc] object Test {
 //	def codec() {
@@ -69,6 +68,8 @@ private[osc] object Test {
 //	}
 	
    def receiver() {
+      import Implicits._
+
       println( """
 Receiver test
 
@@ -95,13 +96,15 @@ Receiver test
    }
   
    def transmitter( transport: Transport.Net ) {
+      import Implicits._
+
       println(
 """Transmitter tests
    assume that scsynth is running on
    localhost """ + transport.name + """ port 57110
 """ )
 
-      val tgt  = InetAddress.getLocalHost -> 57110
+      val tgt  = localhost -> 57110
       val trns = transport match {
          case UDP => UDP.Transmitter( tgt )
          case TCP => TCP.Transmitter( tgt )
@@ -133,12 +136,18 @@ Receiver test
 //   def client( transport: )
 
    def tcpClient() {
-      val c: Client = TCP.Client( "127.0.0.1" -> 57110 )
+      import Implicits._
+//      val c = TCP.Client( "127.0.0.1" -> 57110 )
+      val c = TCP.Client( localhost -> 57110 )
       c.connect()
       c.dump()
       c ! Message( "/dumpOSC", 1 )
       c ! Message( "/notify", 1 )
-      c.action = println( _ )
+      c.action = p => {
+         println( p )
+         c ! Message( "/dumpOSC", 0 )
+         System.exit( 0 )
+      }
    }
 
    def pingPong() {
