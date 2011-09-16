@@ -218,9 +218,9 @@ case object UDP extends Transport.Net {
 
          protected def receive() {
             buf.clear()
-println( "DIRECTED RECEIVER AWAIT" )
+//println( "DIRECTED RECEIVER AWAIT" )
             val sender = channel.receive( buf )
-println( "DIRECTED RECEIVER : " + sender )
+//println( "DIRECTED RECEIVER : " + sender )
             if( sender != null ) flipDecodeDispatch()
          }
       }

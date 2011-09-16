@@ -158,27 +158,28 @@ Receiver test
 println( "pong local is " + pong.localSocketAddress )
 
       val t = new java.util.Timer()
-      def delay( secs: Double )( code: => Unit ) {
-         t.schedule( new java.util.TimerTask { def run { code }}, (secs * 1000).toInt )
+      def delay( code: => Unit ) {
+         t.schedule( new java.util.TimerTask { def run { code }}, 500 )
       }
 
       pingR.action = {
-         case (m @ osc.Message( name, cnt: Int ), sender) =>
-            println( "Ping received " + m + " from " + sender )
-//            delay( 1 ) {
-               pingT.send( osc.Message( "PONG", cnt ), pong.localSocketAddress /* sender */)
-//            }
+         case (m @ osc.Message( "/ping", cnt: Int ), sender) =>
+            println( "Ping received " + m )
+            delay {
+               pingT.send( osc.Message( "/pong", cnt ), pong.localSocketAddress /* sender */)
+            }
          case _ =>
       }
       var cnt = 0
       def act() {
          cnt += 1
          if( cnt <= 10 ) {
-            delay( 1 ) { pong ! osc.Message( "PING", cnt )}
+            delay { pong ! osc.Message( "/ping", cnt )}
          } else {
             pingT.close()
             pingR.close()
             pong.close()
+            System.exit( 0 )
          }
       }
       pong.action = packet => {
@@ -186,6 +187,6 @@ println( "pong local is " + pong.localSocketAddress )
          act()
       }
 //      act() // start the game
-      pingT.send( osc.Message( "/start!" ), pong.localSocketAddress )
+      pingT.send( osc.Message( "/start" ), pong.localSocketAddress )
    }
 }

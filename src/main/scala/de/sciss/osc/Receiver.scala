@@ -117,14 +117,14 @@ trait Receiver extends Channel.Input {
       }
 
       override def run {
-println( "RECEIVER RUN " + this )
+//println( "RECEIVER RUN " + this )
          try {
             while( !wasClosed ) receive()
          } catch {
             case e: AsynchronousCloseException => closedException()
             case e: ClosedChannelException => closedException()
          } finally {
-println( "RECEIVER EXIT " + this )
+//println( "RECEIVER EXIT " + this )
             threadSync.synchronized {
                wasClosed = true
                threadSync.notifyAll()
