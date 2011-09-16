@@ -25,11 +25,11 @@
 package de.sciss.osc
 
 import java.nio.BufferOverflowException
-import java.net.{SocketAddress, InetSocketAddress}
 import java.io.IOException
 import java.nio.channels.{SocketChannel, DatagramChannel}
 import de.sciss.osc.{Channel => OSCChannel, Client => OSCClient,
    Receiver => OSCReceiver, Transmitter => OSCTransmitter}
+import java.net.{InetAddress, SocketAddress, InetSocketAddress}
 
 sealed trait Transport { def name: String }
 
@@ -55,7 +55,7 @@ case object UDP extends Transport.Net {
 
    sealed trait Config extends OSCChannel.NetConfig {
       override final def toString = name + ".Config"
-      def openChannel() : DatagramChannel
+      def openChannel( discardWildcard: Boolean = false ) : DatagramChannel
    }
    sealed trait ConfigBuilder extends OSCChannel.NetConfigBuilder {
       override final def toString = name + ".ConfigBuilder"
@@ -71,9 +71,15 @@ case object UDP extends Transport.Net {
                                         localSocketAddress: InetSocketAddress )
    extends Config {
       def transport = UDP
-      def openChannel() = {
-         val ch = DatagramChannel.open()
-         ch.socket().bind( localSocketAddress )
+      def openChannel( discardWildcard: Boolean ) = {
+         val ch      = DatagramChannel.open()
+         val addr0   = localSocketAddress
+         val addr    = if( discardWildcard && addr0.getAddress
+               .equals( InetAddress.getByAddress( new Array[ Byte ]( 4 )))) {
+            new InetSocketAddress( InetAddress.getLocalHost, addr0.getPort )
+         } else addr0
+
+         ch.socket().bind( addr )
          ch
       }
    }
@@ -83,15 +89,17 @@ case object UDP extends Transport.Net {
       type Undirected   = Transmitter with OSCTransmitter.UndirectedNet
 
       def apply() : Undirected = apply( Config.default )
-      def apply( config: Config ) : Undirected = apply( config.openChannel(), config )
-      def apply( channel: DatagramChannel ) : Undirected = apply( channel, Config.default )
-      def apply( channel: DatagramChannel, config: Config ) : Undirected =
+      def apply( config: Config ) : Undirected = apply( config.openChannel( true ), config )
+//      def apply( channel: DatagramChannel ) : Undirected = apply( channel, Config.default )
+//      def apply( channel: Channel ) : Undirected = apply( channel.channel, channel.config )
+      private[UDP] def apply( channel: DatagramChannel, config: Config ) : Undirected =
          new UndirectedImpl( channel, config )
 
       def apply( target: SocketAddress ) : Directed = apply( target, Config.default )
       def apply( target: SocketAddress, config: Config ) : Directed = apply( config.openChannel(), target, config )
-      def apply( channel: DatagramChannel, target: SocketAddress ) : Directed = apply( channel, target, Config.default )
-      def apply( channel: DatagramChannel, target: SocketAddress, config: Config ) : Directed =
+//      def apply( channel: DatagramChannel, target: SocketAddress ) : Directed = apply( channel, target, Config.default )
+//      def apply( rcv: Receiver.Directed ) : Directed = apply( rcv.channel, rcv.target, rcv.config )
+      private[UDP] def apply( channel: DatagramChannel, target: SocketAddress, config: Config ) : Directed =
          new DirectedImpl( channel, target, config )
 
       private final class UndirectedImpl( val channel: DatagramChannel,
@@ -234,7 +242,7 @@ case object UDP extends Transport.Net {
    object Client {
       def apply( target: SocketAddress ) : Client = apply( target, Config.default )
       def apply( target: SocketAddress, config: Config ) : Client =
-         new Impl( config.openChannel(), target, config )
+         new Impl( config.openChannel( true ), target, config )
 
       private final class Impl( val channel: DatagramChannel,
                                 target: SocketAddress,
@@ -267,7 +275,7 @@ case object TCP extends Transport.Net {
 
    sealed trait Config extends Channel.NetConfig {
       override final def toString = name + ".Config"
-      def openChannel() : SocketChannel
+      def openChannel( discardWildcard: Boolean = true ) : SocketChannel
    }
    sealed trait ConfigBuilder extends Channel.NetConfigBuilder {
       override final def toString = name + ".ConfigBuilder"
@@ -283,20 +291,40 @@ case object TCP extends Transport.Net {
                                         localSocketAddress: InetSocketAddress )
    extends Config {
       def transport = TCP
-      def openChannel() = {
-         val ch = SocketChannel.open()
-         ch.socket().bind( localSocketAddress )
+      // XXX factor out common parts with UDP.ConfigImpl
+      def openChannel( discardWildcard: Boolean ) = {
+         val ch      = SocketChannel.open()
+         val addr0   = localSocketAddress
+         val addr    = if( discardWildcard && addr0.getAddress
+               .equals( InetAddress.getByAddress( new Array[ Byte ]( 4 )))) {
+            new InetSocketAddress( InetAddress.getLocalHost, addr0.getPort )
+         } else addr0
+
+         ch.socket().bind( addr )
          ch
       }
+//      def openChannel() = {
+//         val ch = SocketChannel.open()
+//         ch.socket().bind( localSocketAddress )
+//         ch
+//      }
    }
 
    object Transmitter {
-      def apply( target: SocketAddress ) : Transmitter = new Impl( target, Config.default )
-      def apply( target: SocketAddress, config: Config ) : Transmitter = new Impl( target, config )
+      def apply( target: SocketAddress ) : Transmitter = apply( target, Config.default )
+      def apply( target: SocketAddress, config: Config ) : Transmitter =
+         apply( config.openChannel( true ), target, config )
 
-      private final class Impl( protected val target: SocketAddress, protected val config: Config )
+      private[TCP] def apply( channel: SocketChannel, target: SocketAddress, config: Config ) : Transmitter =
+         new Impl( channel, target, config )
+
+      private final class Impl( val channel: SocketChannel,
+                                protected val target: SocketAddress,
+                                protected val config: Config )
       extends Transmitter {
          override def toString = name + ".Transmitter(" + target + ")"
+
+         def isConnected = channel.isConnected
 
 //         protected def config = cfg
 
@@ -330,14 +358,15 @@ case object TCP extends Transport.Net {
    sealed trait Channel extends OSCChannel.DirectedNet {
       override protected def config: Config
       final def transport = config.transport
-      final override val channel: SocketChannel = config.openChannel()
+//      final override val channel: SocketChannel = config.openChannel()
+      def channel: SocketChannel
       final def localSocketAddress = {
          val so = channel.socket()
          new InetSocketAddress( so.getLocalAddress, so.getLocalPort )
       }
       protected def target: SocketAddress
       final protected def connectChannel() { if( !isConnected ) channel.connect( target )}
-      final def isConnected = channel.isConnected
+//      final def isConnected = channel.isConnected
       def remoteSocketAddress = {
          val so = channel.socket()
          new InetSocketAddress( so.getInetAddress, so.getPort )
@@ -352,13 +381,19 @@ case object TCP extends Transport.Net {
 //   }
 
    object Receiver {
-      def apply( target: SocketAddress ) : Receiver = new Impl( target, Config.default )
-      def apply( target: SocketAddress, config: Config ) : Receiver = new Impl( target, config )
+      def apply( target: SocketAddress ) : Receiver = apply( target, Config.default )
+      def apply( target: SocketAddress, config: Config ) : Receiver = apply( config.openChannel( true ), target, config )
+      def apply( channel: SocketChannel, target: SocketAddress ) : Receiver = apply( channel, target, Config.default )
+      def apply( channel: SocketChannel, target: SocketAddress, config: Config ) : Receiver =
+         new Impl( channel, target, config )
 
-      private final class Impl( protected val target: SocketAddress, protected val config: Config )
+      private final class Impl( val channel: SocketChannel,
+                                protected val target: SocketAddress,
+                                protected val config: Config )
       extends Receiver {
          override def toString = name + ".Receiver(" + target + ")"
 
+         def isConnected = channel.isConnected
 //         @throws( classOf[ IOException ])
 //         protected def connectChannel { channel.connect( target )}
 
@@ -384,10 +419,28 @@ case object TCP extends Transport.Net {
    }
 
    sealed trait Receiver extends OSCReceiver.DirectedImpl with Channel
-//   {
-////      protected def channel: SocketChannel
-//      override protected def config: Config
-//   }
+
+   object Client {
+      def apply( target: SocketAddress ) : Client = apply( target, Config.default )
+      def apply( target: SocketAddress, config: Config ) : Client =
+         new Impl( config.openChannel( true ), target, config )
+
+      private final class Impl( val channel: SocketChannel,
+                                protected val target: SocketAddress,
+                                protected val config: Config )
+      extends Client {
+         protected val input  = Receiver( channel, target, config )
+         protected val output = Transmitter( channel, target, config )
+
+         // XXX factor this out (common with UDP.Client.Impl)
+         def action = input.action
+         def action_=( fun: Channel.DirectedInput.Action ) { input.action = fun }
+
+         def !( p: Packet ) { output ! p }
+      }
+   }
+
+   sealed trait Client extends OSCClient with Channel
 }
 
 /**

@@ -26,15 +26,16 @@
 package de.sciss.osc
 
 import java.io.{ IOException, PrintStream }
-import java.net.{InetAddress, InetSocketAddress}
 import java.nio.channels.{InterruptibleChannel, Channel => NIOChannel}
 import java.nio.ByteBuffer
+import java.net.{SocketAddress, InetAddress, InetSocketAddress}
 
 object Channel {
    type Net = Channel with NetConfigLike
 //   trait Net extends Channel with OSCChannelNetConfigLike
 
    trait DirectedNet extends Channel with NetConfigLike {
+//      private[osc] def target: SocketAddress
       /**
        * The remote socket address of this channel. Returns `null` if the
        * channel has not yet been connected.

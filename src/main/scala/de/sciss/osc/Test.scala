@@ -130,34 +130,27 @@ Receiver test
       }
    }
 
+//   def client( transport: )
+
    def tcpClient() {
-      val c: Client = ScalaOSC.error( "TODO" ) // = Client( TCP, loopBack = true )
-//      c.target = new InetSocketAddress( "127.0.0.1", 57110 )
-//      c.start()
+      val c: Client = TCP.Client( "127.0.0.1" -> 57110 )
+      c.connect()
       c.dump()
-//      c ! Message( "/dumpOSC", 1 )
-//      c ! Message( "/notify", 1 )
+      c ! Message( "/dumpOSC", 1 )
+      c ! Message( "/notify", 1 )
+      c.action = println( _ )
    }
 
    def pingPong() {
       import de.sciss.osc
-      import Implicits._
-
-      val pingCfg = osc.UDP.Config()
-//      pingCfg.localSocketAddress = "localhost" -> 0 // 22222
-//      pingCfg.localAddress = InetAddress.getLocalHost
-      val pingR   = osc.UDP.Receiver( pingCfg )                   // unidirectional, not bound
-      val pingT   = osc.UDP.Transmitter( pingR.channel ) // unidirectional, not bound, same channel
-      val pongCfg = osc.UDP.Config()
-//      cfg.localAddress = InetAddress.getByName( "localhost" )
-//      cfg.localIsLoopback = true
-//      pongCfg.localSocketAddress = "localhost" -> 0 // 33333
-//      pongCfg.localAddress = InetAddress.getLocalHost
-      val pong    = osc.UDP.Client( pingR.localSocketAddress, pongCfg )  // bidirectional, bound
+      val pingT   = osc.UDP.Transmitter()             // unidirectional, not bound
+      val pingR   = osc.UDP.Receiver( pingT.channel ) // unidirectional, not bound, same channel
+      val pong    = osc.UDP.Client( pingT.localSocketAddress )  // bidirectional, bound
       pingT.connect()
       pingR.connect()
       pong.connect()
-println( "pong local is " + pong.localSocketAddress )
+      println( "Ping at " + pingT.localSocketAddress )
+      println( "Pong at" + pong.localSocketAddress )
 
       val t = new java.util.Timer()
       def delay( code: => Unit ) {
@@ -168,27 +161,23 @@ println( "pong local is " + pong.localSocketAddress )
          case (m @ osc.Message( "/ping", cnt: Int ), sender) =>
             println( "Ping received " + m )
             delay {
-               pingT.send( osc.Message( "/pong", cnt ), pong.localSocketAddress /* sender */)
+               pingT.send( osc.Message( "/pong", cnt ), sender )
             }
          case _ =>
       }
       var cnt = 0
-      def act() {
+      pong.action = packet => {
+         println( "Pong received " + packet )
          cnt += 1
          if( cnt <= 10 ) {
             delay { pong ! osc.Message( "/ping", cnt )}
          } else {
-            pingT.close()
             pingR.close()
+            pingT.close()
             pong.close()
             System.exit( 0 )
          }
       }
-      pong.action = packet => {
-         println( "Pong received: " + packet )
-         act()
-      }
-//      act() // start the game
       pingT.send( osc.Message( "/start" ), pong.localSocketAddress )
    }
 }

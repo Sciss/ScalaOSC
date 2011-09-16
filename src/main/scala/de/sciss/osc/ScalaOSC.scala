@@ -29,8 +29,14 @@ object ScalaOSC {
    val name          = "ScalaOSC"
    val version       = 0.24
    val copyright     = "(C)opyright 2008-2011 Hanns Holger Rutz"
+   val isSnapshot    = true
 
-   def versionString = (version + 0.001).toString.substring( 0, 4 )
+   def versionString = {
+      val s = (version + 0.001).toString.substring( 0, 4 )
+      if( isSnapshot ) s + "-SNAPSHOT" else s
+   }
+
+//   def versionString = (version + 0.001).toString.substring( 0, 4 )
 
    // sucky change in scala 2.9 makes compiler output warnings
    private[osc] def error( text: String ) : Nothing = throw new RuntimeException( text )
@@ -57,8 +63,9 @@ object ScalaOSC {
 """The following demos are available:
 
    --pingPong
-   --testTransmitter (UDP|TCP)"
-   --testReceiver"
+   --testTransmitter (UDP|TCP)
+   --testReceiver
+   --testTCPClient
 
 """ )
             System.exit( 1 ) // scala 2.9 only: sys.exit( 1 )

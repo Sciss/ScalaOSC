@@ -28,6 +28,7 @@ package de.sciss.osc
 import java.net.{InetAddress, InetSocketAddress}
 
 object Implicits {
+   implicit def stringToInetAddress( host: String )                  = InetAddress.getByName( host )
    implicit def stringTupleToSocketAddress( tup: (String, Int) )     = new InetSocketAddress( tup._1, tup._2 )
    implicit def addrTupleToSocketAddress( tup: (InetAddress, Int) )  = new InetSocketAddress( tup._1, tup._2 )
 }

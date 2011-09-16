@@ -14,17 +14,17 @@ ScalaOSC builds with sbt 0.10 (xsbt), and also contains a project file for Intel
 
 The standard sbt targets are:
 
-* @clean@ -- removes previous build artefacts
-* @compile@ -- compiles classes into target/scala-version/classes
-* @doc@ -- generates api in target/scala-version/api/index.html
-* @package@ -- packages jar in target/scala-version
-* @run@ __arguments...__ -- prints info when run without arguments
+* @clean@ &ndash; removes previous build artefacts
+* @compile@ &ndash; compiles classes into target/scala-version/classes
+* @doc@ &ndash; generates api in target/scala-version/api/index.html
+* @package@ &ndash; packages jar in target/scala-version
+* @run@ __arguments...__ &ndash; prints info when run without arguments
 
 h3. overview
 
 OpenSoundControl (OSC) is a protocol to exchange messages between systems, typically over a network using UDP or TCP, and typically to control sound or multimedia applications.
 
-OSC can be used to control sound software -- for example "SuperCollider Server":http://supercollider.sf.net/ was one of the first systems to use OSC --, but also to communicate with hardware controllers.
+OSC can be used to control sound software &ndash; for example "SuperCollider Server":http://supercollider.sf.net/ was one of the first systems to use OSC &ndash;, but also to communicate with hardware controllers.
 
 OSC is a generic protocol and not restricted to sound applications: For example, "SwingOSC":http://www.sciss.de/swingOSC/ uses OSC to provide network access to the Java Virtual Machine.
 
@@ -43,29 +43,52 @@ h3. documentation and examples
 A very brief example showing two UDP clients playing ping-pong:
 
 pre. import de.sciss.osc
-
-val ping = UDP.Client() // do not bind to any target address
-val pong = UDP.Client( ping.localSocketAddress )
-ping.connect()
+// a sender, no target
+val pingT = osc.UDP.Transmitter()
+// a receiver, no target, but same channel as sender
+val pingR = osc.UDP.Receiver( pingT.channel )
+// a bidirectional client, targeted at ping's socket
+val pong = osc.UDP.Client( pingT.localSocketAddress )
+pingT.connect() // connect all channels
+pingR.connect()
 pong.connect()
 
-val t = new java.util.Timer()
-def delay( secs: Double )( code: => Unit ) {
-   t.schedule( new java.util.TimerTask { def run { code }}, (secs * 1000).toInt )
+pre. val t = new java.util.Timer()
+def delay( code: => Unit ) {
+   t.schedule( new java.util.TimerTask {
+      def run { code }}, 500 )
 }
 
-ping.action = {
-   case (packet, sender) =>
-      println( "Ping received: " + p )
-      delay( 1 ) { send( "PONG", sender )}
+pre. // unbound channels action takes packet and sender
+pingR.action = {
+   // match against a particular message
+   case (m @ osc.Message( "/ping", c: Int ), s) =>
+      println( "Ping received " + m )
+      delay {
+         pingT.send( osc.Message( "/pong", c ), s )
+      }
+   case _ => // ignore any other message
 }
+
+pre. // bound channels action takes just packet
 var cnt = 0
-pong.action = {
-   case packet =>
-      println( "Pong received: " + p )
-      cnt += 1
-      if( cnt < 10 ) delay( 1 ) { ! "PING" }
+pong.action = packet => {
+   println( "Pong received " + packet )
+   cnt += 1
+   if( cnt <= 10 ) {
+      // bound channels send via !(packet)
+      delay { pong ! osc.Message( "/ping", cnt )}
+   } else {
+      pingR.close()
+      pingT.close()
+      pong.close()
+      System.exit( 0 )
+   }
 }
+
+pre. // unbound channels send via send(packet, addr)
+pingT.send( osc.Message( "/start" ),
+   pong.localSocketAddress )
 
 Further examples can be found in the headers of the API docs, e.g. by looking up the documentation for @UDP.Client@.
 
