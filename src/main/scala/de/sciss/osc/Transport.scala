@@ -239,9 +239,12 @@ println( "DIRECTED RECEIVER : " + sender )
       private final class Impl( val channel: DatagramChannel,
                                 target: SocketAddress,
                                 protected val config: Config )
-      extends Client with Channel {
+      extends Client {
          protected val input  = Receiver( channel, target, config )
          protected val output = Transmitter( channel, target, config )
+
+         def action = input.action
+         def action_=( fun: Channel.DirectedInput.Action ) { input.action = fun }
 
          def !( p: Packet ) { output ! p }
       }

@@ -143,14 +143,14 @@ Receiver test
       import de.sciss.osc
       import Implicits._
 
-      val pingR   = osc.UDP.Receiver()                   // unidirectional, not bound
       val pingCfg = osc.UDP.Config()
-      pingCfg.localSocketAddress = "0.0.0.0" -> 22222
-      val pingT   = osc.UDP.Transmitter( pingR.channel, pingCfg ) // unidirectional, not bound, same channel
+      pingCfg.localSocketAddress = "127.0.0.1" -> 22222
+      val pingR   = osc.UDP.Receiver( pingCfg )                   // unidirectional, not bound
+      val pingT   = osc.UDP.Transmitter( pingR.channel ) // unidirectional, not bound, same channel
       val pongCfg = osc.UDP.Config()
 //      cfg.localAddress = InetAddress.getByName( "localhost" )
 //      cfg.localIsLoopback = true
-      pongCfg.localSocketAddress = "0.0.0.0" -> 33333
+      pongCfg.localSocketAddress = "127.0.0.1" -> 33333
       val pong    = osc.UDP.Client( pingR.localSocketAddress, pongCfg )  // bidirectional, bound
       pingT.connect()
       pingR.connect()

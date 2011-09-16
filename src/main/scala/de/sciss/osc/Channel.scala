@@ -177,7 +177,9 @@ object Channel {
       val NoAction : Action = _ => ()
    }
    trait DirectedInput /* extends InputLike */ {
-      var action = DirectedInput.NoAction
+      def action : DirectedInput.Action
+      def action_=( fun: DirectedInput.Action ) : Unit
+//      var action = DirectedInput.NoAction
    }
 
    trait DirectedOutput /* extends OutputLike */ {

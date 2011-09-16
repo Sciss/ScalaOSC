@@ -42,6 +42,7 @@ object Receiver {
 
    private[osc] trait DirectedImpl extends Receiver with Channel.DirectedInput {
 //      var action = Directed.NoAction
+      final var action = Channel.DirectedInput.NoAction
 
       @throws( classOf[ IOException ])
       protected final def flipDecodeDispatch() {
