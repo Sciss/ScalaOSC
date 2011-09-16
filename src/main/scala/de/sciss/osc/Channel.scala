@@ -93,6 +93,7 @@ object Channel {
    trait NetConfigBuilder extends ConfigBuilder with NetConfigLike {
       def localPort_=( port: Int ) : Unit
       def localAddress_=( address: InetAddress ) : Unit
+      def localSocketAddress_=( address: InetSocketAddress ) : Unit
       def localIsLoopback_=( loopback: Boolean ) : Unit
 
       override def build : NetConfig
@@ -107,6 +108,7 @@ object Channel {
    extends ConfigBuilderImpl with NetConfigBuilder {
       private var localSocket       = new InetSocketAddress( 0 )
       final def localSocketAddress  = localSocket
+      final def localSocketAddress_=( addr: InetSocketAddress ) { localSocket = addr }
 
       final def localPort_=( port: Int ) {
          localSocket = new InetSocketAddress( localSocket.getAddress, port )

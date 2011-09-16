@@ -141,13 +141,17 @@ Receiver test
 
    def pingPong() {
       import de.sciss.osc
+      import Implicits._
 
       val pingR   = osc.UDP.Receiver()                   // unidirectional, not bound
-      val pingT   = osc.UDP.Transmitter( pingR.channel ) // unidirectional, not bound, same channel
-      val cfg     = osc.UDP.Config()
+      val pingCfg = osc.UDP.Config()
+      pingCfg.localSocketAddress = "0.0.0.0" -> 22222
+      val pingT   = osc.UDP.Transmitter( pingR.channel, pingCfg ) // unidirectional, not bound, same channel
+      val pongCfg = osc.UDP.Config()
 //      cfg.localAddress = InetAddress.getByName( "localhost" )
-      cfg.localIsLoopback = true
-      val pong    = osc.UDP.Client( pingR.localSocketAddress, cfg )  // bidirectional, bound
+//      cfg.localIsLoopback = true
+      pongCfg.localSocketAddress = "0.0.0.0" -> 33333
+      val pong    = osc.UDP.Client( pingR.localSocketAddress, pongCfg )  // bidirectional, bound
       pingT.connect()
       pingR.connect()
       pong.connect()
@@ -161,7 +165,9 @@ println( "pong local is " + pong.localSocketAddress )
       pingR.action = {
          case (m @ osc.Message( name, cnt: Int ), sender) =>
             println( "Ping received " + m + " from " + sender )
-            delay( 1 ) { pingT.send( osc.Message( "PONG", cnt ), sender )}
+//            delay( 1 ) {
+               pingT.send( osc.Message( "PONG", cnt ), pong.localSocketAddress /* sender */)
+//            }
          case _ =>
       }
       var cnt = 0
@@ -179,6 +185,7 @@ println( "pong local is " + pong.localSocketAddress )
          println( "Pong received: " + packet )
          act()
       }
-      act() // start the game
+//      act() // start the game
+      pingT.send( osc.Message( "/start!" ), pong.localSocketAddress )
    }
 }
