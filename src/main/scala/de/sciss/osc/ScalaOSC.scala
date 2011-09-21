@@ -27,7 +27,7 @@ package de.sciss.osc
 
 object ScalaOSC {
    val name          = "ScalaOSC"
-   val version       = 0.24
+   val version       = 0.30
    val copyright     = "(C)opyright 2008-2011 Hanns Holger Rutz"
    val isSnapshot    = true
 

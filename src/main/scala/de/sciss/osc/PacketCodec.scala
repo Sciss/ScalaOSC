@@ -365,7 +365,7 @@ object PacketCodec {
                (if( booleanToInt ) Atom.BooleanAsInt else Atom.Boolean).encode( codec, b, tb, db )
 //               case c: Char if( useChars ) =>
             case blob: ByteBuffer => Atom.Blob.encode( codec, blob, tb, db )
-            case p: Packet if( usePackets ) => Atom.Packet.encode( codec, p, tb, db )
+            case p: Packet if( usePackets ) => Atom.PacketAsBlob.encode( codec, p, tb, db )
             case None if( useNone ) => Atom.None.encode( codec, None, tb, db )
             case u: Unit if( useImpulse ) => Atom.Impulse.encode( codec, u, tb, db )
             case t: Timetag if( useTimetags ) => Atom.Timetag.encode( codec, t, tb, db )
@@ -378,7 +378,7 @@ object PacketCodec {
          }
       }
 
-      @inline private def getDecoder( tag: Byte ) : Atom[_] = {
+      @inline private def getDecoder( tag: Byte ) : Atom.Decoder[_] = {
          (tag.toInt: @switch) match {
             case 0x69 => Atom.Int
             case 0x66 => Atom.Float
@@ -393,7 +393,7 @@ object PacketCodec {
             case 0x49 if( useImpulse ) => Atom.Impulse
             case 0x74 if( useTimetags ) => Atom.Timetag
             case 0x53 if( useSymbols ) => Atom.Symbol
-            case _ => Atom.Unsupported
+            case ti => customDec.getOrElse( ti, Atom.Unsupported )
          }
       }
 
@@ -415,11 +415,11 @@ object PacketCodec {
             case blob: ByteBuffer =>
                Atom.Blob.printTextOn( codec, blob, stream, nestCount )
             case p: Packet if( usePackets ) =>
-               Atom.Packet.printTextOn( codec, p, stream, nestCount )
+               Atom.PacketAsBlob.printTextOn( codec, p, stream, nestCount )
             case None if( useNone ) =>
                Atom.None.printTextOn( codec, None, stream, nestCount )
-            case () if( useImpulse ) =>
-               Atom.Impulse.printTextOn( codec, (), stream, nestCount )
+            case u: Unit if( useImpulse ) =>
+               Atom.Impulse.printTextOn( codec, u, stream, nestCount )
             case t: Timetag if( useTimetags ) =>
                Atom.Timetag.printTextOn( codec, t, stream, nestCount )
             case s: Symbol if( useSymbols ) => Atom.Symbol

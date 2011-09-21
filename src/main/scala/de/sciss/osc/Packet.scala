@@ -418,7 +418,7 @@ object Packet {
       /**
        * Encodes an `Packet` as OSC blob (tag `b`)
        */
-      object Packet extends Encoder[OSCPacket] {
+      object PacketAsBlob extends Encoder[OSCPacket] {
          def encode( c: PacketCodec, v: OSCPacket, tb: ByteBuffer, db: ByteBuffer ) {
             tb.put( 0x62.toByte )	// 'b'
             val pos  = db.position
