@@ -339,7 +339,7 @@ object PacketCodec {
       }
 
       def build: PacketCodec = {
-         val customEnc     = Map.empty[ Class[ _ ], Atom ]   // XXX
+         val customEnc     = Map.empty[ Class[ _ ], Atom[ _ ]]   // XXX
 //         val customPrint   = Map(
 //            classOf[String]      -> Atom.String,
 //            classOf[ByteBuffer]  -> Atom.Blob
@@ -350,7 +350,7 @@ object PacketCodec {
       }
    }
 
-   private final class Impl( customEnc: Map[ Class[ _ ], Atom ],
+   private final class Impl( customEnc: Map[ Class[ _ ], Atom[ _ ]],
 //                             customPrint: Map[ Class[ _ ], Atom ],
                              val charsetName: String,
                              useDoubles: Boolean,
@@ -371,14 +371,14 @@ object PacketCodec {
 
       override def toString = "PacketCodec"
 
-      private var atomDecoders = IntMap.empty[ Atom ]
-
-      // ---- constructor ----
-      // OSC version 1.0 strict type tag support
-      atomDecoders += 0x69 -> Atom.Int
-      atomDecoders += 0x66 -> Atom.Float
-      atomDecoders += 0x73 -> Atom.String
-      atomDecoders += 0x62 -> Atom.Blob
+//      private var atomDecoders = IntMap.empty[ Atom ]
+//
+//      // ---- constructor ----
+//      // OSC version 1.0 strict type tag support
+//      atomDecoders += 0x69 -> Atom.Int
+//      atomDecoders += 0x66 -> Atom.Float
+//      atomDecoders += 0x73 -> Atom.String
+//      atomDecoders += 0x62 -> Atom.Blob
 
       @throws( classOf[ IOException ])
       def encodeBundle( bndl: Bundle, b: ByteBuffer ) {
@@ -463,28 +463,46 @@ object PacketCodec {
                tb.put( 0x53.toByte )	   // 'S'
                db.put( s.name.getBytes( charsetName ))  // faster than using Charset or CharsetEncoder
                terminateAndPadToAlign( db )
-            case _ => customEnc.getOrElse( v.getClass, Atom.Unsupported ).encode( codec, v, tb, db )
+            case _ => {
+               val r = v.asInstanceOf[ AnyRef ]
+//               val c: Class[ _ ] = r.getClass
+               customEnc.getOrElse( r.getClass, Atom.Unsupported ).asInstanceOf[ Atom[ r.type ]].encode( codec, r, tb, db )
+            }
          }
       }
 
       def printAtom( v: Any, stream: PrintStream, nestCount: Int ) {
-         val atom = v match {
-            case i: Int => Atom.Int
-            case f: Float => Atom.Float
-            case s: String => Atom.String
-            case h: Long if( useLongs ) => /* if( longToInt ) Atom.LongAsInt else */ Atom.Long
-            case d: Double if( useDoubles ) => /* if( doubleToFloat ) Atom.DoubleAsFloat else */ Atom.Double
-            case b: Boolean if( useBooleans ) => /* if( booleanToInt ) Atom.BooleanAsInt else */ Atom.Boolean
+         v match {
+            case i: Int =>
+               Atom.Int.printTextOn( codec, i, stream, nestCount )
+            case f: Float =>
+               Atom.Float.printTextOn( codec, f, stream, nestCount )
+            case s: String =>
+               Atom.String.printTextOn( codec, s, stream, nestCount )
+            case h: Long if( useLongs ) =>
+               Atom.Long.printTextOn( codec, h, stream, nestCount )
+            case d: Double if( useDoubles ) =>
+               Atom.Double.printTextOn( codec, d, stream, nestCount )
+            case b: Boolean if( useBooleans ) =>
+               Atom.Boolean.printTextOn( codec, b, stream, nestCount )
 //               case c: Char if( useChars ) =>
-            case blob: ByteBuffer => Atom.Blob
-            case p: Packet if( usePackets ) => Atom.Packet
-            case None if( useNone ) => Atom.None
-            case () if( useImpulse ) => Atom.Impulse
-            case t: Timetag if( useTimetags ) => Atom.Timetag
+            case blob: ByteBuffer =>
+               Atom.Blob.printTextOn( codec, blob, stream, nestCount )
+            case p: Packet if( usePackets ) =>
+               Atom.Packet.printTextOn( codec, p, stream, nestCount )
+            case None if( useNone ) =>
+               Atom.None.printTextOn( codec, None, stream, nestCount )
+            case () if( useImpulse ) =>
+               Atom.Impulse.printTextOn( codec, (), stream, nestCount )
+            case t: Timetag if( useTimetags ) =>
+               Atom.Timetag.printTextOn( codec, t, stream, nestCount )
             case s: Symbol if( useSymbols ) => Atom.Symbol
-            case _ => customEnc.getOrElse( v.getClass, Atom.Unsupported )
+            case _ =>
+               val r = v.asInstanceOf[ AnyRef ]
+               val atom = customEnc.getOrElse( r.getClass, Atom.Unsupported ).asInstanceOf[ Atom[ r.type ]]
+               atom.printTextOn( codec, r, stream, nestCount )
          }
-         atom.printTextOn( codec, v, stream, nestCount )
+//         atom.printTextOn( codec, v, stream, nestCount )
       }
 
       @inline private def encodedAtomSize( v: Any ) : Int = {
@@ -502,7 +520,10 @@ object PacketCodec {
             case () if( useImpulse ) => 0
             case t: Timetag if( useTimetags ) => 8
             case s: Symbol if( useSymbols ) =>  (s.name.getBytes( charsetName ).length + 4) & ~3
-            case _ => customEnc.getOrElse( v.getClass, Atom.Unsupported ).getEncodedSize( codec, v )
+            case _ =>
+               val r = v.asInstanceOf[ AnyRef ]
+               val atom = customEnc.getOrElse( r.getClass, Atom.Unsupported ).asInstanceOf[ Atom[ r.type ]]
+               atom.getEncodedSize( codec, r )
          }
       }
 
@@ -559,7 +580,7 @@ object PacketCodec {
             while( argIdx < numArgs ) {
                val typ = b2.get()
 //               if( !atomDecoders.contains( typ )) throw UnsupportedAtom( typ.toChar.toString )
-               val dec = atomDecoders.getOrElse( typ, Atom.Unsupported )
+               val dec = Atom.Unsupported // atomDecoders.getOrElse( typ, Atom.Unsupported )
 //            } catch { // note: IntMap throws RuntimeException, _not_ NoSuchElementException!!!
 //               case e => throw UnsupportedAtom( typ.toChar.toString )
 //            }
