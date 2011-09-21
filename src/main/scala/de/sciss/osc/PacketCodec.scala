@@ -30,6 +30,7 @@ import Packet._
 import collection.mutable.ListBuffer
 import java.nio.{BufferUnderflowException, BufferOverflowException, ByteBuffer}
 import java.io.{PrintStream, IOException}
+import annotation.switch
 
 /**
  *	A packet codec defines how the translation between Java objects
@@ -67,75 +68,6 @@ import java.io.{PrintStream, IOException}
  */
 object PacketCodec {
 	val default: PacketCodec = Builder().build
-  	
-	val MODE_READ_DOUBLE			         = 0x0001
-	val MODE_READ_DOUBLE_AS_FLOAT	      = 0x0002
-	/* private */ val MODE_READ_DOUBLE_MASK	= 0x0003
-	val MODE_READ_LONG				      = 0x0004
-	val MODE_READ_LONG_AS_INTEGER	      = 0x0008
-	/* private */ val MODE_READ_LONG_MASK		= 0x000C
-	val MODE_WRITE_DOUBLE			      = 0x0010
-	val MODE_WRITE_DOUBLE_AS_FLOAT	   = 0x0020
-//	private val MODE_WRITE_DOUBLE_MASK	= 0x0030
-	val MODE_WRITE_LONG				      = 0x0040
-	val MODE_WRITE_LONG_AS_INTEGER	   = 0x0080
-//	private val MODE_WRITE_LONG_MASK		= 0x00C0
-	val MODE_READ_SYMBOL_AS_STRING	   = 0x0100
-	val MODE_WRITE_PACKET_AS_BLOB	      = 0x0200
-
-	/**
-	 *	Support mode: coder only accepts <code>java.lang.Integer</code>,
-	 *	<code>java.lang.Float</code>, <code>java.lang.String</code>,
-	 *	and <code>byte[]</code>.
-	 *	Decoder only accepts <code>'i'</code>, <code>'f'</code>,
-	 *	<code>'s'</code>, and <code>'b'</code>. Note that <code>byte[]</code>
-	 *	is used to represents blobs (<code>'b'</code>).
-	 */
-	val MODE_STRICT_V1				= 0x0000
-	/**
-	 *	Support mode: like <code>MODE_STRICT_V1</code>, but coder additionally
-	 *	encodes <code>java.lang.Long</code> as a <code>'i'</code>,
-	 *	<code>java.lang.Double</code> as a <code>'f'</code>, and
-	 *	<code>de.sciss.net.Packet</code> as a blob <code>'b'</code>.
-	 *	The decoder decodes <code>'h'</code> into <code>java.lang.Integer</code>,
-	 *	<code>'d'</code> into <code>java.lang.Float</code>, and
-	 *	<code>'S'</code> (Symbol) into <code>java.lang.String</code>.
-	 */
-	val MODE_MODEST					= MODE_READ_DOUBLE_AS_FLOAT | MODE_READ_LONG_AS_INTEGER | MODE_WRITE_DOUBLE_AS_FLOAT | MODE_WRITE_LONG_AS_INTEGER | MODE_READ_SYMBOL_AS_STRING | MODE_WRITE_PACKET_AS_BLOB
-	/**
-	 *	Support mode: like <code>MODE_MODEST</code>, that is, it will
-	 *	downgrade to 32bit in the encoding process, but decoding leaves
-	 *	64bit values intact, so <code>'h'</code> becomes <code>java.lang.Long</code>,
-	 *	and <code>'d'</code> into <code>java.lang.Double</code>.
-	 */
-	val MODE_GRACEFUL				= MODE_READ_DOUBLE | MODE_READ_LONG | MODE_WRITE_DOUBLE_AS_FLOAT | MODE_WRITE_LONG_AS_INTEGER | MODE_READ_SYMBOL_AS_STRING | MODE_WRITE_PACKET_AS_BLOB
-	/**
-	 *	Support mode: like <code>MODE_STRICT_V1</code>, but with additional
-	 *	64bit support, that is a mutual mapping between
-	 *	<code>'h'</code> &lt;--&gt; <code>java.lang.Long</code>, and
-	 *	<code>'d'</code> &lt;--&gt; <code>java.lang.Double</code>.
-	 *	Also, <code>'S'</code> (Symbol) is decoded into <code>java.lang.String</code>,
-	 *	and <code>de.sciss.net.Packet</code> is encoded as a blob <code>'b'</code>.
-	 */
-	val MODE_FAT_V1					= MODE_READ_DOUBLE | MODE_READ_LONG | MODE_WRITE_DOUBLE | MODE_WRITE_LONG | MODE_READ_SYMBOL_AS_STRING | MODE_WRITE_PACKET_AS_BLOB
-	
-	/**
-	 * 	Queries the standard codec which is used in all
-	 * 	implicit client and server creations. This codec adheres
-	 * 	to the <code>MODE_GRACEFUL</code> scheme and uses
-	 * 	<code>UTF-8</code> string encoding.
-	 * 	<p>
-	 * 	Note that although it is not recommended, it is
-	 * 	possible to modify the returned codec. That means that
-	 * 	upon your application launch, you could query the default
-	 * 	codec and switch its behaviour, e.g. change the string
-	 * 	charset, so all successive operations with the default
-	 * 	codec will be subject to those customizations.
-	 * 
-	 *	@return	the default codec
-	 *	@see	#MODE_GRACEFUL
-	 */
-//	def getDefaultCodec = defaultCodec
 
    sealed abstract class Exception( message: String, cause: Throwable )
    extends IOException( message, cause )
@@ -230,11 +162,18 @@ object PacketCodec {
       final def doubleToSinglePrecision() : Builder = doublesAsFloats().longsAsInts()
       def booleansAsInts() : Builder
       def packetsAsBlobs() : Builder
+
+      // ---- custom coders ----
+      def encode[ A : Manifest ]( enc: Atom.Encoder[ A ]) : Builder
+      def decode[ A ]( tag: Byte, dec: Atom.Decoder[ A ]) : Builder
    }
 
    implicit def build( b: Builder ) : PacketCodec = b.build
 
    private final class BuilderImpl extends Builder {
+      var customEnc        = Map.empty[ Class[ _ ], Atom.Encoder[ _ ]]
+      var customDec        = IntMap.empty[ Atom.Decoder[ _ ]]
+
       var useDoubles       = false
       var useLongs         = false
       var doubleToFloat    = false
@@ -250,6 +189,7 @@ object PacketCodec {
       var usePackets       = false
 
       def v1_0() = {
+         customEnc         = Map.empty
          useDoubles        = false
          useLongs          = false
          doubleToFloat     = false
@@ -338,20 +278,29 @@ object PacketCodec {
          this
       }
 
+      def encode[ A ]( enc: Atom.Encoder[ A ])( implicit mf: Manifest[ A ]) = {
+         customEnc += mf.erasure -> enc
+         this
+      }
+
+      def decode[ A ]( tag: Byte, dec: Atom.Decoder[ A ]) = {
+         customDec += tag.toInt -> dec
+         this
+      }
+
       def build: PacketCodec = {
-         val customEnc     = Map.empty[ Class[ _ ], Atom[ _ ]]   // XXX
 //         val customPrint   = Map(
 //            classOf[String]      -> Atom.String,
 //            classOf[ByteBuffer]  -> Atom.Blob
 //         ) ++ customEnc
-         new Impl( customEnc, /* customPrint, */ charsetName, useDoubles, useLongs, doubleToFloat, longToInt,
+         new Impl( customEnc, customDec, charsetName, useDoubles, useLongs, doubleToFloat, longToInt,
             useSymbols, /* useChars, */ useArrays, useBooleans, booleanToInt, useNone, useImpulse, useTimetags,
             usePackets )
       }
    }
 
-   private final class Impl( customEnc: Map[ Class[ _ ], Atom[ _ ]],
-//                             customPrint: Map[ Class[ _ ], Atom ],
+   private final class Impl( customEnc: Map[ Class[ _ ], Atom.Encoder[ _ ]],
+                             customDec: IntMap[ Atom.Decoder[ _ ]],
                              val charsetName: String,
                              useDoubles: Boolean,
                              useLongs: Boolean,
@@ -368,6 +317,10 @@ object PacketCodec {
                              usePackets: Boolean )
    extends PacketCodec {
       codec =>
+
+      private val decodeLongs    = useLongs    && !longToInt
+      private val decodeDoubles  = useDoubles  && !doubleToFloat
+      private val decodeBooleans = useBooleans && !booleanToInt
 
       override def toString = "PacketCodec"
 
@@ -401,73 +354,46 @@ object PacketCodec {
 
       @inline private def encodeAtom( v: Any, tb: ByteBuffer, db: ByteBuffer ) {
          v match {
-            case i: Int =>
-               tb.put( 0x69.toByte )	   // 'i'
-               db.putInt( i )
-            case f: Float =>
-               tb.put( 0x66.toByte )	   // 'f'
-               db.putFloat( f )
-            case s: String =>
-               tb.put( 0x73.toByte )	   // 's'
-               db.put( s.getBytes( charsetName ))  // faster than using Charset or CharsetEncoder
-               terminateAndPadToAlign( db )
+            case i: Int => Atom.Int.encode( codec, i, tb, db )
+            case f: Float => Atom.Float.encode( codec, f, tb, db )
+            case s: String => Atom.String.encode( codec, s, tb, db )
             case h: Long if( useLongs ) =>
-               if( longToInt ) {
-                  tb.put( 0x69.toByte )	// 'i'
-                  db.putInt( h.toInt )
-               } else {
-                  tb.put( 0x68.toByte )	// 'h'
-                  db.putLong( h )
-               }
+               (if( longToInt ) Atom.LongAsInt else Atom.Long).encode( codec, h, tb, db )
             case d: Double if( useDoubles ) =>
-               if( doubleToFloat ) {
-                  tb.put( 0x66.toByte )	// 'f'
-                  db.putFloat( d.toFloat )
-               } else {
-                  tb.put( 0x64.toByte )	// 'd'
-                  db.putDouble( d )
-               }
+               (if( doubleToFloat ) Atom.DoubleAsFloat else Atom.Double).encode( codec, d, tb, db )
             case b: Boolean if( useBooleans ) =>
-               if( booleanToInt ) {
-                  tb.put( 0x69.toByte )	// 'i'
-                  db.putInt( if( b ) 1 else 0 )
-               } else {
-                  tb.put( if( b ) 0x54.toByte else 0x46.toByte )       // 'T' and 'F'
-               }
+               (if( booleanToInt ) Atom.BooleanAsInt else Atom.Boolean).encode( codec, b, tb, db )
 //               case c: Char if( useChars ) =>
-            case blob: ByteBuffer =>
-               tb.put( 0x62.toByte )	   // 'b'
-               db.putInt( blob.remaining )
-               val pos = blob.position
-               try {
-                  db.put( blob )
-               } finally {
-                  blob.position( pos )
-               }
-               padToAlign( db )
-            case p: Packet if( usePackets ) =>
-               tb.put( 0x62.toByte )	   // 'b'
-               val pos  = db.position
-               val pos2 = pos + 4
-               db.putInt( 0 ) // dummy to skip to data; properly throws BufferOverflowException
-               p.encode( codec, db )
-               db.putInt( pos, db.position - pos2 )
-            case None if( useNone ) =>
-               tb.put( 0x4E.toByte )	   // 'N'
-            case () if( useImpulse ) =>
-               tb.put( 0x49.toByte )	   // 'I'
-            case t: Timetag if( useTimetags ) =>
-               tb.put( 0x74.toByte )	   // 't'
-               db.putLong( t.raw )
-            case s: Symbol if( useSymbols ) =>
-               tb.put( 0x53.toByte )	   // 'S'
-               db.put( s.name.getBytes( charsetName ))  // faster than using Charset or CharsetEncoder
-               terminateAndPadToAlign( db )
-            case _ => {
-               val r = v.asInstanceOf[ AnyRef ]
-//               val c: Class[ _ ] = r.getClass
-               customEnc.getOrElse( r.getClass, Atom.Unsupported ).asInstanceOf[ Atom[ r.type ]].encode( codec, r, tb, db )
+            case blob: ByteBuffer => Atom.Blob.encode( codec, blob, tb, db )
+            case p: Packet if( usePackets ) => Atom.Packet.encode( codec, p, tb, db )
+            case None if( useNone ) => Atom.None.encode( codec, None, tb, db )
+            case u: Unit if( useImpulse ) => Atom.Impulse.encode( codec, u, tb, db )
+            case t: Timetag if( useTimetags ) => Atom.Timetag.encode( codec, t, tb, db )
+            case s: Symbol if( useSymbols ) => Atom.Symbol.encode( codec, s, tb, db )
+            case r: AnyRef => {
+//               val r = v.asInstanceOf[ AnyRef ]
+               val atom = customEnc.getOrElse( r.getClass, Atom.Unsupported ).asInstanceOf[ Atom[ r.type ]]
+               atom.encode( codec, r, tb, db )
             }
+         }
+      }
+
+      @inline private def getDecoder( tag: Byte ) : Atom[_] = {
+         (tag.toInt: @switch) match {
+            case 0x69 => Atom.Int
+            case 0x66 => Atom.Float
+            case 0x73 => Atom.String
+            case 0x68 if( decodeLongs ) => Atom.Long
+            case 0x64 if( decodeDoubles ) => Atom.Double
+            case 0x54 if( decodeBooleans ) => Atom.Boolean
+            case 0x46 if( decodeBooleans ) => Atom.Boolean
+            case 0x62 => Atom.Blob
+//          case p: Packet
+            case 0x4E if( useNone ) => Atom.None
+            case 0x49 if( useImpulse ) => Atom.Impulse
+            case 0x74 if( useTimetags ) => Atom.Timetag
+            case 0x53 if( useSymbols ) => Atom.Symbol
+            case _ => Atom.Unsupported
          }
       }
 
@@ -497,8 +423,8 @@ object PacketCodec {
             case t: Timetag if( useTimetags ) =>
                Atom.Timetag.printTextOn( codec, t, stream, nestCount )
             case s: Symbol if( useSymbols ) => Atom.Symbol
-            case _ =>
-               val r = v.asInstanceOf[ AnyRef ]
+            case r: AnyRef =>
+//               val r = v.asInstanceOf[ AnyRef ]
                val atom = customEnc.getOrElse( r.getClass, Atom.Unsupported ).asInstanceOf[ Atom[ r.type ]]
                atom.printTextOn( codec, r, stream, nestCount )
          }
@@ -517,11 +443,11 @@ object PacketCodec {
             case blob: ByteBuffer => (blob.remaining() + 7) & ~3
             case p: Packet if( usePackets ) => p.getEncodedSize( codec ) + 4
             case None if( useNone ) => 0
-            case () if( useImpulse ) => 0
+            case u: Unit if( useImpulse ) => 0
             case t: Timetag if( useTimetags ) => 8
             case s: Symbol if( useSymbols ) =>  (s.name.getBytes( charsetName ).length + 4) & ~3
-            case _ =>
-               val r = v.asInstanceOf[ AnyRef ]
+            case r: AnyRef =>
+//               val r = v.asInstanceOf[ AnyRef ]
                val atom = customEnc.getOrElse( r.getClass, Atom.Unsupported ).asInstanceOf[ Atom[ r.type ]]
                atom.getEncodedSize( codec, r )
          }
@@ -579,12 +505,13 @@ object PacketCodec {
             var argIdx = 0
             while( argIdx < numArgs ) {
                val typ = b2.get()
-//               if( !atomDecoders.contains( typ )) throw UnsupportedAtom( typ.toChar.toString )
-               val dec = Atom.Unsupported // atomDecoders.getOrElse( typ, Atom.Unsupported )
-//            } catch { // note: IntMap throws RuntimeException, _not_ NoSuchElementException!!!
-//               case e => throw UnsupportedAtom( typ.toChar.toString )
-//            }
-               args( argIdx ) = dec.decode( codec, typ, b )
+////               if( !atomDecoders.contains( typ )) throw UnsupportedAtom( typ.toChar.toString )
+//               val dec = Atom.Unsupported // atomDecoders.getOrElse( typ, Atom.Unsupported )
+////            } catch { // note: IntMap throws RuntimeException, _not_ NoSuchElementException!!!
+////               case e => throw UnsupportedAtom( typ.toChar.toString )
+////            }
+//               args( argIdx ) = dec.decode( codec, typ, b )
+               args( argIdx ) = getDecoder( typ ).decode( codec, typ, b )
                argIdx += 1
             }
             Message( name, args: _* )

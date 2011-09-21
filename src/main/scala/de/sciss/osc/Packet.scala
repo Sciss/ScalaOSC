@@ -245,7 +245,17 @@ object Packet {
       import java.lang.{String => SString}
       import de.sciss.osc.{Packet => OSCPacket, Timetag => OSCTimetag}
 
-      private def decodeUnsupported( typeTag: SByte ) = throw PacketCodec.UnsupportedAtom( typeTag.toChar.toString )
+      private def errUnsupported( text: String ) = throw PacketCodec.UnsupportedAtom( text )
+
+      trait Encoder[ @specialized A ] {
+         def encode( c: PacketCodec, v: A, tb: ByteBuffer, db: ByteBuffer ) : Unit
+         def getEncodedSize( c: PacketCodec, v: A ) : Int
+         def printTextOn( c: PacketCodec, v: A, stream: PrintStream, nestCount: Int ) { stream.print( v )}
+      }
+
+      trait Decoder[ @specialized A ] {
+         def decode( c: PacketCodec, typeTag: SByte, b: ByteBuffer ) : A
+      }
 
       object Int extends Atom[SInt] {
          def decode( c: PacketCodec, typeTag: SByte, b: ByteBuffer ) = b.getInt()
@@ -292,26 +302,19 @@ object Packet {
          def getEncodedSize( c: PacketCodec, v: SDouble ) = 8
       }
 
-      object DoubleAsFloat extends Atom[SDouble] {
-         def decode( c: PacketCodec, typeTag: SByte, b: ByteBuffer ) :SDouble = decodeUnsupported( typeTag ) // b.getFloat.toDouble
-
+      object DoubleAsFloat extends Encoder[SDouble] {
          def encode( c: PacketCodec, v: SDouble, tb: ByteBuffer, db: ByteBuffer ) {
             tb.put( 0x66.toByte )	// 'f'
             db.putFloat( v.toFloat )
          }
-
-      //	def getTypeTag( v: Any ) : Byte  = 0x66	// 'f'
          def getEncodedSize( c: PacketCodec, v: SDouble ) = 4
       }
 
-      object LongAsInt extends Atom[SLong] {
-         def decode( c: PacketCodec, typeTag: SByte, b: ByteBuffer ) :SLong = decodeUnsupported( typeTag ) // b.getInt.toLong
-
+      object LongAsInt extends Encoder[SLong] {
          def encode( c: PacketCodec, v: SLong, tb: ByteBuffer, db: ByteBuffer ) {
             tb.put( 0x69.toByte )	// 'i'
             db.putInt( v.toInt )
          }
-
          def getEncodedSize( c: PacketCodec, v: SLong ) = 4
       }
 
@@ -415,9 +418,7 @@ object Packet {
       /**
        * Encodes an `Packet` as OSC blob (tag `b`)
        */
-      object Packet extends Atom[OSCPacket] {
-         def decode( c: PacketCodec, typeTag: SByte, b: ByteBuffer ) : OSCPacket = decodeUnsupported( typeTag )
-
+      object Packet extends Encoder[OSCPacket] {
          def encode( c: PacketCodec, v: OSCPacket, tb: ByteBuffer, db: ByteBuffer ) {
             tb.put( 0x62.toByte )	// 'b'
             val pos  = db.position
@@ -427,11 +428,9 @@ object Packet {
             v.encode( c, db )
             db.putInt( pos, db.position - pos2 )
          }
-
          def getEncodedSize( c: PacketCodec, v: OSCPacket ) = {
             v.getEncodedSize( c ) + 4
          }
-
          override def printTextOn( c: PacketCodec, v: OSCPacket, stream: PrintStream, nestCount: Int ) {
             stream.println()
             v.printTextOn( c, stream, nestCount + 1 )
@@ -445,7 +444,7 @@ object Packet {
             } else if( typeTag == 0x46 ) {
                false
             } else {
-               decodeUnsupported( typeTag )
+               errUnsupported( typeTag.toChar.toString )
             }
          }
 
@@ -456,14 +455,11 @@ object Packet {
          def getEncodedSize( c: PacketCodec, v: SBoolean ) = 0
       }
 
-      object BooleanAsInt extends Atom[SBoolean] {
-         def decode( c: PacketCodec, typeTag: SByte, b: ByteBuffer ) : SBoolean = decodeUnsupported( typeTag )
-
+      object BooleanAsInt extends Encoder[SBoolean] {
          def encode( c: PacketCodec, v: SBoolean, tb: ByteBuffer, db: ByteBuffer ) {
             tb.put( 0x69.toByte )	// 'i'
             db.putInt( if( v ) 1 else 0 )
          }
-
          def getEncodedSize( c: PacketCodec, v: SBoolean ) = 4
       }
 
@@ -491,14 +487,14 @@ object Packet {
        * Throws exceptions when called
        */
       object Unsupported extends Atom[Any] {
-         def decode( c: PacketCodec, typeTag: SByte, b: ByteBuffer ) : Any = decodeUnsupported( typeTag )
+         def decode( c: PacketCodec, typeTag: SByte, b: ByteBuffer ) : Any = errUnsupported( typeTag.toChar.toString )
 
          def encode( c: PacketCodec, v: Any, tb: ByteBuffer, db: ByteBuffer ) {
-            throw PacketCodec.UnsupportedAtom( v.getClass.getName )
+            errUnsupported( v.getClass.getName )
          }
 
          def getEncodedSize( c: PacketCodec, v: Any ) =
-            throw PacketCodec.UnsupportedAtom( v.getClass.getName )
+            errUnsupported( v.getClass.getName )
 
          override def printTextOn( c: PacketCodec, v: Any, stream: PrintStream, nestCount: Int ) {
             stream.print( '\u26A1' )
@@ -506,14 +502,7 @@ object Packet {
          }
       }
    }
-   abstract class Atom[ @specialized A] {
-      def decode( c: PacketCodec, typeTag: Byte, b: ByteBuffer ) : A
-      def encode( c: PacketCodec, v: A, tb: ByteBuffer, db: ByteBuffer ) : Unit
-      def getEncodedSize( c: PacketCodec, v: A ) : Int
-      def printTextOn( c: PacketCodec, v: A, stream: PrintStream, nestCount: Int ) {
-         stream.print( v )
-      }
-   }
+   trait Atom[ @specialized A ] extends Atom.Encoder[ A ] with Atom.Decoder[ A ]
 }
 
 sealed trait Packet {
@@ -730,8 +719,8 @@ with LinearSeqLike[ Any, Message ] {
 	def getEncodedSize( c: PacketCodec ) : Int = c.getEncodedMessageSize( this )
 
    // recreate stuff we lost when removing case modifier
-   override def toString = args.mkString( "Message(" + name + ", ", ", ", ")" )
-   override def hashCode = name.hashCode * 41 + args.hashCode
+   override def toString() = args.mkString( "Message(" + name + ", ", ", ", ")" )
+   override def hashCode() = name.hashCode * 41 + args.hashCode
    override def equals( other: Any ) = other match {
       case that: Message => (that isComparable this) && this.name == that.name && this.args == that.args
       case _ => false
