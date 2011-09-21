@@ -1,5 +1,5 @@
 /*
- * OSCClient.scala
+ * Client.scala
  * (ScalaOSC)
  *
  * Copyright (c) 2008-2011 Hanns Holger Rutz. All rights reserved.

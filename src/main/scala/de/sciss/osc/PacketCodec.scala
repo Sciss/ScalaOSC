@@ -1,5 +1,5 @@
 /*
- * OSCPacketCodec.scala
+ * PacketCodec.scala
  * (ScalaOSC)
  *
  * Copyright (c) 2008-2011 Hanns Holger Rutz. All rights reserved.
@@ -299,6 +299,8 @@ object PacketCodec {
       }
    }
 
+   private val BUNDLE_TAGB  = "#bundle\0".getBytes
+
    private final class Impl( customEnc: Map[ Class[ _ ], Atom.Encoder[ _ ]],
                              customDec: IntMap[ Atom.Decoder[ _ ]],
                              val charsetName: String,
@@ -336,8 +338,8 @@ object PacketCodec {
       @throws( classOf[ IOException ])
       def encodeBundle( bndl: Bundle, b: ByteBuffer ) {
          try {
-            b.put( Bundle.TAGB ).putLong( bndl.timetag )
-            bndl.foreach( p => {
+            b.put( BUNDLE_TAGB ).putLong( bndl.timetag.raw )
+            bndl.foreach { p =>
                b.mark()
                b.putInt( 0 )			// calculate size later
                val pos1 = b.position
@@ -345,7 +347,7 @@ object PacketCodec {
                val pos2 = b.position
                b.reset()
                b.putInt( pos2 - pos1 ).position( pos2 )
-            })
+            }
          }
          catch { case e: BufferOverflowException =>
             throw PacketCodec.BufferOverflow( bndl.name, e )
@@ -659,10 +661,10 @@ trait PacketCodec {
             p += decode( b )
             b.limit( totalLimit )
          }
-         Bundle( timetag, p: _* )
+         Bundle( Timetag( timetag ), p: _* )
 		}
 		catch { case e : BufferUnderflowException =>
-			throw PacketCodec.BufferOverflow( Bundle.TAG, e )
+			throw PacketCodec.BufferOverflow( "#bundle", e )
 		}
 	}
 

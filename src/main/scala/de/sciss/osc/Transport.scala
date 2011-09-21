@@ -1,5 +1,5 @@
 /*
- * OSCTransport.scala
+ * Transport.scala
  * (ScalaOSC)
  *
  * Copyright (c) 2008-2011 Hanns Holger Rutz. All rights reserved.
@@ -22,9 +22,9 @@
  * For further information, please contact Hanns Holger Rutz at
  * contact@sciss.de
  */
+
 package de.sciss.osc
 
-import java.nio.BufferOverflowException
 import java.io.IOException
 import java.nio.channels.{SocketChannel, DatagramChannel}
 import de.sciss.osc.{Channel => OSCChannel, Client => OSCClient,
@@ -37,10 +37,10 @@ object Transport {
    sealed trait Net extends Transport
 
    def apply( name: String ) : Transport = name.toUpperCase match {
-      case UDP.name              => UDP
-      case TCP.name              => TCP
+      case UDP.name  => UDP
+      case TCP.name  => TCP
       case File.name => File
-      case _                     => throw new IllegalArgumentException( name )
+      case _         => throw new IllegalArgumentException( name )
    }
 }
 

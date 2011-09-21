@@ -1,5 +1,5 @@
 /*
- * OSCPacket.scala
+ * Packet.scala
  * (ScalaOSC)
  *
  * Copyright (c) 2008-2011 Hanns Holger Rutz. All rights reserved.
@@ -29,8 +29,6 @@ import java.io.PrintStream
 import java.nio.{ BufferOverflowException, BufferUnderflowException, ByteBuffer }
 import collection.LinearSeqLike
 import collection.mutable.Builder
-import java.text.{NumberFormat, SimpleDateFormat, DecimalFormat}
-import java.util.Locale
 
 object Packet {
 	private val HEX   = "0123456789ABCDEF".getBytes
@@ -490,11 +488,11 @@ object Packet {
          def decode( c: PacketCodec, typeTag: SByte, b: ByteBuffer ) : Any = errUnsupported( typeTag.toChar.toString )
 
          def encode( c: PacketCodec, v: Any, tb: ByteBuffer, db: ByteBuffer ) {
-            errUnsupported( v.getClass.getName )
+            errUnsupported( v.asInstanceOf[AnyRef].getClass.getName )
          }
 
          def getEncodedSize( c: PacketCodec, v: Any ) =
-            errUnsupported( v.getClass.getName )
+            errUnsupported( v.asInstanceOf[AnyRef].getClass.getName )
 
          override def printTextOn( c: PacketCodec, v: Any, stream: PrintStream, nestCount: Int ) {
             stream.print( '\u26A1' )
@@ -518,21 +516,12 @@ sealed trait Packet {
 // they need to be in the same file due to the sealed restriction...
 
 object Bundle {
-  /**
-   *  This is the initial string
-   *  of an OSC bundle datagram
-   */
-  private[osc] val TAG   = "#bundle"
-  private[osc] val TAGB  = "#bundle\0".getBytes
-
-  /**
-   *  The special timetag value
-   *  to indicate that the bundle be
-   *  processed as soon as possible
-   */
-  val Now   = 1
-
-  private val SECONDS_FROM_1900_TO_1970 = 2208988800L
+//  /**
+//   *  This is the initial string
+//   *  of an OSC bundle datagram
+//   */
+//  private[osc] val TAG   = "#bundle"
+//  private[osc] val TAGB  = "#bundle\0".getBytes
 
    /**
     * Creates a bundle with timetag given by
@@ -540,7 +529,7 @@ object Bundle {
     * jan 1 1970, as returned by System.currentTimeMillis
     */
    def millis( abs: Long, packets: Packet* ) : Bundle =
-	   new Bundle( millisToTimetag( abs ), packets: _* )
+	   new Bundle( Timetag.millis( abs ), packets: _* )
 
    /**
     * Creates a bundle with timetag given by
@@ -548,108 +537,18 @@ object Bundle {
     * for example for scsynth offline rendering
     */
    def secs( delta: Double, packets: Packet* ) : Bundle =
-	   new Bundle( secsToTimetag( delta ), packets: _* )
+	   new Bundle( Timetag.secs( delta ), packets: _* )
 
    /**
     * Creates a bundle with special timetag 'now'
     */
-   def apply( packets: Packet* ) : Bundle = new Bundle( Now, packets: _* )
-
-//   /**
-//    * Creates a bundle with raw formatted timetag
-//    */
-//   def apply( timetag: Long, packets: Packet* ) : Bundle = new Bundle( timetag, packets: _* )
-
-   /**
-    * Converts a time value from the system clock value in milliseconds since
-    * jan 1 1970, as returned by System.currentTimeMillis, into a raw timetag.
-    */
-   def millisToTimetag( abs: Long ) : Long = {
-      val secsSince1900    = abs / 1000 + SECONDS_FROM_1900_TO_1970
-      val secsFractional	= (((abs % 1000) << 32) + 500) / 1000
-      (secsSince1900 << 32) | secsFractional
-   }
-
-   /**
-    * Converts a relative time value in seconds, as required
-    * for example for scsynth offline rendering, into a raw timetag.
-    */
-   def secsToTimetag( delta: Double ) : Long =
-      (delta.toLong << 32) + ((delta % 1.0) * 0x100000000L + 0.5).toLong
-
-   /**
-    * Converts a raw timetag into a time value from the system clock value in milliseconds since
-    * jan 1 1970, corresponding to what is returned by System.currentTimeMillis.
-    */
-   def timetagToMillis( timetag: Long ) : Long = {
-      val m1 = ((timetag & 0xFFFFFFFFL) * 1000) >> 32
-      val m2 = (((timetag >> 32) & 0xFFFFFFFFL) - SECONDS_FROM_1900_TO_1970) * 1000
-      m1 + m2
-   }
-
-   /**
-    * Converts a raw timetag into a relative time value in seconds, as required
-    * for example for scsynth offline rendering. In general, this will return
-    * the amount of seconds since midnight on January 1, 1900, as defined by
-    * the OSC standard.
-    */
-   def timetagToSecs( timetag: Long ) : Double = {
-      val frac = (timetag & 0xFFFFFFFFL).toDouble / 0x100000000L
-      val secs = (timetag >> 32).toDouble
-      secs + frac
-   }
-
-//   def unapplySeq( b: Bundle ): Option[ Tuple2[ Long, Seq[ Packet ]]]= Some( b.timetag -> b.packets )
-
-//	@throws( classOf[ IOException ])
-//	private[osc] def decode( b: ByteBuffer ) : Bundle = {
-//		val totalLimit = b.limit
-//		val p			   = new scala.collection.mutable.ListBuffer[ Packet ]
-//		val timetag 	= b.getLong
-//
-//		try {
-//			while( b.hasRemaining ) {
-//				b.limit( b.getInt + b.position )   // msg size
-//				p += decode( b )
-//				b.limit( totalLimit )
-//			}
-//			Bundle( timetag, p: _* )
-//		}
-//		catch { case e : IllegalArgumentException =>	// throws by b.limit if bundle size is corrupted
-//			throw new OSCException( OSCException.DECODE, e.getLocalizedMessage )
-//		}
-//	}
-
-   private val datef    = new SimpleDateFormat( "HH:mm:ss.SSS", Locale.US )
-   private val decimf   = {
-      val res = NumberFormat.getInstance( Locale.US )
-      res match {
-         case d: DecimalFormat => {
-            d.setGroupingUsed( false )
-            d.setMinimumFractionDigits( 1 )
-            d.setMaximumFractionDigits( 5 )
-         }
-         case _ =>
-      }
-      res
-   }
-
-   private def smartTimetagString( timetag: Long ) : String = {
-      if( timetag == Now ) "<now>" else {
-         val secsSince1900 = (timetag >> 32) & 0xFFFFFFFFL
-         if( secsSince1900 > SECONDS_FROM_1900_TO_1970 ) {
-            datef.format( timetagToMillis( timetag ))
-         } else {
-            decimf.format( timetagToSecs( timetag ))
-         }
-      }
-   }
+   def now( packets: Packet* ) : Bundle = new Bundle( Timetag.now, packets: _* )
 }
 
-final case class Bundle( timetag: Long, packets: Packet* )
+final case class Bundle( timetag: Timetag, packets: Packet* )
 extends Packet
 with LinearSeqLike[ Packet, Bundle ] {
-   import Bundle._
+//   import Bundle._
 
 	// ---- getting LinearSeqLike to work properly ----
 
@@ -664,7 +563,7 @@ with LinearSeqLike[ Packet, Bundle ] {
    def seq: TraversableOnce[ Packet ] = this // need for Scala 2.9.0
 
 	// ---- Packet implementation ----
-	def name: String = Bundle.TAG
+	def name: String = "#bundle" // Bundle.TAG
 
 	@throws( classOf[ Exception ])
 	def encode( c: PacketCodec, b: ByteBuffer ) { c.encodeBundle( this, b )}
@@ -673,7 +572,7 @@ with LinearSeqLike[ Packet, Bundle ] {
 
 	private[osc] def printTextOn( c: PacketCodec, stream: PrintStream, nestCount: Int ) {
 		stream.print( "  " * nestCount )
-		stream.print( "[ #bundle, " + smartTimetagString( timetag ))
+		stream.print( "[ #bundle, " + timetag )
 		val ncInc = nestCount + 1
 		for( v <- packets ) {
 			stream.println( ',' )
@@ -682,7 +581,7 @@ with LinearSeqLike[ Packet, Bundle ] {
 		if( nestCount == 0 ) stream.println( " ]" ) else stream.print( " ]" )
 	}
 
-   override def toString() = "Bundle(" + smartTimetagString( timetag ) + packets.mkString( ", ", ", ", ")" )
+   override def toString() = "Bundle(" + timetag + packets.mkString( ", ", ", ", ")" )
 //   override def hashCode = timetag.hashCode * 41 + packets.hashCode
 //   override def equals( other: Any ) = other match {
 //      case that: Bundle => (that isComparable this) && this.timetag == that.timetag && this.packets == that.packets

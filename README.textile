@@ -1,6 +1,4 @@
-h2. ScalaOSC ==<small>-- version 0.24 SNAPSHOT --</small>==
-
-*WARNING:* This is an unfinished new version. Please use the 0.23 git tag for the latest full version.
+h2. ScalaOSC ==<small>-- version 0.30 SNAPSHOT --</small>==
 
 h3. statement
 
@@ -8,7 +6,7 @@ ScalaOSC is an OpenSoundControl (OSC) library for the Scala programming language
 
 h3. requirements / installation
 
-ScalaOSC currently cross-builds against Scala 2.9.1 (default), 2.9.0, and 2.8.1. It uses the I/O API from Java 1.6. Use the "NetUtil":http://www.sciss.de/netutil/ Java OSC library if you require compatibility with Java SE 1.4.
+ScalaOSC currently cross-builds against Scala 2.9.1 (default) and. 2.9.0. Due to problems with specialization, cross-build for 2.8.1 is currently disabled. It uses the I/O API from Java 1.6. Use the "NetUtil":http://www.sciss.de/netutil/ Java OSC library if you require compatibility with Java SE 1.4.
 
 ScalaOSC builds with sbt 0.10 (xsbt), and also contains a project file for Intellij IDEA 10 CE
 

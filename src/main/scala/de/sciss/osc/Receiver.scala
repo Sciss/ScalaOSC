@@ -1,5 +1,5 @@
 /*
- * OSCReceiver.scala
+ * Receiver.scala
  * (ScalaOSC)
  *
  * Copyright (c) 2008-2011 Hanns Holger Rutz. All rights reserved.
@@ -26,7 +26,6 @@
 package de.sciss.osc
 
 import java.io.IOException
-import java.nio.BufferUnderflowException
 import java.nio.channels.{AsynchronousCloseException, ClosedChannelException}
 import java.net.SocketAddress
 

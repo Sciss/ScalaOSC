@@ -6,7 +6,7 @@ organization := "de.sciss"
 
 scalaVersion := "2.9.1"
 
-crossScalaVersions := Seq("2.9.1", "2.9.0", "2.8.1")
+crossScalaVersions := Seq("2.9.1", "2.9.0") // "2.8.1" currently compiler chokes
 
 // fix sbt issue #85 (https://github.com/harrah/xsbt/issues/85)
 unmanagedClasspath in Compile += Attributed.blank(new java.io.File("doesnotexist"))
