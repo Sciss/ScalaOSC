@@ -240,9 +240,10 @@ object Packet {
    }
 
    object Atom {
-      import scala.{Byte => SByte, Double => SDouble, Float => SFloat, Int => SInt, Long => SLong}
+      import scala.{Boolean => SBoolean, Byte => SByte, Double => SDouble, Float => SFloat, Int => SInt, Long => SLong,
+         None => SNone, Symbol => SSymbol}
       import java.lang.{String => SString}
-      import de.sciss.osc.{Packet => OSCPacket}
+      import de.sciss.osc.{Packet => OSCPacket, Timetag => OSCTimetag}
 
       object Int extends Atom {
          def decode( c: PacketCodec, typeTag: SByte, b: ByteBuffer ) : Any = b.getInt()
@@ -312,22 +313,24 @@ object Packet {
          def getEncodedSize( c: PacketCodec, v: Any ) = 4
       }
 
+      private def decodeString( c: PacketCodec, b: ByteBuffer ) : SString = {
+         val pos1	   = b.position
+         while( b.get() != 0 ) {}
+         val pos2	   = b.position - 1
+         b.position( pos1 )
+         val len		= pos2 - pos1
+         val bytes	= new Array[ SByte ]( len )
+         b.get( bytes, 0, len )
+         val s       = new String( bytes, c.charsetName )
+         val pos3    = (pos2 + 4) & ~3
+         if( pos3 > b.limit ) throw new BufferUnderflowException
+         b.position( pos3 )
+         s
+      }
+
       // parametrized through charsetName
       object String extends Atom {
-         def decode( c: PacketCodec, typeTag: SByte, b: ByteBuffer ) : Any = {
-            val pos1	   = b.position
-            while( b.get() != 0 ) {}
-            val pos2	   = b.position - 1
-            b.position( pos1 )
-            val len		= pos2 - pos1
-            val bytes	= new Array[ SByte ]( len )
-            b.get( bytes, 0, len )
-            val s       = new String( bytes, c.charsetName )
-            val pos3    = (pos2 + 4) & ~3
-            if( pos3 > b.limit ) throw new BufferUnderflowException
-            b.position( pos3 )
-            s
-         }
+         def decode( c: PacketCodec, typeTag: SByte, b: ByteBuffer ) : Any = decodeString( c, b )
 
          def encode( c: PacketCodec, v: Any, tb: ByteBuffer, db: ByteBuffer ) {
             tb.put( 0x73.toByte )	// 's'
@@ -343,6 +346,37 @@ object Packet {
          override def printTextOn( c: PacketCodec, v: Any, stream: PrintStream, nestCount: Int ) {
             OSCPacket.printEscapedStringOn( stream, v.asInstanceOf[ SString ])
          }
+      }
+
+      // parametrized through charsetName
+      object Symbol extends Atom {
+         def decode( c: PacketCodec, typeTag: SByte, b: ByteBuffer ) : Any = SSymbol( decodeString( c, b ))
+
+         def encode( c: PacketCodec, v: Any, tb: ByteBuffer, db: ByteBuffer ) {
+            tb.put( 0x53.toByte )	// 'S'
+            db.put( v.asInstanceOf[ SSymbol ].name.getBytes( c.charsetName ))
+            terminateAndPadToAlign( db )
+         }
+
+         def getEncodedSize( c: PacketCodec, v: Any ) = {
+            (v.asInstanceOf[ SSymbol ].name.getBytes( c.charsetName ).length + 4) & ~3
+         }
+
+//         // provide an escaped display
+//         override def printTextOn( c: PacketCodec, v: Any, stream: PrintStream, nestCount: Int ) {
+//            OSCPacket.printEscapedStringOn( stream, v.asInstanceOf[ SSymbol ])
+//         }
+      }
+
+      object Timetag extends Atom {
+         def decode( c: PacketCodec, typeTag: SByte, b: ByteBuffer ) : Any = OSCTimetag( b.getLong() )
+
+         def encode( c: PacketCodec, v: Any, tb: ByteBuffer, db: ByteBuffer ) {
+            tb.put( 0x74.toByte )	// 't'
+            db.putLong( v.asInstanceOf[ OSCTimetag ].raw )
+         }
+
+         def getEncodedSize( c: PacketCodec, v: Any ) = 8
       }
 
       /**
@@ -401,6 +435,70 @@ object Packet {
          override def printTextOn( c: PacketCodec, v: Any, stream: PrintStream, nestCount: Int ) {
             stream.println()
             v.asInstanceOf[ Packet ].printTextOn( c, stream, nestCount + 1 )
+         }
+      }
+
+      object Boolean extends Atom {
+         def decode( c: PacketCodec, typeTag: SByte, b: ByteBuffer ) : Any = {
+            if( typeTag == 0x54 ) {
+               true
+            } else if( typeTag == 0x46 ) {
+               false
+            } else {
+               throw PacketCodec.UnsupportedAtom( typeTag.toChar.toString )
+            }
+         }
+
+         def encode( c: PacketCodec, v: Any, tb: ByteBuffer, db: ByteBuffer ) {
+            tb.put( if( v.asInstanceOf[ SBoolean ]) 0x54.toByte else 0x46.toByte )  // 'T' and 'F'
+         }
+
+         def getEncodedSize( c: PacketCodec, v: Any ) = 0
+      }
+
+      object BooleanAsInt extends Atom {
+         def decode( c: PacketCodec, typeTag: SByte, b: ByteBuffer ) : Any =
+            throw PacketCodec.UnsupportedAtom( typeTag.toChar.toString )
+
+         def encode( c: PacketCodec, v: Any, tb: ByteBuffer, db: ByteBuffer ) {
+            tb.put( 0x69.toByte )	// 'i'
+            db.putInt( if( v.asInstanceOf[ SBoolean ]) 1 else 0 )
+         }
+
+         def getEncodedSize( c: PacketCodec, v: Any ) = 4
+      }
+
+      object None extends Atom {
+         def decode( c: PacketCodec, typeTag: SByte, b: ByteBuffer ) : Any = SNone
+
+         def encode( c: PacketCodec, v: Any, tb: ByteBuffer, db: ByteBuffer ) {
+            tb.put( 0x4E.toByte )   // 'N'
+         }
+
+         def getEncodedSize( c: PacketCodec, v: Any ) = 0
+      }
+
+      object Impulse extends Atom {
+         def decode( c: PacketCodec, typeTag: SByte, b: ByteBuffer ) : Any = ()
+
+         def encode( c: PacketCodec, v: Any, tb: ByteBuffer, db: ByteBuffer ) {
+            tb.put( 0x49.toByte )   // 'I'
+         }
+
+         def getEncodedSize( c: PacketCodec, v: Any ) = 0
+      }
+
+      /**
+       * Throws exceptions when called
+       */
+      object Unsupported extends Atom {
+         private def err( text: String ): Nothing = throw PacketCodec.UnsupportedAtom( text )
+         def decode( c: PacketCodec, typeTag: SByte, b: ByteBuffer ) : Any = err( typeTag.toChar.toString )
+         def encode( c: PacketCodec, v: Any, tb: ByteBuffer, db: ByteBuffer ) { err( v.getClass.getName )}
+         def getEncodedSize( c: PacketCodec, v: Any ) = err( v.getClass.getName )
+         override def printTextOn( c: PacketCodec, v: Any, stream: PrintStream, nestCount: Int ) {
+            stream.print( '\u26A1' )
+            stream.print( v.toString )
          }
       }
    }
@@ -591,7 +689,7 @@ with LinearSeqLike[ Packet, Bundle ] {
 		if( nestCount == 0 ) stream.println( " ]" ) else stream.print( " ]" )
 	}
 
-   override def toString = "Bundle(" + smartTimetagString( timetag ) + packets.mkString( ", ", ", ", ")" )
+   override def toString() = "Bundle(" + smartTimetagString( timetag ) + packets.mkString( ", ", ", ", ")" )
 //   override def hashCode = timetag.hashCode * 41 + packets.hashCode
 //   override def equals( other: Any ) = other match {
 //      case that: Bundle => (that isComparable this) && this.timetag == that.timetag && this.packets == that.packets
