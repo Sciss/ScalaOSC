@@ -29,7 +29,7 @@ import java.io.IOException
 import java.nio.channels.{SocketChannel, DatagramChannel}
 import de.sciss.osc.{Channel => OSCChannel, Client => OSCClient,
    Receiver => OSCReceiver, Transmitter => OSCTransmitter}
-import java.net.{InetAddress, SocketAddress, InetSocketAddress}
+import java.net.{ConnectException, PortUnreachableException, InetAddress, SocketAddress, InetSocketAddress}
 
 sealed trait Transport { def name: String }
 
@@ -130,7 +130,7 @@ case object UDP extends Transport.Net {
          override def toString = name + ".Transmitter()"
 
          @throws( classOf[ IOException ])
-         protected def connectChannel { if( !isConnected ) channel.connect( target )}
+         protected def connectChannel() { if( !isConnected ) channel.connect( target )}
          def isConnected = channel.isConnected
 //         def remoteSocketAddress = {
 //            val so = channel.socket()
@@ -141,6 +141,7 @@ case object UDP extends Transport.Net {
          def !( p: Packet ) {
 //            try {
                bufSync.synchronized {
+//println( "TRANSMIT FROM " + channel.socket().getLocalSocketAddress )
                   buf.clear()
                   p.encode( codec, buf )
                   buf.flip()
@@ -213,15 +214,59 @@ case object UDP extends Transport.Net {
       extends Receiver with OSCReceiver.DirectedImpl {
          override def toString = name + ".Receiver(" + target + ")"
 
-         protected def connectChannel() { if( !isConnected ) channel.connect( target )}
+//         protected def connectChannel() { if( !isConnected ) channel.connect( target )}
          def isConnected = channel.isConnected
 
+//         private var flushBuf = false
+
+         protected def connectChannel() {
+//println( "UDP.RCV: connectChannel()" )
+            if( isConnected ) return
+
+//println( "UDP.RCV: channel.connect( target )" )
+            channel.connect( target )
+//println( "UDP.RCV: channel.blockingLock()" )
+//            channel.blockingLock().synchronized {
+//println( "UDP.RCV: channel.configureBlocking( false )" )
+//               channel.configureBlocking( false )
+//               try {
+//                  buf.clear()
+//println( "UDP.RCV: channel.receive( buf )" )
+//                  flushBuf = channel.receive( buf ) != null
+//               } catch {
+//                  // cast this into a ConnectException so it behaves identical to the TCP receiver
+//                  case e: PortUnreachableException =>
+//println( "UDP.RCV: throw new ConnectException( e.getMessage )" )
+//                     throw new ConnectException( e.getMessage )
+//               } finally {
+//println( "UDP.RCV: channel.configureBlocking( true )" )
+//                  channel.configureBlocking( true )
+//println( "UDP.RCV: channel connected" )
+//               }
+//            }
+         }
+
          protected def receive() {
+//            if( flushBuf ) {  // happens when a datagram was in the line when connectChannel was called
+//               flushBuf = false
+//               flipDecodeDispatch()
+//            }
             buf.clear()
-//println( "DIRECTED RECEIVER AWAIT" )
-            val sender = channel.receive( buf )
-//println( "DIRECTED RECEIVER : " + sender )
-            if( sender != null ) flipDecodeDispatch()
+//            channel.receive( buf )
+//println( "RECEIVE FROM " + channel.socket().getLocalSocketAddress )
+//try {
+//   val sender =
+      channel.receive( buf )
+//   println( "SENDER " + sender + " (target is " + target + ")" )
+//   println( "DISPATCH" )
+   flipDecodeDispatch()
+//} catch {
+//   case e =>
+//      println( "RECEIVE CAUGHT:" )
+//      e.printStackTrace( Console.out )
+//} finally {
+//   println( "RECEIVED." )
+//}
          }
       }
    }
@@ -242,6 +287,8 @@ case object UDP extends Transport.Net {
       extends Client {
          protected val input  = Receiver( channel, target, config )
          protected val output = Transmitter( channel, target, config )
+
+         override def toString = name + ".Client(" + target + ")"
 
          def action = input.action
          def action_=( fun: Channel.DirectedInput.Action ) { input.action = fun }
@@ -426,6 +473,8 @@ case object TCP extends Transport.Net {
       extends Client {
          protected val input  = Receiver( channel, target, config )
          protected val output = Transmitter( channel, target, config )
+
+         override def toString = name + ".Client(" + target + ")"
 
          // XXX factor this out (common with UDP.Client.Impl)
          def action = input.action

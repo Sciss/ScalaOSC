@@ -27,7 +27,7 @@ package de.sciss.osc
 
 import java.io.IOException
 import java.nio.channels.{AsynchronousCloseException, ClosedChannelException}
-import java.net.SocketAddress
+import java.net.{PortUnreachableException, SocketAddress}
 
 object Receiver {
    type Net = Receiver with Channel.NetConfigLike
@@ -117,13 +117,20 @@ trait Receiver extends Channel.Input {
          }
       }
 
-      override def run {
+      override def run() {
 //println( "RECEIVER RUN " + this )
          try {
-            while( !wasClosed ) receive()
-         } catch {
-            case e: AsynchronousCloseException => closedException()
-            case e: ClosedChannelException => closedException()
+            while( !wasClosed ) {
+               try {
+                  receive()
+               } catch {
+                  case e: AsynchronousCloseException => closedException()
+                  case e: ClosedChannelException => closedException()
+                  case e: PortUnreachableException =>
+                   // thrown by server coming up (e.g. scsynth booting)
+                     Thread.sleep( 50 )
+               }
+            }
          } finally {
 //println( "RECEIVER EXIT " + this )
             threadSync.synchronized {
@@ -148,11 +155,27 @@ trait Receiver extends Channel.Input {
 
    @throws( classOf[ IOException ])
    final def connect() {
+println( "RCV: connectChannel()" )
       connectChannel()
+println( "RCV: start()" )
       start()
+println( "RCV: started" )
    }
 
 //   final def isConnected : Boolean = isChannelConnected && thread.isAlive
+
+//   final def isConnected : Boolean = {
+//      // XXX
+//      check if thread is sleeping due to port unreachable!
+//
+//   }
+
+   /*
+      Idea:
+      start with channel unconnected
+      after first packet with correct address,
+      do the connect
+    */
 
    @throws( classOf[ IOException ])
    private def start() {
