@@ -491,7 +491,7 @@ object PacketCodec {
       }
 
       @throws( classOf[ Exception ])
-      protected def decodeMessage( name: String, b: ByteBuffer ) : Message = {
+      /* protected */ def decodeMessage( name: String, b: ByteBuffer ) : Message = {
          try {
             if( b.get() != 0x2C ) throw MalformedPacket( name )
             val b2      = b.slice	// faster to slice than to reposition all the time!
@@ -648,7 +648,7 @@ trait PacketCodec {
    }
 
    @throws( classOf[ Exception ])
-   protected final def decodeBundle( b: ByteBuffer ) : Bundle = {
+   /* protected */ final def decodeBundle( b: ByteBuffer ) : Bundle = {
       try {
          val totalLimit = b.limit
          val p			   = new ListBuffer[ Packet ]
@@ -685,5 +685,5 @@ trait PacketCodec {
     *                list (beginning with `','`).
     */
    @throws( classOf[ Exception ])
-   protected def decodeMessage( name: String, b: ByteBuffer ) : Message
+   /* protected */ def decodeMessage( name: String, b: ByteBuffer ) : Message
 }
