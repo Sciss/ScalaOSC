@@ -126,9 +126,9 @@ trait Receiver extends Channel.Input {
                } catch {
                   case e: AsynchronousCloseException => closedException()
                   case e: ClosedChannelException => closedException()
-                  case e: PortUnreachableException =>
-                   // thrown by server coming up (e.g. scsynth booting)
-                     Thread.sleep( 50 )
+//                  case e: PortUnreachableException =>
+//                   // thrown by server coming up (e.g. scsynth booting)
+//                     Thread.sleep( 50 )
                }
             }
          } finally {
@@ -155,11 +155,11 @@ trait Receiver extends Channel.Input {
 
    @throws( classOf[ IOException ])
    final def connect() {
-println( "RCV: connectChannel()" )
+//println( "RCV: connectChannel()" )
       connectChannel()
-println( "RCV: start()" )
+//println( "RCV: start()" )
       start()
-println( "RCV: started" )
+//println( "RCV: started" )
    }
 
 //   final def isConnected : Boolean = isChannelConnected && thread.isAlive
