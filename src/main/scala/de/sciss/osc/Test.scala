@@ -159,7 +159,7 @@ Receiver test
       pingR.connect()
       pong.connect()
       println( "Ping at " + pingT.localSocketAddress )
-      println( "Pong at" + pong.localSocketAddress )
+      println( "Pong at " + pong.localSocketAddress )
 
       val t = new java.util.Timer()
       def delay( code: => Unit ) {
