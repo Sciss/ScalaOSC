@@ -1,4 +1,4 @@
-h2. ScalaOSC ==<small>-- version 0.30 SNAPSHOT --</small>==
+h2. ScalaOSC ==<small>-- version 0.30 --</small>==
 
 h3. statement
 
