@@ -1,12 +1,10 @@
 name := "scalaosc"
 
-version := "0.30"
+version := "0.31-SNAPSHOT"
 
 organization := "de.sciss"
 
 scalaVersion := "2.9.1"
-
-crossScalaVersions := Seq("2.9.1", "2.9.0") // "2.8.1" currently compiler chokes
 
 // ---- publishing ----
 

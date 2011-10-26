@@ -67,7 +67,7 @@ import annotation.switch
  *	@since		NetUtil 0.35
  */
 object PacketCodec {
-	val default: PacketCodec = Builder().build
+	val default: PacketCodec = apply().build
 
    sealed abstract class Exception( message: String, cause: Throwable )
    extends IOException( message, cause )
@@ -94,13 +94,14 @@ object PacketCodec {
     */
    final case class MalformedPacket( name: String ) extends Exception( name, null )
 
-   object Builder {
+//   object Builder {
       /**
        * Creates a new codec builder, initialized
        * to strict OSC 1_0 spec.
        */
       def apply() : Builder = new BuilderImpl
-   }
+//   }
+
    sealed trait Builder {
       def build: PacketCodec
 
@@ -372,8 +373,8 @@ object PacketCodec {
             case u: Unit if( useImpulse ) => Atom.Impulse.encode( codec, u, tb, db )
             case t: Timetag if( useTimetags ) => Atom.Timetag.encode( codec, t, tb, db )
             case s: Symbol if( useSymbols ) => Atom.Symbol.encode( codec, s, tb, db )
-            case r: AnyRef => {
-//               val r = v.asInstanceOf[ AnyRef ]
+            case v: Any /* Ref */ => {
+               val r = v.asInstanceOf[ AnyRef ]
                val atom = customEnc.getOrElse( r.getClass, Atom.Unsupported ).asInstanceOf[ Atom[ r.type ]]
                atom.encode( codec, r, tb, db )
             }
