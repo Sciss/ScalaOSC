@@ -20,18 +20,14 @@ ScalaOSC builds with sbt 0.11 (xsbt), with the standard targets:
 
 The IDEA project files have now been removed from the git repository, but they can be easily recreated, given that you have installed the sbt-idea plugin. If you haven't yet, create the following contents in `~/.sbt/plugins/build.sbt`:
 
-```scala
-
     resolvers += "sbt-idea-repo" at "http://mpeltonen.github.com/maven/"
     
     addSbtPlugin("com.github.mpeltonen" % "sbt-idea" % "0.11.0")
-
 
 Then to create the IDEA project, run the following two commands from the xsbt shell:
 
     > set ideaProjectName := "ScalaOSC"
     > gen-idea
-
 
 ### overview
 
@@ -55,8 +51,7 @@ ScalaOSC comes with a codec conforming with the strict [OSC 1.0 specification](h
 
 An example of setting up a client that talks to the SuperCollider server running on UDP port 57110:
 
-```scala
-
+    ```scala
     import de.sciss.osc._
     import Implicits._      // simply socket address construction
     
@@ -87,8 +82,7 @@ An example of setting up a client that talks to the SuperCollider server running
 
 Another very brief example, showing two UDP clients playing ping-pong:
 
-```scala
-
+    ```scala
     import de.sciss.osc
     // a sender, no target
     val pingT = osc.UDP.Transmitter()
