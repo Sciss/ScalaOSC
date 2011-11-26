@@ -80,6 +80,8 @@ An example of setting up a client that talks to the SuperCollider server running
     
     // finally shut down the client
     c.close()
+    
+````
 
 Another very brief example, showing two UDP clients playing ping-pong:
 
@@ -132,6 +134,8 @@ Another very brief example, showing two UDP clients playing ping-pong:
     // unbound channels send via send(packet, addr)
     pingT.send( osc.Message( "/start" ),
        pong.localSocketAddress )
+    
+````
 
 Further examples can be found in the headers of the API docs, e.g. by looking up the documentation for `UDP.Client`.
 
