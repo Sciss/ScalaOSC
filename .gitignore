@@ -2,8 +2,6 @@ target/
 lib_managed/
 src_managed/
 project/boot/
-out/
-index.html
-style.css
-.idea/workspace.xml
+.idea/
+.idea_modules/
 .history
