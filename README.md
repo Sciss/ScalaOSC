@@ -51,7 +51,8 @@ ScalaOSC comes with a codec conforming with the strict [OSC 1.0 specification](h
 
 An example of setting up a client that talks to the SuperCollider server running on UDP port 57110:
 
-    ```scala
+```scala
+    
     import de.sciss.osc._
     import Implicits._      // simply socket address construction
     
@@ -82,7 +83,8 @@ An example of setting up a client that talks to the SuperCollider server running
 
 Another very brief example, showing two UDP clients playing ping-pong:
 
-    ```scala
+```scala
+    
     import de.sciss.osc
     // a sender, no target
     val pingT = osc.UDP.Transmitter()
