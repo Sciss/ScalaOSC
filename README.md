@@ -23,13 +23,15 @@ The IDEA project files have now been removed from the git repository, but they c
 ```scala
 
     resolvers += "sbt-idea-repo" at "http://mpeltonen.github.com/maven/"
-     
+    
     addSbtPlugin("com.github.mpeltonen" % "sbt-idea" % "0.11.0")
+
 
 Then to create the IDEA project, run the following two commands from the xsbt shell:
 
     > set ideaProjectName := "ScalaOSC"
     > gen-idea
+
 
 ### overview
 
