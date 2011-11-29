@@ -1,6 +1,6 @@
 name := "scalaosc"
 
-version := "0.33-SNAPSHOT"
+version := "0.33"
 
 organization := "de.sciss"
 

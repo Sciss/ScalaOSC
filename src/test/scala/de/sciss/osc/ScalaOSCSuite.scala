@@ -15,7 +15,7 @@ class ScalaOSCSuite extends FeatureSpec with GivenWhenThen {
    val MAX_NAME      = 40
    val MAX_BLOB      = 50
    val RAND_SEED     = 0L
-   val DUMP_IN       = false  // true
+   val DUMP_IN       = false
 
    feature( "Conforming messages can be en- and decodec" ) {
       info( "Several random messages are generated" )
@@ -90,12 +90,13 @@ class ScalaOSCSuite extends FeatureSpec with GivenWhenThen {
             in.encode( c, bb )
             bb.flip()
             val sz2 = bb.limit()
-            assert( sz1 == sz2, "Reported message size " + sz1 + " != actual " + sz2 )
 
             if( DUMP_IN ) {
                in.printTextOn( c, Console.out, 0 )
                Packet.printHexOn( bb, Console.out )
             }
+
+            assert( sz1 == sz2, "Reported message size " + sz1 + " != actual " + sz2 )
 
             val out = c.decode( bb ).asInstanceOf[ Message ]
 //            when( "an original message is compared to the one that went through the codec" )

@@ -333,6 +333,26 @@ object PacketCodec {
 
       override def toString = "PacketCodec"
 
+      private def decodeString( b: ByteBuffer ) : String = {
+         val pos1	   = b.position
+         while( b.get() != 0 ) {}
+         val pos2	   = b.position - 1
+         b.position( pos1 )
+         val len		= pos2 - pos1
+         val bytes	= new Array[ Byte ]( len )
+         b.get( bytes, 0, len )
+         val s       = new String( bytes, charsetName )
+         val pos3    = (pos2 + 4) & ~3
+         if( pos3 > b.limit ) throw new BufferUnderflowException
+         b.position( pos3 )
+         s
+      }
+
+      private def encodeString( b: ByteBuffer, s: String ) {
+         b.put( s.getBytes( charsetName ))  // faster than using Charset or CharsetEncoder
+         terminateAndPadToAlign( b )
+      }
+
       @throws( classOf[ IOException ])
       def encodeBundle( bndl: Bundle, b: ByteBuffer ) {
          try {
@@ -352,79 +372,181 @@ object PacketCodec {
          }
       }
 
-      @inline private def encodeAtom( v: Any, tb: ByteBuffer, db: ByteBuffer ) {
+      @inline private def encodeAtomType( v: Any, tb: ByteBuffer ) {
          v match {
-            case i: Int                           => Atom.Int.encode( codec, i, tb, db )
-            case f: Float                         => Atom.Float.encode( codec, f, tb, db )
-            case s: String                        => Atom.String.encode( codec, s, tb, db )
-            case h: Long if( useLongs )           =>
-               (if( longToInt ) Atom.LongAsInt else Atom.Long).encode( codec, h, tb, db )
-            case d: Double if( useDoubles )       =>
-               (if( doubleToFloat ) Atom.DoubleAsFloat else Atom.Double).encode( codec, d, tb, db )
-            case b: Boolean if( useBooleans )     =>
-               (if( booleanToInt ) Atom.BooleanAsInt else Atom.Boolean).encode( codec, b, tb, db )
+            case i: Int                         => tb.put( 0x69.toByte )	// 'i'
+            case f: Float                       => tb.put( 0x66.toByte )	// 'f'
+            case s: String                      => tb.put( 0x73.toByte )	// 's'
+            case h: Long if( useLongs )         => tb.put(
+               if( longToInt ) 0x69.toByte /* 'i' */ else 0x68.toByte /* 'h' */ )
+            case d: Double if( useDoubles )     => tb.put(
+               if( doubleToFloat ) 0x66.toByte /* 'f' */ else 0x64.toByte /* 'd' */ )
+            case b: Boolean if( useBooleans )   => tb.put(
+               if( booleanToInt ) 0x69.toByte /* 'i' */ else {
+                  if( b ) 0x54.toByte else 0x46.toByte  // 'T' and 'F'
+               })
 //          case c: Char if( useChars )           =>
-            case blob: ByteBuffer => Atom.Blob.encode( codec, blob, tb, db )
-            case p: Packet if( usePackets )       => Atom.PacketAsBlob.encode( codec, p, tb, db )
-//            case c: IIdxSeq[ _ ] if( useArrays )  => Atom.IndexedSeqAsArray.encode( codec, blobk ,tb, db )
-
+            case blob: ByteBuffer               => tb.put( 0x62.toByte )	// 'b'
+            case p: Packet if( usePackets )     => tb.put( 0x62.toByte )	// 'b'
             // be careful to place the Traversable after the Packet case, because
             // the packets extends linear seq!
             case c: Traversable[ _ ] if( useArrays ) =>
                tb.put( 0x5B.toByte )
-               c.foreach( encodeAtom( _, tb, db ))
+               c.foreach( encodeAtomType( _, tb ))
                tb.put( 0x5D.toByte )
 
-            case None if( useNone )               => Atom.None.encode( codec, None, tb, db )
-            case u: Unit if( useImpulse )         => Atom.Impulse.encode( codec, u, tb, db )
-            case t: Timetag if( useTimetags )     => Atom.Timetag.encode( codec, t, tb, db )
-            case s: Symbol if( useSymbols )       => Atom.Symbol.encode( codec, s, tb, db )
-            case v: Any                           => {
+            case None if( useNone )             => tb.put( 0x4E.toByte )   // 'N'
+            case u: Unit if( useImpulse )       => tb.put( 0x49.toByte )   // 'I'
+            case t: Timetag if( useTimetags )   => tb.put( 0x74.toByte )	// 't'
+            case s: Symbol if( useSymbols )     => tb.put( 0x53.toByte )	// 'S'
+            case v: Any                         => {
                val r = v.asInstanceOf[ AnyRef ]
                val atom = customEnc.getOrElse( r.getClass, Atom.Unsupported ).asInstanceOf[ Atom[ r.type ]]
-               atom.encode( codec, r, tb, db )
+               atom.encodeType( codec, r, tb )
             }
          }
       }
 
-      @inline private def getDecoder( tag: Byte ) : Atom.Decoder[_] = {
-         (tag.toInt: @switch) match {
-            case 0x69 => Atom.Int
-            case 0x66 => Atom.Float
-            case 0x73 => Atom.String
-            case 0x68 if( decodeLongs ) => Atom.Long
-            case 0x64 if( decodeDoubles ) => Atom.Double
-            case 0x54 if( decodeBooleans ) => Atom.Boolean
-            case 0x46 if( decodeBooleans ) => Atom.Boolean
-            case 0x62 => Atom.Blob
-//          case p: Packet
-            case 0x4E if( useNone ) => Atom.None
-            case 0x49 if( useImpulse ) => Atom.Impulse
-            case 0x74 if( useTimetags ) => Atom.Timetag
-            case 0x53 if( useSymbols ) => Atom.Symbol
-            case ti => customDec.getOrElse( ti, Atom.Unsupported )
+      @inline private def encodeAtomData( v: Any, db: ByteBuffer ) {
+         v match {
+            case i: Int                           => db.putInt( i )
+            case f: Float                         => db.putFloat( f )
+            case s: String                        => encodeString( db, s )
+            case h: Long if( useLongs )           =>
+               if( longToInt ) {
+                  db.putInt( h.toInt )
+               } else {
+                  db.putLong( h )
+               }
+            case d: Double if( useDoubles )       =>
+               if( doubleToFloat ) {
+                  db.putFloat( d.toFloat )
+               } else {
+                  db.putDouble( d )
+               }
+            case b: Boolean if( useBooleans )     => if( booleanToInt ) { db.putInt( if( b ) 1 else 0 )}
+//          case c: Char if( useChars )           =>
+            case blob: ByteBuffer                 =>
+               db.putInt( blob.remaining )
+               val pos = blob.position
+               db.put( blob )
+               blob.position( pos )
+               padToAlign( db )
+
+            case p: Packet if( usePackets )       =>
+               val pos  = db.position
+               val pos2 = pos + 4
+               db.putInt( 0 ) // dummy to skip to data; properly throws BufferOverflowException
+               p.encode( this, db )
+               db.putInt( pos, db.position - pos2 )
+
+            // be careful to place the Traversable after the Packet case, because
+            // the packets extends linear seq!
+            case c: Traversable[ _ ] if( useArrays ) => c.foreach( encodeAtomData( _, db ))
+            case None if( useNone )               =>
+            case u: Unit if( useImpulse )         =>
+            case t: Timetag if( useTimetags )     => db.putLong( t.raw )
+            case s: Symbol if( useSymbols )       => encodeString( db, s.name )
+            case v: Any                           => {
+               val r = v.asInstanceOf[ AnyRef ]
+               val atom = customEnc.getOrElse( r.getClass, Atom.Unsupported ).asInstanceOf[ Atom[ r.type ]]
+               atom.encodeData( codec, r, db )
+            }
          }
       }
 
+//      @inline private def encodeAtom( v: Any, tb: ByteBuffer, db: ByteBuffer ) {
+//         v match {
+//            case i: Int                           => Atom.Int.encode( codec, i, tb, db )
+//            case f: Float                         => Atom.Float.encode( codec, f, tb, db )
+//            case s: String                        => Atom.String.encode( codec, s, tb, db )
+//            case h: Long if( useLongs )           =>
+//               (if( longToInt ) Atom.LongAsInt else Atom.Long).encode( codec, h, tb, db )
+//            case d: Double if( useDoubles )       =>
+//               (if( doubleToFloat ) Atom.DoubleAsFloat else Atom.Double).encode( codec, d, tb, db )
+//            case b: Boolean if( useBooleans )     =>
+//               (if( booleanToInt ) Atom.BooleanAsInt else Atom.Boolean).encode( codec, b, tb, db )
+////          case c: Char if( useChars )           =>
+//            case blob: ByteBuffer => Atom.Blob.encode( codec, blob, tb, db )
+//            case p: Packet if( usePackets )       => Atom.PacketAsBlob.encode( codec, p, tb, db )
+////            case c: IIdxSeq[ _ ] if( useArrays )  => Atom.IndexedSeqAsArray.encode( codec, blobk ,tb, db )
+//
+//            // be careful to place the Traversable after the Packet case, because
+//            // the packets extends linear seq!
+//            case c: Traversable[ _ ] if( useArrays ) =>
+//               tb.put( 0x5B.toByte )
+//               c.foreach( encodeAtom( _, tb, db ))
+//               tb.put( 0x5D.toByte )
+//
+//            case None if( useNone )               => Atom.None.encode( codec, None, tb, db )
+//            case u: Unit if( useImpulse )         => Atom.Impulse.encode( codec, u, tb, db )
+//            case t: Timetag if( useTimetags )     => Atom.Timetag.encode( codec, t, tb, db )
+//            case s: Symbol if( useSymbols )       => Atom.Symbol.encode( codec, s, tb, db )
+//            case v: Any                           => {
+//               val r = v.asInstanceOf[ AnyRef ]
+//               val atom = customEnc.getOrElse( r.getClass, Atom.Unsupported ).asInstanceOf[ Atom[ r.type ]]
+//               atom.encode( codec, r, tb, db )
+//            }
+//         }
+//      }
+
+      @inline private def decodeAtomData( tt: Byte, db: ByteBuffer ) : Any = {
+         (tt.toInt: @switch) match {
+            case 0x69                        => db.getInt()          // 'i'
+            case 0x66                        => db.getFloat()        // 'f'
+            case 0x73                        => decodeString( db )   // 's'
+            case 0x68 if( decodeLongs )      => db.getLong()         // 'h'
+            case 0x64 if( decodeDoubles )    => db.getDouble()       // 'd'
+            case 0x54 if( decodeBooleans )   => true
+            case 0x46 if( decodeBooleans )   => false
+            case 0x62                        =>
+               val blob = new Array[ Byte ]( db.getInt() )
+               db.get( blob )
+               skipToAlign( db )
+               ByteBuffer.wrap( blob ).asReadOnlyBuffer
+
+//          case p: Packet
+            case 0x4E if( useNone )          => None
+            case 0x49 if( useImpulse )       => ()
+            case 0x74 if( useTimetags )      => new Timetag( db.getLong() )
+            case 0x53 if( useSymbols )       => Symbol( decodeString( db ))
+            case ti                          =>
+               customDec.getOrElse( ti, Atom.Unsupported ).decode( this, tt, db )
+         }
+      }
+
+//      @inline private def getDecoder( tag: Byte ) : Atom.Decoder[_] = {
+//         (tag.toInt: @switch) match {
+//            case 0x69 => Atom.Int
+//            case 0x66 => Atom.Float
+//            case 0x73 => Atom.String
+//            case 0x68 if( decodeLongs ) => Atom.Long
+//            case 0x64 if( decodeDoubles ) => Atom.Double
+//            case 0x54 if( decodeBooleans ) => Atom.Boolean
+//            case 0x46 if( decodeBooleans ) => Atom.Boolean
+//            case 0x62 => Atom.Blob
+////          case p: Packet
+//            case 0x4E if( useNone ) => Atom.None
+//            case 0x49 if( useImpulse ) => Atom.Impulse
+//            case 0x74 if( useTimetags ) => Atom.Timetag
+//            case 0x53 if( useSymbols ) => Atom.Symbol
+//            case ti => customDec.getOrElse( ti, Atom.Unsupported )
+//         }
+//      }
+
       def printAtom( v: Any, stream: PrintStream, nestCount: Int ) {
          v match {
-            case i: Int =>
-               Atom.Int.printTextOn( codec, i, stream, nestCount )
-            case f: Float =>
-               Atom.Float.printTextOn( codec, f, stream, nestCount )
-            case s: String =>
-               Atom.String.printTextOn( codec, s, stream, nestCount )
-            case h: Long if( useLongs ) =>
-               Atom.Long.printTextOn( codec, h, stream, nestCount )
-            case d: Double if( useDoubles ) =>
-               Atom.Double.printTextOn( codec, d, stream, nestCount )
-            case b: Boolean if( useBooleans ) =>
-               Atom.Boolean.printTextOn( codec, b, stream, nestCount )
+            case i: Int                         => stream.print( i )
+            case f: Float                       => stream.print( f )
+            case s: String                      => Packet.printEscapedStringOn( stream, s )
+            case h: Long if( useLongs )         => stream.print( h )
+            case d: Double if( useDoubles )     => stream.print( d )
+            case b: Boolean if( useBooleans )   => stream.print( b )
 //               case c: Char if( useChars ) =>
-            case blob: ByteBuffer =>
-               Atom.Blob.printTextOn( codec, blob, stream, nestCount )
-            case p: Packet if( usePackets ) =>
-               Atom.PacketAsBlob.printTextOn( codec, p, stream, nestCount )
+            case blob: ByteBuffer               => stream.print( "DATA[" + blob.remaining + "]" )
+            case p: Packet if( usePackets )     =>
+               stream.println()
+               p.printTextOn( this, stream, nestCount + 1 )
             // be careful to place the Traversable after the Packet case, because
             // the packets extends linear seq!
             case c: Traversable[ _ ] if( useArrays ) =>
@@ -439,37 +561,31 @@ object PacketCodec {
                   printAtom( v, stream, nestCount )
                }
                stream.print( " ]" )
-            case None if( useNone ) =>
-               Atom.None.printTextOn( codec, None, stream, nestCount )
-            case u: Unit if( useImpulse ) =>
-               Atom.Impulse.printTextOn( codec, u, stream, nestCount )
-            case t: Timetag if( useTimetags ) =>
-               Atom.Timetag.printTextOn( codec, t, stream, nestCount )
-            case s: Symbol if( useSymbols ) => Atom.Symbol
+            case None if( useNone )             => stream.print( None )
+            case u: Unit if( useImpulse )       => stream.print( () )
+            case t: Timetag if( useTimetags )   => stream.print( t )
+            case s: Symbol if( useSymbols )     => stream.print( None )
             case r: AnyRef =>
 //               val r = v.asInstanceOf[ AnyRef ]
                val atom = customEnc.getOrElse( r.getClass, Atom.Unsupported ).asInstanceOf[ Atom[ r.type ]]
                atom.printTextOn( codec, r, stream, nestCount )
          }
-//         atom.printTextOn( codec, v, stream, nestCount )
       }
 
       @throws( classOf[ Exception ])
-      def encodeMessage( msg: Message, db: ByteBuffer ) {
+      def encodeMessage( msg: Message, b: ByteBuffer ) {
          try {
-            val numArgs = msg.args.size
-            db.put( msg.name.getBytes )  // this one assumes 7-bit ascii only
-            terminateAndPadToAlign( db )
+            val a       = msg.args
+//            val numArgs = a.size
+            b.put( msg.name.getBytes )  // this one assumes 7-bit ascii only
+            terminateAndPadToAlign( b )
             // it's important to slice at a 4-byte boundary because
             // the position will become 0 and terminateAndPadToAlign
             // will be malfunctioning otherwise
-            val tb = db.slice
-            tb.put( 0x2C.toByte )		// ',' to announce type string
-            val pos = db.position + ((numArgs + 5) & ~3)
-            if( pos > db.limit ) throw new BufferOverflowException
-            db.position( pos )	// comma + numArgs + zero + align
-            msg.args.foreach( encodeAtom( _, tb, db ))
-            terminateAndPadToAlign( tb )
+            b.put( 0x2C.toByte )		// ',' to announce type string
+            a.foreach( encodeAtomType( _, b ))
+            terminateAndPadToAlign( b )
+            a.foreach( encodeAtomData( _, b ))
          }
          catch { case e: BufferOverflowException =>
             throw BufferOverflow( msg.name, e )
@@ -504,7 +620,7 @@ object PacketCodec {
             case r: AnyRef =>
 //               val r = v.asInstanceOf[ AnyRef ]
                val atom = customEnc.getOrElse( r.getClass, Atom.Unsupported ).asInstanceOf[ Atom[ r.type ]]
-               dsz += atom.encodedSize( codec, r )
+               dsz += atom.encodedDataSize( codec, r )
          }
 
          msg.args.foreach( calc )
@@ -534,7 +650,7 @@ object PacketCodec {
             b += (if( tt == 0x5B && useArrays ) {
                decodeMessageArgs( 0x5D, tb, db )   // nested array
             } else {
-               getDecoder( tt ).decode( codec, tt, db )
+               decodeAtomData( tt, db )
             })
             tt = tb.get()
          }
@@ -704,4 +820,7 @@ trait PacketCodec {
     */
    @throws( classOf[ Exception ])
    /* protected */ def decodeMessage( name: String, b: ByteBuffer ) : Message
+
+//   def decodeString( b: ByteBuffer ) : String
+//   def encodeString( b: ByteBuffer, s: String ) : Unit
 }

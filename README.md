@@ -45,7 +45,7 @@ ScalaOSC currently provides single ended channels (`Transmitter` to send message
 
 The supported transports are UDP and TCP. A TCP server option is currently missing. If you need one, have a look at [NetUtil](http://www.sciss.de/netutil/).
 
-ScalaOSC comes with a codec conforming with the strict [OSC 1.0 specification](http://opensoundcontrol.org/spec-1_0), as well as allowing for the optional types `h` (64-bit integer), `d` (64-bit floating point) and encoding OSC packets themselves as `b` blobs, as used by SuperCollider. The codecs are customizable, thus support for other tags such as the booleans `T` and `F`, characters `c` or arrays `[ ]` should be possible.
+ScalaOSC comes with a codec conforming with the strict [OSC 1.0 specification](http://opensoundcontrol.org/spec-1_0). It can be configured to use the types `h` (64-bit integer), `d` (64-bit floating point), to encode OSC packets themselves as `b` blobs (as used by SuperCollider), to support the boolean tags `T` and `F` and many other optional types of OSC 1.1, including array wrapping with `[` and `]`. The API also allows to extend the codec with custom types.
 
 ### documentation and examples
 
