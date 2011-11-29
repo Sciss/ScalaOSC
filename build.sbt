@@ -1,6 +1,6 @@
 name := "scalaosc"
 
-version := "0.32"
+version := "0.33-SNAPSHOT"
 
 organization := "de.sciss"
 
@@ -12,9 +12,11 @@ homepage := Some( url( "https://github.com/Sciss/ScalaOSC" ))
 
 licenses := Seq( "LGPL v2.1+" -> url( "http://www.gnu.org/licenses/lgpl-2.1.txt" ))
 
-// ---- idea ----
+libraryDependencies ++= Seq( "org.scalatest" %% "scalatest" % "1.6.1" % "test" )
 
-// ideaProjectName := "ScalaOSC"
+retrieveManaged := true
+
+scalacOptions ++= Seq( "-deprecation", "-unchecked" )
 
 // ---- publishing ----
 

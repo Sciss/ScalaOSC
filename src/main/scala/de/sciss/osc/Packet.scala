@@ -239,7 +239,7 @@ object Packet {
 
    object Atom {
       import scala.{Boolean => SBoolean, Byte => SByte, Double => SDouble, Float => SFloat, Int => SInt, Long => SLong,
-         None => SNone, Symbol => SSymbol}
+         None => SNone, Symbol => SSymbol, Array => SArray}
       import java.lang.{String => SString}
       import de.sciss.osc.{Packet => OSCPacket, Timetag => OSCTimetag}
 
@@ -247,7 +247,7 @@ object Packet {
 
       trait Encoder[ @specialized A ] {
          def encode( c: PacketCodec, v: A, tb: ByteBuffer, db: ByteBuffer ) : Unit
-         def getEncodedSize( c: PacketCodec, v: A ) : Int
+         def encodedSize( c: PacketCodec, v: A ) : Int
          def printTextOn( c: PacketCodec, v: A, stream: PrintStream, nestCount: Int ) { stream.print( v )}
       }
 
@@ -263,7 +263,7 @@ object Packet {
             db.putInt( v )
          }
 
-         def getEncodedSize( c: PacketCodec, v: Int ) = 4
+         def encodedSize( c: PacketCodec, v: Int ) = 4
       }
 
       object Float extends Atom[SFloat] {
@@ -274,7 +274,7 @@ object Packet {
             db.putFloat( v )
          }
 
-         def getEncodedSize( c: PacketCodec, v: SFloat ) = 4
+         def encodedSize( c: PacketCodec, v: SFloat ) = 4
       }
 
       object Long extends Atom[SLong] {
@@ -285,7 +285,7 @@ object Packet {
             db.putLong( v )
          }
 
-         def getEncodedSize( c: PacketCodec, v: SLong ) = 8
+         def encodedSize( c: PacketCodec, v: SLong ) = 8
       }
 
       object Double extends Atom[SDouble] {
@@ -297,7 +297,7 @@ object Packet {
          }
 
       //	def getTypeTag( v: Any ) : Byte  = 0x64	// 'd'
-         def getEncodedSize( c: PacketCodec, v: SDouble ) = 8
+         def encodedSize( c: PacketCodec, v: SDouble ) = 8
       }
 
       object DoubleAsFloat extends Encoder[SDouble] {
@@ -305,7 +305,7 @@ object Packet {
             tb.put( 0x66.toByte )	// 'f'
             db.putFloat( v.toFloat )
          }
-         def getEncodedSize( c: PacketCodec, v: SDouble ) = 4
+         def encodedSize( c: PacketCodec, v: SDouble ) = 4
       }
 
       object LongAsInt extends Encoder[SLong] {
@@ -313,7 +313,7 @@ object Packet {
             tb.put( 0x69.toByte )	// 'i'
             db.putInt( v.toInt )
          }
-         def getEncodedSize( c: PacketCodec, v: SLong ) = 4
+         def encodedSize( c: PacketCodec, v: SLong ) = 4
       }
 
       private def decodeString( c: PacketCodec, b: ByteBuffer ) : SString = {
@@ -322,7 +322,7 @@ object Packet {
          val pos2	   = b.position - 1
          b.position( pos1 )
          val len		= pos2 - pos1
-         val bytes	= new Array[ SByte ]( len )
+         val bytes	= new SArray[ SByte ]( len )
          b.get( bytes, 0, len )
          val s       = new String( bytes, c.charsetName )
          val pos3    = (pos2 + 4) & ~3
@@ -341,7 +341,7 @@ object Packet {
             terminateAndPadToAlign( db )
          }
 
-         def getEncodedSize( c: PacketCodec, v: SString ) = {
+         def encodedSize( c: PacketCodec, v: SString ) = {
             (v.getBytes( c.charsetName ).length + 4) & ~3
          }
 
@@ -361,7 +361,7 @@ object Packet {
             terminateAndPadToAlign( db )
          }
 
-         def getEncodedSize( c: PacketCodec, v: SSymbol ) = {
+         def encodedSize( c: PacketCodec, v: SSymbol ) = {
             (v.name.getBytes( c.charsetName ).length + 4) & ~3
          }
 
@@ -379,7 +379,7 @@ object Packet {
             db.putLong( v.raw )
          }
 
-         def getEncodedSize( c: PacketCodec, v: OSCTimetag ) = 8
+         def encodedSize( c: PacketCodec, v: OSCTimetag ) = 8
       }
 
       /**
@@ -387,7 +387,7 @@ object Packet {
        */
       object Blob extends Atom[ByteBuffer] {
          def decode( c: PacketCodec, typeTag: SByte, b: ByteBuffer ) = {
-            val blob = new Array[ SByte ]( b.getInt() )
+            val blob = new SArray[ SByte ]( b.getInt() )
             b.get( blob )
             skipToAlign( b )
             ByteBuffer.wrap( blob ).asReadOnlyBuffer
@@ -395,7 +395,7 @@ object Packet {
 
          def encode( c: PacketCodec, blob: ByteBuffer, tb: ByteBuffer, db: ByteBuffer ) {
             tb.put( 0x62.toByte )	// 'b'
-      //		val blob = v.asInstanceOf[ Array[ Byte ]]
+      //		val blob = v.asInstanceOf[ SArray[ Byte ]]
 //            val blob = v.asInstanceOf[ ByteBuffer ]
             db.putInt( blob.remaining )
             val pos = blob.position
@@ -404,7 +404,7 @@ object Packet {
             padToAlign( db )
          }
 
-         def getEncodedSize( c: PacketCodec, v: ByteBuffer ) = {
+         def encodedSize( c: PacketCodec, v: ByteBuffer ) = {
             (v.remaining() + 7) & ~3
          }
 
@@ -426,14 +426,29 @@ object Packet {
             v.encode( c, db )
             db.putInt( pos, db.position - pos2 )
          }
-         def getEncodedSize( c: PacketCodec, v: OSCPacket ) = {
-            v.getEncodedSize( c ) + 4
+         def encodedSize( c: PacketCodec, v: OSCPacket ) = {
+            v.encodedSize( c ) + 4
          }
          override def printTextOn( c: PacketCodec, v: OSCPacket, stream: PrintStream, nestCount: Int ) {
             stream.println()
             v.printTextOn( c, stream, nestCount + 1 )
          }
       }
+
+//      object Array extends Encoder[Traversable[_]] with Decoder[IIdxSeq[_]] {
+//        def encode( c: PacketCodec, v: Traversable[_], tb: ByteBuffer, db: ByteBuffer ) {
+//           tb.put( 0x5B.toByte )	// '['
+//           v.foreach( c.encodeAtom( _, tb, db ))
+//           tb.put( 0.5D.toByte ) // ']'
+//        }
+//        def getEncodedSize( c: PacketCodec, v: OSCPacket ) = {
+//           c.encodedMessageSize()
+//        }
+//        override def printTextOn( c: PacketCodec, v: OSCPacket, stream: PrintStream, nestCount: Int ) {
+//           stream.println()
+//           v.printTextOn( c, stream, nestCount + 1 )
+//        }
+//      }
 
       object Boolean extends Atom[SBoolean] {
          def decode( c: PacketCodec, typeTag: SByte, b: ByteBuffer ) : SBoolean = {
@@ -450,7 +465,7 @@ object Packet {
             tb.put( if( v ) 0x54.toByte else 0x46.toByte )  // 'T' and 'F'
          }
 
-         def getEncodedSize( c: PacketCodec, v: SBoolean ) = 0
+         def encodedSize( c: PacketCodec, v: SBoolean ) = 0
       }
 
       object BooleanAsInt extends Encoder[SBoolean] {
@@ -458,7 +473,7 @@ object Packet {
             tb.put( 0x69.toByte )	// 'i'
             db.putInt( if( v ) 1 else 0 )
          }
-         def getEncodedSize( c: PacketCodec, v: SBoolean ) = 4
+         def encodedSize( c: PacketCodec, v: SBoolean ) = 4
       }
 
       object None extends Atom[SNone.type] {
@@ -468,7 +483,7 @@ object Packet {
             tb.put( 0x4E.toByte )   // 'N'
          }
 
-         def getEncodedSize( c: PacketCodec, v: SNone.type ) = 0
+         def encodedSize( c: PacketCodec, v: SNone.type ) = 0
       }
 
       object Impulse extends Atom[Unit] {
@@ -478,7 +493,7 @@ object Packet {
             tb.put( 0x49.toByte )   // 'I'
          }
 
-         def getEncodedSize( c: PacketCodec, v: Unit ) = 0
+         def encodedSize( c: PacketCodec, v: Unit ) = 0
       }
 
       /**
@@ -491,7 +506,7 @@ object Packet {
             errUnsupported( v.asInstanceOf[AnyRef].getClass.getName )
          }
 
-         def getEncodedSize( c: PacketCodec, v: Any ) =
+         def encodedSize( c: PacketCodec, v: Any ) =
             errUnsupported( v.asInstanceOf[AnyRef].getClass.getName )
 
          override def printTextOn( c: PacketCodec, v: Any, stream: PrintStream, nestCount: Int ) {
@@ -509,7 +524,7 @@ sealed trait Packet {
 	@throws( classOf[ PacketCodec.Exception ])
 	def encode( c: PacketCodec, b: ByteBuffer ) : Unit
 	
-	def getEncodedSize( c: PacketCodec ) : Int
+	def encodedSize( c: PacketCodec ) : Int
 	private[osc] def printTextOn( c: PacketCodec, stream: PrintStream, nestCount: Int )
 }
 
@@ -568,13 +583,13 @@ with LinearSeqLike[ Packet, Bundle ] {
 	@throws( classOf[ Exception ])
 	def encode( c: PacketCodec, b: ByteBuffer ) { c.encodeBundle( this, b )}
 
-	def getEncodedSize( c: PacketCodec ) : Int = c.getEncodedBundleSize( this )
+	def encodedSize( c: PacketCodec ) : Int = c.encodedBundleSize( this )
 
 	private[osc] def printTextOn( c: PacketCodec, stream: PrintStream, nestCount: Int ) {
 		stream.print( "  " * nestCount )
 		stream.print( "[ #bundle, " + timetag )
 		val ncInc = nestCount + 1
-		for( v <- packets ) {
+		packets.foreach { v =>
 			stream.println( ',' )
 			v.printTextOn( c, stream, ncInc )
 		}
@@ -615,7 +630,7 @@ with LinearSeqLike[ Any, Message ] {
    def seq: TraversableOnce[ Any ] = this // need for Scala 2.9.0
 
 	def encode( c: PacketCodec, b: ByteBuffer ) { c.encodeMessage( this, b )}
-	def getEncodedSize( c: PacketCodec ) : Int = c.getEncodedMessageSize( this )
+	def encodedSize( c: PacketCodec ) : Int = c.encodedMessageSize( this )
 
    // recreate stuff we lost when removing case modifier
    override def toString() = args.mkString( "Message(" + name + ", ", ", ", ")" )
@@ -632,7 +647,7 @@ with LinearSeqLike[ Any, Message ] {
 		stream.print( "  " * nestCount )
 		stream.print( "[ " )
 		printEscapedStringOn( stream, name )
-		for( v <- args ) {
+      args.foreach { v =>
 			stream.print( ", " )
 			// XXX eventually encoder and decoder should be strictly separated,
 			// and hence we would integrate the printing of the incoming messages

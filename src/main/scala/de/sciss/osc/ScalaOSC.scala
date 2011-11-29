@@ -27,9 +27,9 @@ package de.sciss.osc
 
 object ScalaOSC {
    val name          = "ScalaOSC"
-   val version       = 0.32
+   val version       = 0.33
    val copyright     = "(C)opyright 2008-2011 Hanns Holger Rutz"
-   val isSnapshot    = false
+   val isSnapshot    = true
 
    def versionString = {
       val s = (version + 0.001).toString.substring( 0, 4 )

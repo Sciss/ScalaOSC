@@ -25,7 +25,7 @@
 
 package de.sciss.osc
 
-import collection.immutable.IntMap
+import collection.immutable.{ IntMap, IndexedSeq => IIdxSeq }
 import Packet._
 import collection.mutable.ListBuffer
 import java.nio.{BufferUnderflowException, BufferOverflowException, ByteBuffer}
@@ -60,11 +60,6 @@ import annotation.switch
  *	Last but not least, using the <code>putDecoder</code> and <code>putEncoder</code>
  *	methods, the codec can be extended to support additional Java classes or
  *	OSC typetags, without the need to subclass <code>PacketCodec</code>.
- *
- *  @author		Hanns Holger Rutz
- *  @version	0.36, 18-Feb-09
- *
- *	@since		NetUtil 0.35
  */
 object PacketCodec {
 	val default: PacketCodec = apply().build
@@ -129,12 +124,12 @@ object PacketCodec {
 
       /**
        * Resets the builder to SuperCollider server spec.
-       * That is, strict OSC 1.0, plus down-casting of
-       * 64-bit numbers to 32-bit, encoding booleans as integers,
+       * That is, strict OSC 1.0, plus array support,
+       * down-casting of 64-bit numbers to 32-bit, encoding booleans as integers,
        * and packet arguments as blobs, and.
        */
       final def scsynth() : Builder =
-         v1_0().doubleToSinglePrecision().booleansAsInts().packetsAsBlobs()
+         v1_0().arrays().doubleToSinglePrecision().booleansAsInts().packetsAsBlobs()
 
       // ---- optional OSC 1.0 types ----
 
@@ -148,6 +143,17 @@ object PacketCodec {
       // - should this thus be UTF-32? We currently drop support
       // for 'c'. It also hasn't made it into OSC 1.1
 //      def chars() : Builder
+
+     /**
+      * Enables support for the OSC 1.0 extended spec's array tags. An 'array' is
+      * written out as a type tag '[' (without associated value), followed by the
+      * normal encoding of the array elements, and finally another type tag ']'
+      * (without associated value).
+      *
+      * On the Scala side, we wish to enforce a immutable type, hence
+      * `collection.immutable.IndexedSeq` was chosen over `Array` for the decoder,
+      * while the encoder accepts any `Traversable`
+      */
       def arrays() : Builder
 
       // ---- OSC 1.1 types ----
@@ -327,20 +333,11 @@ object PacketCodec {
 
       override def toString = "PacketCodec"
 
-//      private var atomDecoders = IntMap.empty[ Atom ]
-//
-//      // ---- constructor ----
-//      // OSC version 1.0 strict type tag support
-//      atomDecoders += 0x69 -> Atom.Int
-//      atomDecoders += 0x66 -> Atom.Float
-//      atomDecoders += 0x73 -> Atom.String
-//      atomDecoders += 0x62 -> Atom.Blob
-
       @throws( classOf[ IOException ])
       def encodeBundle( bndl: Bundle, b: ByteBuffer ) {
          try {
             b.put( BUNDLE_TAGB ).putLong( bndl.timetag.raw )
-            bndl.foreach { p =>
+            bndl.packets.foreach { p =>
                b.mark()
                b.putInt( 0 )			// calculate size later
                val pos1 = b.position
@@ -357,23 +354,32 @@ object PacketCodec {
 
       @inline private def encodeAtom( v: Any, tb: ByteBuffer, db: ByteBuffer ) {
          v match {
-            case i: Int => Atom.Int.encode( codec, i, tb, db )
-            case f: Float => Atom.Float.encode( codec, f, tb, db )
-            case s: String => Atom.String.encode( codec, s, tb, db )
-            case h: Long if( useLongs ) =>
+            case i: Int                           => Atom.Int.encode( codec, i, tb, db )
+            case f: Float                         => Atom.Float.encode( codec, f, tb, db )
+            case s: String                        => Atom.String.encode( codec, s, tb, db )
+            case h: Long if( useLongs )           =>
                (if( longToInt ) Atom.LongAsInt else Atom.Long).encode( codec, h, tb, db )
-            case d: Double if( useDoubles ) =>
+            case d: Double if( useDoubles )       =>
                (if( doubleToFloat ) Atom.DoubleAsFloat else Atom.Double).encode( codec, d, tb, db )
-            case b: Boolean if( useBooleans ) =>
+            case b: Boolean if( useBooleans )     =>
                (if( booleanToInt ) Atom.BooleanAsInt else Atom.Boolean).encode( codec, b, tb, db )
-//               case c: Char if( useChars ) =>
+//          case c: Char if( useChars )           =>
             case blob: ByteBuffer => Atom.Blob.encode( codec, blob, tb, db )
-            case p: Packet if( usePackets ) => Atom.PacketAsBlob.encode( codec, p, tb, db )
-            case None if( useNone ) => Atom.None.encode( codec, None, tb, db )
-            case u: Unit if( useImpulse ) => Atom.Impulse.encode( codec, u, tb, db )
-            case t: Timetag if( useTimetags ) => Atom.Timetag.encode( codec, t, tb, db )
-            case s: Symbol if( useSymbols ) => Atom.Symbol.encode( codec, s, tb, db )
-            case v: Any /* Ref */ => {
+            case p: Packet if( usePackets )       => Atom.PacketAsBlob.encode( codec, p, tb, db )
+//            case c: IIdxSeq[ _ ] if( useArrays )  => Atom.IndexedSeqAsArray.encode( codec, blobk ,tb, db )
+
+            // be careful to place the Traversable after the Packet case, because
+            // the packets extends linear seq!
+            case c: Traversable[ _ ] if( useArrays ) =>
+               tb.put( 0x5B.toByte )
+               c.foreach( encodeAtom( _, tb, db ))
+               tb.put( 0x5D.toByte )
+
+            case None if( useNone )               => Atom.None.encode( codec, None, tb, db )
+            case u: Unit if( useImpulse )         => Atom.Impulse.encode( codec, u, tb, db )
+            case t: Timetag if( useTimetags )     => Atom.Timetag.encode( codec, t, tb, db )
+            case s: Symbol if( useSymbols )       => Atom.Symbol.encode( codec, s, tb, db )
+            case v: Any                           => {
                val r = v.asInstanceOf[ AnyRef ]
                val atom = customEnc.getOrElse( r.getClass, Atom.Unsupported ).asInstanceOf[ Atom[ r.type ]]
                atom.encode( codec, r, tb, db )
@@ -419,6 +425,20 @@ object PacketCodec {
                Atom.Blob.printTextOn( codec, blob, stream, nestCount )
             case p: Packet if( usePackets ) =>
                Atom.PacketAsBlob.printTextOn( codec, p, stream, nestCount )
+            // be careful to place the Traversable after the Packet case, because
+            // the packets extends linear seq!
+            case c: Traversable[ _ ] if( useArrays ) =>
+               stream.print( "[ " )
+               var sec = false
+               c.foreach { v =>
+                  if( sec ) {
+                     stream.print( ", " )
+                  } else {
+                     sec = true
+                  }
+                  printAtom( v, stream, nestCount )
+               }
+               stream.print( " ]" )
             case None if( useNone ) =>
                Atom.None.printTextOn( codec, None, stream, nestCount )
             case u: Unit if( useImpulse ) =>
@@ -434,47 +454,21 @@ object PacketCodec {
 //         atom.printTextOn( codec, v, stream, nestCount )
       }
 
-      @inline private def encodedAtomSize( v: Any ) : Int = {
-         v match {
-            case i: Int => 4
-            case f: Float => 4
-            case s: String => (s.getBytes( charsetName ).length + 4) & ~3
-            case h: Long if( useLongs ) => if( longToInt ) 4 else 8
-            case d: Double if( useDoubles ) => if( doubleToFloat ) 4 else 8
-            case b: Boolean if( useBooleans ) => if( booleanToInt ) 4 else 0
-//          case c: Char if( useChars ) => 4
-            case blob: ByteBuffer => (blob.remaining() + 7) & ~3
-            case p: Packet if( usePackets ) => p.getEncodedSize( codec ) + 4
-            case None if( useNone ) => 0
-            case u: Unit if( useImpulse ) => 0
-            case t: Timetag if( useTimetags ) => 8
-            case s: Symbol if( useSymbols ) =>  (s.name.getBytes( charsetName ).length + 4) & ~3
-            case r: AnyRef =>
-//               val r = v.asInstanceOf[ AnyRef ]
-               val atom = customEnc.getOrElse( r.getClass, Atom.Unsupported ).asInstanceOf[ Atom[ r.type ]]
-               atom.getEncodedSize( codec, r )
-         }
-      }
-
       @throws( classOf[ Exception ])
-      def encodeMessage( msg: Message, b: ByteBuffer ) {
+      def encodeMessage( msg: Message, db: ByteBuffer ) {
          try {
-            val numArgs = msg.size
-            b.put( msg.name.getBytes )  // this one assumes 7-bit ascii only
-            terminateAndPadToAlign( b )
+            val numArgs = msg.args.size
+            db.put( msg.name.getBytes )  // this one assumes 7-bit ascii only
+            terminateAndPadToAlign( db )
             // it's important to slice at a 4-byte boundary because
             // the position will become 0 and terminateAndPadToAlign
             // will be malfunctioning otherwise
-            val tb = b.slice
+            val tb = db.slice
             tb.put( 0x2C.toByte )		// ',' to announce type string
-            val pos = b.position + ((numArgs + 5) & ~3)
-            if( pos > b.limit ) throw new BufferOverflowException
-            b.position( pos )	// comma + numArgs + zero + align
-            msg.foreach { v =>
-//               val a = atomEncoders( v )
-//               a.encode( this, v, tb, b )
-               encodeAtom( v, tb, b )
-            }
+            val pos = db.position + ((numArgs + 5) & ~3)
+            if( pos > db.limit ) throw new BufferOverflowException
+            db.position( pos )	// comma + numArgs + zero + align
+            msg.args.foreach( encodeAtom( _, tb, db ))
             terminateAndPadToAlign( tb )
          }
          catch { case e: BufferOverflowException =>
@@ -482,51 +476,70 @@ object PacketCodec {
          }
       }
 
-      def getEncodedMessageSize( msg: Message ) : Int = {
-         var result  = ((msg.name.length + 4) & ~3) + ((1+msg.length + 4) & ~3)
-         msg.foreach { v =>
-//            result += atomEncoders( v ).getEncodedSize( codec, v )
-            result += encodedAtomSize( v )
+      def encodedMessageSize( msg: Message ) : Int = {
+         var tsz     = msg.args.size + 5  // initial comma, one per arg, final zero, and max 3 padding zeroes
+         var dsz     = 0
+
+         // is this faster than lazy val?
+         var calc: Any => Unit = null
+         calc = {
+            case i: Int => dsz += 4
+            case f: Float => dsz += 4
+            case s: String => dsz += (s.getBytes( charsetName ).length + 4) & ~3
+            case h: Long if( useLongs ) => dsz += (if( longToInt ) 4 else 8)
+            case d: Double if( useDoubles ) => dsz += (if( doubleToFloat ) 4 else 8)
+            case b: Boolean if( useBooleans ) => dsz += (if( booleanToInt ) 4 else 0)
+//          case c: Char if( useChars ) => 4
+            case blob: ByteBuffer => dsz += (blob.remaining() + 7) & ~3
+            case p: Packet if( usePackets ) => dsz += p.encodedSize( codec ) + 4
+            // be careful to place the Traversable after the Packet case, because
+            // the packets extends linear seq!
+            case c: Traversable[ _ ] if( useArrays ) =>
+               tsz += c.size + 1 // a tag for each element plus terminator
+               c.foreach( calc )
+            case None if( useNone ) =>
+            case u: Unit if( useImpulse ) =>
+            case t: Timetag if( useTimetags ) => dsz += 8
+            case s: Symbol if( useSymbols ) => dsz += (s.name.getBytes( charsetName ).length + 4) & ~3
+            case r: AnyRef =>
+//               val r = v.asInstanceOf[ AnyRef ]
+               val atom = customEnc.getOrElse( r.getClass, Atom.Unsupported ).asInstanceOf[ Atom[ r.type ]]
+               dsz += atom.encodedSize( codec, r )
          }
-         result
+
+         msg.args.foreach( calc )
+
+         ((msg.name.length() + 4) & ~3) + (tsz & ~3) + dsz
       }
 
       @throws( classOf[ Exception ])
-      /* protected */ def decodeMessage( name: String, b: ByteBuffer ) : Message = {
+      /* protected */ def decodeMessage( name: String, db: ByteBuffer ) : Message = {
          try {
-            if( b.get() != 0x2C ) throw MalformedPacket( name )
-            val b2      = b.slice	// faster to slice than to reposition all the time!
-            val pos1	   = b.position
-            while( b.get() != 0x00 ) ()
-            val numArgs	= b.position - pos1 - 1
-            // note: Array filling is much faster than ListBuffer
-            // (with numArgs == 6, the whole thing should be approx. 4x faster)
-//         val args	   = new ListBuffer[ Any ]
-            val args	   = new Array[ Any ]( numArgs )
-            skipToAlign( b )
-
-            var argIdx = 0
-            while( argIdx < numArgs ) {
-               val typ = b2.get()
-////               if( !atomDecoders.contains( typ )) throw UnsupportedAtom( typ.toChar.toString )
-//               val dec = Atom.Unsupported // atomDecoders.getOrElse( typ, Atom.Unsupported )
-////            } catch { // note: IntMap throws RuntimeException, _not_ NoSuchElementException!!!
-////               case e => throw UnsupportedAtom( typ.toChar.toString )
-////            }
-//               args( argIdx ) = dec.decode( codec, typ, b )
-               args( argIdx ) = getDecoder( typ ).decode( codec, typ, b )
-               argIdx += 1
-            }
-            Message( name, args: _* )
+            if( db.get() != 0x2C ) throw MalformedPacket( name )
+            val tb      = db.slice	// faster to slice than to reposition all the time!
+            while( db.get() != 0x00 ) ()
+            skipToAlign( db )
+            val args = decodeMessageArgs( 0x00, tb, db )
+            new Message( name, args: _* )
          }
          catch { case e: BufferUnderflowException =>
             throw BufferOverflow( name, e )
          }
       }
 
-//      def printAtom( value: Any, stream: PrintStream, nestCount: Int ) {
-//         atomEncoders( value ).printTextOn( codec, value, stream, nestCount )
-//      }
+      private def decodeMessageArgs( end: Int, tb: ByteBuffer, db: ByteBuffer ) : IIdxSeq[ Any ] = {
+         var tt   = tb.get()
+         val b    = IIdxSeq.newBuilder[ Any ]
+         while( tt != end ) {
+            b += (if( tt == 0x5B && useArrays ) {
+               decodeMessageArgs( 0x5D, tb, db )   // nested array
+            } else {
+               getDecoder( tt ).decode( codec, tt, db )
+            })
+            tt = tb.get()
+         }
+         b.result()
+      }
    }
 }
 
@@ -585,12 +598,16 @@ trait PacketCodec {
 	@throws( classOf[ Exception ])
 	def encodeMessage( msg: Message, b: ByteBuffer ) : Unit
 
+//   def encodeAtom( v: Any, tb: ByteBuffer, db: ByteBuffer ) : Unit
+
    /**
     *	Calculates the byte size of the encoded message
     *
     *	@return	the size of the OSC message in bytes
     */
-   def getEncodedMessageSize( msg: Message ) : Int
+   def encodedMessageSize( msg: Message ) : Int
+
+//   def encodedAtomSize( v: Any ) : Int
 
    /**
     * Calculates the byte size of the encoded bundle.
@@ -599,13 +616,13 @@ trait PacketCodec {
     * each bundle element.
     *
     * For contained messages,
-    * `getEncodedMessageSize` will be called, thus for
+    * `encodedMessageSize` will be called, thus for
     * implementations of `PacketCodec`, it is sufficient
-    * to overwrite `getEncodedMessageSize.
+    * to overwrite `encodedMessageSize.
     */
-	final def getEncodedBundleSize( bndl: Bundle ) : Int = {
+	final def encodedBundleSize( bndl: Bundle ) : Int = {
                  // overhead: name, timetag
-      bndl.foldLeft( 16 + (bndl.size << 2) )( (sum, p) => sum + p.getEncodedSize( codec ))
+      bndl.packets.foldLeft( 16 + (bndl.packets.size << 2) )( (sum, p) => sum + p.encodedSize( codec ))
 	}
 
    /**
@@ -662,7 +679,7 @@ trait PacketCodec {
             p += decode( b )
             b.limit( totalLimit )
          }
-         Bundle( Timetag( timetag ), p: _* )
+         new Bundle( new Timetag( timetag ), p: _* )
 		}
 		catch { case e : BufferUnderflowException =>
 			throw PacketCodec.BufferOverflow( "#bundle", e )
