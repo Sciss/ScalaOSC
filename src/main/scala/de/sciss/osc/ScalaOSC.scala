@@ -2,7 +2,7 @@
  * ScalaOSC.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2011 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2012 Hanns Holger Rutz. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,7 +28,7 @@ package de.sciss.osc
 object ScalaOSC {
    val name          = "ScalaOSC"
    val version       = 0.33
-   val copyright     = "(C)opyright 2008-2011 Hanns Holger Rutz"
+   val copyright     = "(C)opyright 2008-2012 Hanns Holger Rutz"
    val isSnapshot    = false
 
    def versionString = {

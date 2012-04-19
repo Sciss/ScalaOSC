@@ -2,11 +2,11 @@
 
 ### statement
 
-ScalaOSC is an OpenSoundControl (OSC) library for the Scala programming language. It is (C)opyright 2008&ndash;2011 by Hanns Holger Rutz. All rights reserved. ScalaOSC is released under the [GNU Lesser General Public License](https://raw.github.com/Sciss/ScalaOSC/master/licenses/ScalaOSC-License.txt) and comes with absolutely no warranties. To contact the author, send an email to `contact at sciss.de`
+ScalaOSC is an OpenSoundControl (OSC) library for the Scala programming language. It is (C)opyright 2008&ndash;2012 by Hanns Holger Rutz. All rights reserved. ScalaOSC is released under the [GNU Lesser General Public License](https://raw.github.com/Sciss/ScalaOSC/master/licenses/ScalaOSC-License.txt) and comes with absolutely no warranties. To contact the author, send an email to `contact at sciss.de`
 
 ### requirements / installation
 
-ScalaOSC currently builds against Scala 2.9.1. It uses the I/O API from Java 1.6. Use the [NetUtil](http://www.sciss.de/netutil/) Java OSC library if you require compatibility with Java SE 1.4.
+ScalaOSC currently builds against Scala 2.9.2. It uses the I/O API from Java 1.6. Use the [NetUtil](http://www.sciss.de/netutil/) Java OSC library if you require compatibility with Java SE 1.4.
 
 ScalaOSC builds with sbt 0.11 (xsbt), with the standard targets:
 

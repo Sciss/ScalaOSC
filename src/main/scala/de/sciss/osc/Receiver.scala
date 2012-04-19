@@ -2,7 +2,7 @@
  * Receiver.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2011 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2012 Hanns Holger Rutz. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,7 +27,7 @@ package de.sciss.osc
 
 import java.io.IOException
 import java.nio.channels.{AsynchronousCloseException, ClosedChannelException}
-import java.net.{PortUnreachableException, SocketAddress}
+import java.net.SocketAddress
 
 object Receiver {
    type Net = Receiver with Channel.NetConfigLike

@@ -2,7 +2,7 @@
  * PacketCodec.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2011 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2012 Hanns Holger Rutz. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -734,7 +734,7 @@ trait PacketCodec {
     * For contained messages,
     * `encodedMessageSize` will be called, thus for
     * implementations of `PacketCodec`, it is sufficient
-    * to overwrite `encodedMessageSize.
+    * to overwrite `encodedMessageSize`.
     */
 	final def encodedBundleSize( bndl: Bundle ) : Int = {
                  // overhead: name, timetag
@@ -755,9 +755,9 @@ trait PacketCodec {
     * This method is final. For messages encountered,
     * `decodeMessage` is called, , thus for
     * implementations of `PacketCodec`, it is sufficient
-    * to overwrite `decodeMessage.
+    * to overwrite `decodeMessage`.
     *
-    *  @param  b   <code>ByteBuffer</code> pointing right at
+    *@param  b   <code>ByteBuffer</code> pointing right at
     *				the beginning of the packet. the buffer's
     *				limited should be set appropriately to
     *				allow the complete packet to be read. when
@@ -789,7 +789,7 @@ trait PacketCodec {
          val timetag    = b.getLong()
 
          while( b.hasRemaining ) {
-            val sz = b.getInt + b.position // msg size
+            val sz = b.getInt() + b.position // msg size
             if( sz > totalLimit ) throw new BufferUnderflowException
             b.limit( sz )
             p += decode( b )

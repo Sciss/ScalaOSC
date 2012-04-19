@@ -4,7 +4,7 @@ version := "0.33"
 
 organization := "de.sciss"
 
-scalaVersion := "2.9.1"
+scalaVersion := "2.9.2"
 
 description := "A library for OpenSoundControl (OSC), a message protocol used in multi-media applications."
 
@@ -12,7 +12,7 @@ homepage := Some( url( "https://github.com/Sciss/ScalaOSC" ))
 
 licenses := Seq( "LGPL v2.1+" -> url( "http://www.gnu.org/licenses/lgpl-2.1.txt" ))
 
-libraryDependencies ++= Seq( "org.scalatest" %% "scalatest" % "1.6.1" % "test" )
+libraryDependencies ++= Seq( "org.scalatest" %% "scalatest" % "1.7.2" % "test" )
 
 retrieveManaged := true
 
@@ -20,22 +20,32 @@ scalacOptions ++= Seq( "-deprecation", "-unchecked" )
 
 // ---- publishing ----
 
+publishMavenStyle := true
+
 publishTo <<= version { (v: String) =>
-   Some( "Scala Tools Nexus" at "http://nexus.scala-tools.org/content/repositories/".+(
-      if( v.endsWith( "-SNAPSHOT")) "snapshots/" else "releases/"
-   ))
+   Some( if( v.endsWith( "-SNAPSHOT" ))
+      "Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
+   else
+      "Sonatype Releases"  at "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+   )
 }
 
-pomExtra :=
-<licenses>
-  <license>
-    <name>LGPL v2.1+</name>
-    <url>http://www.gnu.org/licenses/lgpl-2.1.txt</url>
-    <distribution>repo</distribution>
-  </license>
-</licenses>
+publishArtifact in Test := false
 
-credentials += Credentials( Path.userHome / ".ivy2" / ".credentials" )
+pomIncludeRepository := { _ => false }
+
+pomExtra :=
+<scm>
+  <url>git@github.com:Sciss/ScalaOSC.git</url>
+  <connection>scm:git:git@github.com:Sciss/ScalaOSC.git</connection>
+</scm>
+<developers>
+   <developer>
+      <id>sciss</id>
+      <name>Hanns Holger Rutz</name>
+      <url>http://www.sciss.de</url>
+   </developer>
+</developers>
 
 // ---- ls.implicit.ly ----
 

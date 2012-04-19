@@ -2,7 +2,7 @@
  * Transport.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2011 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2012 Hanns Holger Rutz. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,7 +29,7 @@ import java.io.IOException
 import java.nio.channels.{SocketChannel, DatagramChannel}
 import de.sciss.osc.{Channel => OSCChannel, Client => OSCClient,
    Receiver => OSCReceiver, Transmitter => OSCTransmitter}
-import java.net.{ConnectException, PortUnreachableException, InetAddress, SocketAddress, InetSocketAddress}
+import java.net.{InetAddress, SocketAddress, InetSocketAddress}
 
 sealed trait Transport { def name: String }
 

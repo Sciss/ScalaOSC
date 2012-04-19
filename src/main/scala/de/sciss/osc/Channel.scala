@@ -2,7 +2,7 @@
  * Channel.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2011 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2012 Hanns Holger Rutz. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,7 +28,7 @@ package de.sciss.osc
 import java.io.{ IOException, PrintStream }
 import java.nio.channels.{InterruptibleChannel, Channel => NIOChannel}
 import java.nio.ByteBuffer
-import java.net.{SocketAddress, InetAddress, InetSocketAddress}
+import java.net.{InetAddress, InetSocketAddress}
 
 object Channel {
    type Net = Channel with NetConfigLike

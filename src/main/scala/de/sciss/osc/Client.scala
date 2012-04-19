@@ -2,7 +2,7 @@
  * Client.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2011 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2012 Hanns Holger Rutz. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,8 +25,7 @@
 
 package de.sciss.osc
 
-import java.io.{ IOException, PrintStream }
-import java.net.{ InetSocketAddress, SocketAddress }
+import java.io.IOException
 
 /**
  *	This class groups together a transmitter and receiver, allowing bidirectional
