@@ -4,7 +4,7 @@ version := "0.33"
 
 organization := "de.sciss"
 
-scalaVersion := "2.9.2"
+scalaVersion := "2.10.0-M5"
 
 description := "A library for OpenSoundControl (OSC), a message protocol used in multi-media applications."
 
@@ -12,7 +12,7 @@ homepage := Some( url( "https://github.com/Sciss/ScalaOSC" ))
 
 licenses := Seq( "LGPL v2.1+" -> url( "http://www.gnu.org/licenses/lgpl-2.1.txt" ))
 
-libraryDependencies ++= Seq( "org.scalatest" %% "scalatest" % "1.7.2" % "test" )
+libraryDependencies ++= Seq( "org.scalatest" %% "scalatest" % "1.9-2.10.0-M5-B2" % "test" )
 
 retrieveManaged := true
 
