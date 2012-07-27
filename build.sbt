@@ -12,7 +12,11 @@ homepage := Some( url( "https://github.com/Sciss/ScalaOSC" ))
 
 licenses := Seq( "LGPL v2.1+" -> url( "http://www.gnu.org/licenses/lgpl-2.1.txt" ))
 
-libraryDependencies ++= Seq( "org.scalatest" % "scalatest_2.10.0-M5" % "1.9-2.10.0-M5-B2" % "test" )
+resolvers += "Sonatype OSS Releases" at "https://oss.sonatype.org/content/groups/public"
+
+libraryDependencies ++= Seq(
+   "org.scalatest" %% "scalatest" % "1.9-2.10.0-M6-B1" % "test"
+)
 
 retrieveManaged := true
 
