@@ -6,15 +6,11 @@ ScalaOSC is an OpenSoundControl (OSC) library for the Scala programming language
 
 ### requirements / installation
 
-ScalaOSC currently builds against Scala 2.9.2. It uses the I/O API from Java 1.6. Use the [NetUtil](http://www.sciss.de/netutil/) Java OSC library if you require compatibility with Java SE 1.4.
+ScalaOSC currently builds against Scala 2.9.2, using sbt 0.12.0. It uses the I/O API from Java 1.6. Use the [NetUtil](http://www.sciss.de/netutil/) Java OSC library if you require compatibility with Java SE 1.4.
 
-ScalaOSC builds with sbt 0.11 (xsbt), with the standard targets:
+To link to ScalaOSC:
 
-* `clean` &ndash; removes previous build artefacts
-* `compile` &ndash; compiles classes into target/scala-version/classes
-* `doc` &ndash; generates api in target/scala-version/api/index.html
-* `package` &ndash; packages jar in target/scala-version
-* `run` _arguments..._ &ndash; prints info when run without arguments
+    libraryDependencies += "de.sciss" %% "scalaosc" % "1.0.+"
 
 ### creating an IntelliJ IDEA project
 
@@ -22,12 +18,9 @@ The IDEA project files have now been removed from the git repository, but they c
 
     resolvers += "sbt-idea-repo" at "http://mpeltonen.github.com/maven/"
     
-    addSbtPlugin("com.github.mpeltonen" % "sbt-idea" % "0.11.0")
+    addSbtPlugin("com.github.mpeltonen" % "sbt-idea" % "1.1.0")
 
-Then to create the IDEA project, run the following two commands from the xsbt shell:
-
-    > set ideaProjectName := "ScalaOSC"
-    > gen-idea
+Then to create the IDEA project, run `sbt gen-idea`.
 
 ### overview
 

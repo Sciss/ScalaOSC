@@ -1,10 +1,10 @@
 name := "scalaosc"
 
-version := "0.33"
+version := "1.0.0"
 
 organization := "de.sciss"
 
-scalaVersion := "2.10.0-M6"
+scalaVersion := "2.9.2"
 
 description := "A library for OpenSoundControl (OSC), a message protocol used in multi-media applications."
 
@@ -14,13 +14,33 @@ licenses := Seq( "LGPL v2.1+" -> url( "http://www.gnu.org/licenses/lgpl-2.1.txt"
 
 resolvers += "Sonatype OSS Releases" at "https://oss.sonatype.org/content/groups/public"
 
-libraryDependencies ++= Seq(
-   "org.scalatest" %% "scalatest" % "1.9-2.10.0-M6-B1" % "test"
-)
+libraryDependencies in ThisBuild <+= scalaVersion { sv =>
+   val v = sv match {
+      case "2.10.0-M7" => "org.scalatest" % "scalatest_2.10.0-M6" % "1.9-2.10.0-M6-B2"
+      case _ => "org.scalatest" %% "scalatest" % "1.8"
+   }
+   v % "test"
+}
 
 retrieveManaged := true
 
 scalacOptions ++= Seq( "-deprecation", "-unchecked" )
+
+initialCommands in console := """import de.sciss.osc._
+import Implicits._"""
+
+// ---- build info ----
+
+buildInfoSettings
+
+sourceGenerators in Compile <+= buildInfo
+
+buildInfoKeys := Seq( name, organization, version, scalaVersion, description,
+   BuildInfoKey.map( homepage ) { case (k, opt) => k -> opt.get },
+   BuildInfoKey.map( licenses ) { case (_, Seq( (lic, _) )) => "license" -> lic }
+)
+
+buildInfoPackage := "de.sciss.osc"
 
 // ---- publishing ----
 
