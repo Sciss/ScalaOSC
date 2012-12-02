@@ -15,9 +15,11 @@ licenses := Seq( "LGPL v2.1+" -> url( "http://www.gnu.org/licenses/lgpl-2.1.txt"
 resolvers += "Sonatype OSS Releases" at "https://oss.sonatype.org/content/groups/public"
 
 libraryDependencies in ThisBuild <+= scalaVersion { sv =>
+   val org = "org.scalatest"
    val v = sv match {
-      case "2.10.0-M7" => "org.scalatest" % "scalatest_2.10.0-M6" % "1.9-2.10.0-M6-B2"
-      case _ => "org.scalatest" %% "scalatest" % "1.8"
+      case "2.10.0-M7"  => org % "scalatest_2.10.0-M6" % "1.9-2.10.0-M6-B2"
+      case "2.10.0-RC3" => org % "scalatest_2.10.0-RC3" % "1.8-B1"
+      case _            => org %% "scalatest" % "1.8"
    }
    v % "test"
 }
