@@ -38,6 +38,12 @@ object Transmitter {
    }
 
    object Directed {
-      type Net = Directed with Channel.Directed.Net
+      type Net = Transmitter.Directed with Channel.Directed.Net
    }
+
+   // convenient redirections
+
+   def apply( target: SocketAddress, config: TCP.Config ) : TCP.Transmitter = TCP.Transmitter( target, config )
+   def apply( config: UDP.Config ) : UDP.Transmitter.Undirected = UDP.Transmitter( config )
+   def apply( target: SocketAddress, config: UDP.Config ) : UDP.Transmitter.Directed = UDP.Transmitter( target, config )
 }

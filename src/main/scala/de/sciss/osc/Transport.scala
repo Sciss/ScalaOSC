@@ -25,11 +25,10 @@
 
 package de.sciss.osc
 
-import java.io.IOException
 import java.nio.channels.{SocketChannel, DatagramChannel}
 import de.sciss.osc.{Channel => OSCChannel, Client => OSCClient,
    Receiver => OSCReceiver, Transmitter => OSCTransmitter}
-import java.net.{InetAddress, SocketAddress, InetSocketAddress}
+import java.net.SocketAddress
 
 sealed trait Transport { def name: String }
 
@@ -81,11 +80,6 @@ case object UDP extends Transport.Net {
          new impl.DirectedUDPTransmitterImpl( channel, target, config )
    }
 
-//   sealed trait Transmitter extends OSCTransmitter with Channel
-////   {
-////      override def channel: DatagramChannel
-////   }
-
    trait Channel extends OSCChannel with OSCChannel.Net.ConfigLike {
       override def channel: DatagramChannel
    }
@@ -114,11 +108,6 @@ case object UDP extends Transport.Net {
    }
 
    type Client = OSCClient with Channel
-
-//   sealed trait Client extends OSCClient with Channel
-////   {
-////      override protected def config: Config
-////   }
 }
 
 /**
@@ -161,7 +150,7 @@ case object TCP extends Transport.Net {
       override def channel: SocketChannel
    }
 
-   type Transmitter = OSCChannel.Directed.Output
+   type Transmitter = OSCChannel.Directed.Output with Channel
 
    object Receiver {
       def apply( target: SocketAddress ) : Receiver = apply( target, Config.default )
@@ -173,7 +162,7 @@ case object TCP extends Transport.Net {
          new impl.TCPReceiverImpl( channel, target, config )
    }
 
-   type Receiver = OSCReceiver.Directed
+   type Receiver = OSCReceiver.Directed with Channel
 
    object Client {
       def apply( target: SocketAddress ) : Client = apply( target, Config.default )

@@ -26,12 +26,14 @@
 package de.sciss.osc
 
 import java.net.SocketAddress
+import java.nio.channels.{SocketChannel, DatagramChannel}
 
 object Receiver {
    type Net       = Channel /* Receiver */ with Channel.Net.ConfigLike
    type Directed  = Channel.Directed.Input
-
-   type DirectedNet = Directed with Net
+   object Directed {
+      type Net = Receiver.Directed with Receiver.Net
+   }
 
    object Undirected {
       type Action = (Packet, SocketAddress) => Unit
@@ -40,4 +42,20 @@ object Receiver {
       val Net  = Channel.Undirected.Input.Net
       type Net = Channel.Undirected.Input.Net
    }
+
+   // convenient redirection
+
+   def apply( config: UDP.Config ) : UDP.Receiver.Undirected = UDP.Receiver( config )
+   def apply( channel: DatagramChannel ) : UDP.Receiver.Undirected = UDP.Receiver( channel )
+   def apply( channel: DatagramChannel, config: UDP.Config ) : UDP.Receiver.Undirected = UDP.Receiver( channel, config )
+
+   def apply( target: SocketAddress, config: UDP.Config ) : UDP.Receiver.Directed = UDP.Receiver( target, config )
+   def apply( channel: DatagramChannel, target: SocketAddress ) : UDP.Receiver.Directed = UDP.Receiver( channel, target )
+   def apply( channel: DatagramChannel, target: SocketAddress, config: UDP.Config ) : UDP.Receiver.Directed =
+      UDP.Receiver( channel, target, config )
+
+   def apply( target: SocketAddress, config: TCP.Config ) : TCP.Receiver = TCP.Receiver( target, config )
+   def apply( channel: SocketChannel, target: SocketAddress ) : TCP.Receiver = TCP.Receiver( channel, target )
+   def apply( channel: SocketChannel, target: SocketAddress, config: TCP.Config ) : TCP.Receiver =
+      TCP.Receiver( channel, target, config )
 }
