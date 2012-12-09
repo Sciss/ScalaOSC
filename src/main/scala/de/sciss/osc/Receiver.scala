@@ -45,19 +45,22 @@ object Receiver {
 
    // convenient redirection
 
-   def apply( config: UDP.Config ) : UDP.Receiver.Undirected = UDP.Receiver( config )
-   def apply( channel: DatagramChannel ) : UDP.Receiver.Undirected = UDP.Receiver( channel )
-   def apply( channel: DatagramChannel, config: UDP.Config ) : UDP.Receiver.Undirected = UDP.Receiver( channel, config )
+//   def apply( config: UDP.Config ) : UDP.Receiver.Undirected = UDP.Receiver( config )
+//   def apply( channel: DatagramChannel ) : UDP.Receiver.Undirected = UDP.Receiver( channel )
+//   def apply( channel: DatagramChannel, config: UDP.Config ) : UDP.Receiver.Undirected = UDP.Receiver( channel, config )
 
-   def apply( target: SocketAddress, config: UDP.Config ) : UDP.Receiver.Directed = UDP.Receiver( target, config )
-   def apply( channel: DatagramChannel, target: SocketAddress ) : UDP.Receiver.Directed = UDP.Receiver( channel, target )
-   def apply( channel: DatagramChannel, target: SocketAddress, config: UDP.Config ) : UDP.Receiver.Directed =
-      UDP.Receiver( channel, target, config )
+//   def apply( target: SocketAddress, config: UDP.Config ) : UDP.Receiver.Directed = UDP.Receiver( target, config )
+//   def apply( channel: DatagramChannel, target: SocketAddress ) : UDP.Receiver.Directed = UDP.Receiver( channel, target )
+//   def apply( channel: DatagramChannel, target: SocketAddress, config: UDP.Config ) : UDP.Receiver.Directed =
+//      UDP.Receiver( channel, target, config )
 
-   def apply( target: SocketAddress, config: TCP.Config ) : TCP.Receiver = TCP.Receiver( target, config )
-   def apply( channel: SocketChannel, target: SocketAddress ) : TCP.Receiver = TCP.Receiver( channel, target )
-   def apply( channel: SocketChannel, target: SocketAddress, config: TCP.Config ) : TCP.Receiver =
-      TCP.Receiver( channel, target, config )
+//   def apply( target: SocketAddress, config: TCP.Config ) : TCP.Receiver = TCP.Receiver( target, config )
+//   def apply( channel: SocketChannel, target: SocketAddress ) : TCP.Receiver = TCP.Receiver( channel, target )
+//   def apply( channel: SocketChannel, target: SocketAddress, config: TCP.Config ) : TCP.Receiver =
+//      TCP.Receiver( channel, target, config )
 
-
+   def apply( target: SocketAddress, config: Channel.Net.Config ) : Receiver.Directed.Net = config match {
+      case udp: UDP.Config => UDP.Receiver( target, udp )
+      case tcp: TCP.Config => TCP.Receiver( target, tcp )
+   }
 }

@@ -43,7 +43,11 @@ object Transmitter {
 
    // convenient redirections
 
-   def apply( target: SocketAddress, config: TCP.Config ) : TCP.Transmitter = TCP.Transmitter( target, config )
-   def apply( config: UDP.Config ) : UDP.Transmitter.Undirected = UDP.Transmitter( config )
-   def apply( target: SocketAddress, config: UDP.Config ) : UDP.Transmitter.Directed = UDP.Transmitter( target, config )
+//   def apply( config: UDP.Config ) : UDP.Transmitter.Undirected = UDP.Transmitter( config )
+//   def apply( target: SocketAddress, config: TCP.Config ) : TCP.Transmitter = TCP.Transmitter( target, config )
+//   def apply( target: SocketAddress, config: UDP.Config ) : UDP.Transmitter.Directed = UDP.Transmitter( target, config )
+   def apply( target: SocketAddress, config: Channel.Net.Config ) : Transmitter.Directed.Net = config match {
+      case udp: UDP.Config => UDP.Transmitter( target, udp )
+      case tcp: TCP.Config => TCP.Transmitter( target, tcp )
+   }
 }

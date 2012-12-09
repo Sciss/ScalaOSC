@@ -177,5 +177,5 @@ case object TCP extends Transport.Net {
  * XXX TODO -- this transport has not yet been implemented.
  */
 case object File extends Transport {
-   val name = "File"
+   final val name = "File"
 }
