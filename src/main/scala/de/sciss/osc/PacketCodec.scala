@@ -171,7 +171,7 @@ object PacketCodec {
       def packetsAsBlobs() : Builder
 
       // ---- custom coders ----
-      def encode[ A : Manifest ]( enc: Atom.Encoder[ A ]) : Builder
+      def encode[ A ]( clazz: Class[ A ], enc: Atom.Encoder[ A ]) : Builder
       def decode[ A ]( tag: Byte, dec: Atom.Decoder[ A ]) : Builder
    }
 
@@ -285,8 +285,8 @@ object PacketCodec {
          this
       }
 
-      def encode[ A ]( enc: Atom.Encoder[ A ])( implicit mf: Manifest[ A ]) = {
-         customEnc += mf.erasure -> enc
+      def encode[ A ]( clazz: Class[ A ], enc: Atom.Encoder[ A ]) = {
+         customEnc += clazz -> enc
          this
       }
 
