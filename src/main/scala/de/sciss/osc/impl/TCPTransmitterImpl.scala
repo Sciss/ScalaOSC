@@ -8,7 +8,7 @@ import java.io.IOException
 private[osc] final class TCPTransmitterImpl( val channel: SocketChannel,
                                              protected val target: SocketAddress,
                                              protected val config: TCP.Config )
-extends TransmitterImpl with TCPChannelImpl with Channel.DirectedOutput {
+extends TransmitterImpl with TCPChannelImpl with Channel.Directed.Output {
    override def toString = TCP.name + ".Transmitter(" + target + ")"
 
    def isConnected = channel.isConnected

@@ -93,40 +93,44 @@ object Channel {
 
    type Net = Channel with Net.ConfigLike
 
-   trait DirectedNet extends Channel with Net.ConfigLike {
-      /**
-       * The remote socket address of this channel. Returns `null` if the
-       * channel has not yet been connected.
-       *
-       * @see  #connect()
-       */
-      def remoteSocketAddress : InetSocketAddress
-      final def remotePort    : Int          = remoteSocketAddress.getPort
-      final def remoteAddress : InetAddress  = remoteSocketAddress.getAddress
-   }
-
-   object DirectedInput {
-      type Action = Packet => Unit
-      val NoAction : Action = _ => ()
-   }
-   trait DirectedInput extends Channel {
-      def action : DirectedInput.Action
-      def action_=( fun: DirectedInput.Action ) : Unit
-   }
-
-   object UndirectedInput {
-      object Net {
-         type Action = (Packet, SocketAddress) => Unit
-         val NoAction : Action = (_, _) => ()
-      }
-      trait Net extends Channel {
-         def action: Net.Action
-         def action_=( value: Net.Action ) : Unit
+   object Undirected {
+      object Input {
+         object Net {
+            type Action = (Packet, SocketAddress) => Unit
+            val NoAction : Action = (_, _) => ()
+         }
+         trait Net extends Channel {
+            def action: Net.Action
+            def action_=( value: Net.Action ) : Unit
+         }
       }
    }
 
-   trait DirectedOutput extends Channel /* extends OutputLike */ {
-      def !( p: Packet ) : Unit
+   object Directed {
+      trait Net extends Channel with Net.ConfigLike {
+         /**
+          * The remote socket address of this channel. Returns `null` if the
+          * channel has not yet been connected.
+          *
+          * @see  #connect()
+          */
+         def remoteSocketAddress : InetSocketAddress
+         final def remotePort    : Int          = remoteSocketAddress.getPort
+         final def remoteAddress : InetAddress  = remoteSocketAddress.getAddress
+      }
+
+      object Input {
+         type Action = Packet => Unit
+         val NoAction : Action = _ => ()
+      }
+      trait Input extends Channel {
+         def action : Input.Action
+         def action_=( fun: Input.Action ) : Unit
+      }
+
+      trait Output extends Channel {
+         def !( p: Packet ) : Unit
+      }
    }
 
    trait Bidi {

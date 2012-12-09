@@ -29,7 +29,7 @@ import java.net.SocketAddress
 
 object Receiver {
    type Net       = Channel /* Receiver */ with Channel.Net.ConfigLike
-   type Directed  = Channel.DirectedInput
+   type Directed  = Channel.Directed.Input
 
    type DirectedNet = Directed with Net
 
@@ -37,7 +37,7 @@ object Receiver {
       type Action = (Packet, SocketAddress) => Unit
       val NoAction : Action = (_, _) => ()
 
-      val Net  = Channel.UndirectedInput.Net
-      type Net = Channel.UndirectedInput.Net
+      val Net  = Channel.Undirected.Input.Net
+      type Net = Channel.Undirected.Input.Net
    }
 }

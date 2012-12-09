@@ -8,7 +8,7 @@ import java.io.IOException
 private[osc] final class DirectedUDPTransmitterImpl( val channel: DatagramChannel,
                                                      protected val target: SocketAddress,
                                                      protected val config: UDP.Config )
-extends UDPTransmitterImpl with Channel.DirectedOutput with Channel.DirectedNet {
+extends UDPTransmitterImpl with Channel.Directed.Output with Channel.Directed.Net {
    override def toString = transport.name + ".Transmitter()"
 
    @throws( classOf[ IOException ])

@@ -63,8 +63,8 @@ case object UDP extends Transport.Net {
    }
 
    object Transmitter {
-      type Directed     = OSCTransmitter.DirectedNet with Channel
-      type Undirected   = OSCTransmitter.UndirectedNet with Channel
+      type Directed     = OSCTransmitter.Directed.Net with Channel
+      type Undirected   = OSCTransmitter.Undirected.Net with Channel
 
       def apply() : Undirected = apply( Config.default )
       def apply( config: Config ) : Undirected = apply( config.openChannel( discardWildcard = true ), config )
@@ -157,18 +157,11 @@ case object TCP extends Transport.Net {
          new impl.TCPTransmitterImpl( channel, target, config )
    }
 
-   trait Channel extends OSCChannel.DirectedNet {
+   trait Channel extends OSCChannel.Directed.Net {
       override def channel: SocketChannel
    }
 
-   type Transmitter = OSCChannel.DirectedOutput
-
-//   sealed trait Transmitter
-//   extends OSCTransmitter with OSCChannel.DirectedOutput with Channel
-////   {
-//////      protected def channel: SocketChannel
-////      override protected def config: Config
-////   }
+   type Transmitter = OSCChannel.Directed.Output
 
    object Receiver {
       def apply( target: SocketAddress ) : Receiver = apply( target, Config.default )
@@ -180,7 +173,6 @@ case object TCP extends Transport.Net {
          new impl.TCPReceiverImpl( channel, target, config )
    }
 
-//   sealed trait Receiver extends OSCReceiver.DirectedImpl with Channel
    type Receiver = OSCReceiver.Directed
 
    object Client {

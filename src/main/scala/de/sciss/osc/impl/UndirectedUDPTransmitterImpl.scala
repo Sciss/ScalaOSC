@@ -8,7 +8,7 @@ import java.net.SocketAddress
 
 private[osc] final class UndirectedUDPTransmitterImpl( val channel: DatagramChannel,
                                                        protected val config: UDP.Config )
-extends UDPTransmitterImpl with Transmitter.UndirectedNet {
+extends UDPTransmitterImpl with Transmitter.Undirected.Net {
    override def toString = transport.name + ".Transmitter()"
 
 //         def isConnected = channel.isOpen

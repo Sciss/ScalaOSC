@@ -25,20 +25,19 @@
 
 package de.sciss.osc
 
-import java.io.IOException
 import java.net.SocketAddress
 
 object Transmitter {
-   type Directed  = Channel.DirectedOutput
+   type Directed  = Channel.Directed.Output
    type Net       = Channel.Net
 
-   trait UndirectedNet extends Channel /* Transmitter */ with Channel.Net.ConfigLike { // Channel.Net
-      def send( p: Packet, target: SocketAddress ) : Unit
-
-//      @throws( classOf[ IOException ])
-//      protected final def connectChannel() {}  // XXX or: if( !isOpen ) throw new ChannelClosedException ?
-//      final def isConnected = isOpen
+   object Undirected {
+      trait Net extends Channel with Channel.Net.ConfigLike { // Channel.Net
+         def send( p: Packet, target: SocketAddress ) : Unit
+      }
    }
 
-   type DirectedNet = Directed with Channel.DirectedNet
+   object Directed {
+      type Net = Directed with Channel.Directed.Net
+   }
 }
