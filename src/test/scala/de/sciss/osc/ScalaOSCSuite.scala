@@ -75,10 +75,10 @@ class ScalaOSCSuite extends FeatureSpec with GivenWhenThen {
          val c    = PacketCodec().build
          val bb   = ByteBuffer.allocate( 8192 )
 
-         when( "several random messages are en- and decoded" )
-         then( "the codec should be able to report the correct byte size prior encoding" )
-         then( "the decoded messages should be equal to their input" )
-         then( "it should be possible to re-encode and re-decode the decoded messages" )
+         info( "When several random messages are en- and decoded:" )
+         info( "- the codec should be able to report the correct byte size prior encoding" )
+         info( "- the decoded messages should be equal to their input" )
+         info( "- it should be possible to re-encode and re-decode the decoded messages" )
          for( i <- 0 until NUM_MESSAGES ) {
             val numArgs = rnd.nextInt( MAX_ARGS )
             val in  = Message( randName(), Seq.fill( numArgs )( randStrictArg() ): _* )
@@ -113,8 +113,8 @@ class ScalaOSCSuite extends FeatureSpec with GivenWhenThen {
             checkMessageEquality( in, out2 )
          }
 
-         when( "several unsupported types are put in a message" )
-         then( "the encoder should fail to operate" )
+         info( "When several unsupported types are put in a message:" )
+         info( "- the encoder should fail to operate" )
 
          def throwAny( v: Any ) {
             bb.clear()

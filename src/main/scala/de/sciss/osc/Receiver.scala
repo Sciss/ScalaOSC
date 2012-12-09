@@ -52,7 +52,7 @@ object Receiver {
             try {
                action.apply( p )
             } catch {
-               case e => e.printStackTrace() // XXX eventually error handler?
+               case e: Throwable => e.printStackTrace() // XXX eventually error handler?
             }
 //         }
 //         catch { case e1: BufferUnderflowException =>
@@ -89,7 +89,7 @@ object Receiver {
             try {
                action.apply( p, sender )
             } catch {
-               case e => e.printStackTrace() // XXX eventually error handler?
+               case e: Throwable => e.printStackTrace() // XXX eventually error handler?
             }
          }
 //         catch { case e1: BufferUnderflowException =>

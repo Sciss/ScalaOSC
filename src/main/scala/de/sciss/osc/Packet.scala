@@ -27,8 +27,7 @@ package de.sciss.osc
 
 import java.io.PrintStream
 import java.nio.{ BufferOverflowException, BufferUnderflowException, ByteBuffer }
-import collection.{LinearSeq, LinearSeqLike}
-import collection.mutable.Builder
+import collection.{mutable, LinearSeq, LinearSeqLike}
 
 object Packet {
 	private val HEX   = "0123456789ABCDEF".getBytes
@@ -572,8 +571,8 @@ with LinearSeq[ Packet ] with LinearSeqLike[ Packet, Bundle ] {
 
 	// ---- getting LinearSeqLike to work properly ----
 
-	override def newBuilder : Builder[ Packet, Bundle ] = {
-		new scala.collection.mutable.ArrayBuffer[ Packet ] mapResult (buf => new Bundle( timetag, packets: _* ))
+	override def newBuilder : mutable.Builder[ Packet, Bundle ] = {
+		new mutable.ArrayBuffer[ Packet ] mapResult (buf => new Bundle( timetag, packets: _* ))
 	}
 
 	override def iterator : Iterator[ Packet ] = packets.iterator
@@ -624,8 +623,8 @@ with LinearSeq[ Any ] with LinearSeqLike[ Any, Message ] {
    
 	// ---- getting LinearSeqLike to work properly ----
 
-	override def newBuilder : Builder[ Any, Message ] = {
-		new scala.collection.mutable.ArrayBuffer[ Any ] mapResult (buf => new Message( name, buf: _* ))
+	override def newBuilder : mutable.Builder[ Any, Message ] = {
+		new mutable.ArrayBuffer[ Any ] mapResult (buf => new Message( name, buf: _* ))
 	}
 
 	override def iterator : Iterator[ Any ] = args.iterator

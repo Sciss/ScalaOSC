@@ -89,7 +89,7 @@ case object UDP extends Transport.Net {
       type Undirected   = Transmitter with OSCTransmitter.UndirectedNet
 
       def apply() : Undirected = apply( Config.default )
-      def apply( config: Config ) : Undirected = apply( config.openChannel( true ), config )
+      def apply( config: Config ) : Undirected = apply( config.openChannel( discardWildcard = true ), config )
 //      def apply( channel: DatagramChannel ) : Undirected = apply( channel, Config.default )
 //      def apply( channel: Channel ) : Undirected = apply( channel.channel, channel.config )
       private[UDP] def apply( channel: DatagramChannel, config: Config ) : Undirected =
@@ -279,7 +279,7 @@ case object UDP extends Transport.Net {
    object Client {
       def apply( target: SocketAddress ) : Client = apply( target, Config.default )
       def apply( target: SocketAddress, config: Config ) : Client =
-         new Impl( config.openChannel( true ), target, config )
+         new Impl( config.openChannel( discardWildcard = true ), target, config )
 
       private final class Impl( val channel: DatagramChannel,
                                 target: SocketAddress,
@@ -361,7 +361,7 @@ case object TCP extends Transport.Net {
    object Transmitter {
       def apply( target: SocketAddress ) : Transmitter = apply( target, Config.default )
       def apply( target: SocketAddress, config: Config ) : Transmitter =
-         apply( config.openChannel( true ), target, config )
+         apply( config.openChannel( discardWildcard = true ), target, config )
 
       private[TCP] def apply( channel: SocketChannel, target: SocketAddress, config: Config ) : Transmitter =
          new Impl( channel, target, config )
@@ -424,7 +424,9 @@ case object TCP extends Transport.Net {
 
    object Receiver {
       def apply( target: SocketAddress ) : Receiver = apply( target, Config.default )
-      def apply( target: SocketAddress, config: Config ) : Receiver = apply( config.openChannel( true ), target, config )
+      def apply( target: SocketAddress, config: Config ) : Receiver =
+         apply( config.openChannel( discardWildcard = true ), target, config )
+
       def apply( channel: SocketChannel, target: SocketAddress ) : Receiver = apply( channel, target, Config.default )
       def apply( channel: SocketChannel, target: SocketAddress, config: Config ) : Receiver =
          new Impl( channel, target, config )
@@ -465,7 +467,7 @@ case object TCP extends Transport.Net {
    object Client {
       def apply( target: SocketAddress ) : Client = apply( target, Config.default )
       def apply( target: SocketAddress, config: Config ) : Client =
-         new Impl( config.openChannel( true ), target, config )
+         new Impl( config.openChannel( discardWildcard = true ), target, config )
 
       private final class Impl( val channel: SocketChannel,
                                 protected val target: SocketAddress,
