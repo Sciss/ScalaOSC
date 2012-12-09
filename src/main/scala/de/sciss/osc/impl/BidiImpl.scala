@@ -37,9 +37,7 @@ private[osc] trait BidiImpl extends ChannelImpl with Channel.Bidi {
     *	@see	#kDumpHex
     *	@see	#kDumpBoth
     */
-   final def dump( mode: Dump = Dump.Text,
-                      stream: PrintStream = Console.err,
-                      filter: Dump.Filter = Dump.AllPackets ) {
+   final def dump( mode: Dump, stream: PrintStream, filter: Dump.Filter = Dump.AllPackets ) {
       dumpIn( mode, stream, filter )
       dumpOut( mode, stream, filter )
    }

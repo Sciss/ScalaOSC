@@ -10,17 +10,7 @@ ScalaOSC currently builds against Scala 2.9.2, using sbt 0.12.0. It uses the I/O
 
 To link to ScalaOSC:
 
-    libraryDependencies += "de.sciss" %% "scalaosc" % "1.0.+"
-
-### creating an IntelliJ IDEA project
-
-The IDEA project files have now been removed from the git repository, but they can be easily recreated, given that you have installed the sbt-idea plugin. If you haven't yet, create the following contents in `~/.sbt/plugins/build.sbt`:
-
-    resolvers += "sbt-idea-repo" at "http://mpeltonen.github.com/maven/"
-    
-    addSbtPlugin("com.github.mpeltonen" % "sbt-idea" % "1.1.0")
-
-Then to create the IDEA project, run `sbt gen-idea`.
+    libraryDependencies += "de.sciss" %% "scalaosc" % "1.1.+"
 
 ### overview
 
@@ -130,13 +120,42 @@ Another very brief example, showing two UDP clients playing ping-pong:
     
 ````
 
+Another example, building a TCP echo server:
+
+```scala
+
+    import de.sciss.osc._
+
+    val server = TCP.Server()
+    server.action = {
+      case (Message( name, args @ _* ), from) =>
+        from ! Message( "/pong", args: _* )
+    }
+    server.connect()
+
+    val client = TCP.Client( server.localSocketAddress )
+    client.dump()
+    client.connect()
+    client ! Message( "/ping", 1, 2.3f )
+````
+
 Further examples can be found in the headers of the API docs, e.g. by looking up the documentation for `UDP.Client`.
 
 ScalaOSC is used in the [ScalaCollider](http://www.sciss.de/scalaCollider/) project, so you may take a look at its usage there.
 
+### creating an IntelliJ IDEA project
+
+If you want to develop the library, you can set up an IntelliJ IDEA project, using the sbt-idea plugin yet. Have the following contents in `~/.sbt/plugins/build.sbt`:
+
+    addSbtPlugin("com.github.mpeltonen" % "sbt-idea" % "1.1.0")
+
+Then to create the IDEA project, run `sbt gen-idea`.
+
 ### todo
 
-A TCP server is planned, as well as a file protocol conforming to SuperCollider's binary OSC file format.
+The TCP server uses one thread per connection right now. This is fine for most scenarios were only one or two clients
+are connected. A future version might use asynchronous I/O with thread pooling. Also a file protocol conforming to
+SuperCollider's binary OSC file format is planned.
 
 ### download
 

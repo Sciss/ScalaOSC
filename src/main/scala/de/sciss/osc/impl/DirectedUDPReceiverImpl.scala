@@ -8,10 +8,10 @@ private[osc] final class DirectedUDPReceiverImpl( val channel: DatagramChannel,
                                                   protected val target: SocketAddress,
                                                   protected val config: UDP.Config )
 extends DirectedReceiverImpl with UDPChannelImpl {
-   def isConnected = channel.isConnected
+   def isConnected = channel.isConnected && isThreadRunning
 
    protected def connectChannel() {
-      if( isConnected ) return
+      if( channel.isConnected ) return
       channel.connect( target )
    }
 

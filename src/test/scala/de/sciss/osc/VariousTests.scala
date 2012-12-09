@@ -121,8 +121,27 @@ Receiver test
       c.action = p => {
          println( p )
          c ! Message( "/dumpOSC", 0 )
-         System.exit( 0 )
+         sys.exit( 0 )
       }
+   }
+
+   def tcpServer() {
+      val server = TCP.Server()
+      server.action = {
+        case (Message( name, args @ _* ), from) =>
+          from ! Message( "/pong", args: _* )
+      }
+      server.connect()
+
+      val client = TCP.Client( server.localSocketAddress )
+      client.dump()
+      client.connect()
+      client ! Message( "/ping", 1, 2.3f )
+
+      Thread.sleep( 1000 )
+      server.close()
+      client.close()
+      sys.exit( 0 )
    }
 
    def pingPong() {
@@ -159,7 +178,7 @@ Receiver test
             pingR.close()
             pingT.close()
             pong.close()
-            System.exit( 0 )
+            sys.exit( 0 )
          }
       }
       pingT.send( osc.Message( "/start" ), pong.localSocketAddress )

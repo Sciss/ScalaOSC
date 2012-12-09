@@ -9,7 +9,7 @@ private[osc] final class DirectedUDPTransmitterImpl( val channel: DatagramChanne
                                                      protected val target: SocketAddress,
                                                      protected val config: UDP.Config )
 extends UDPTransmitterImpl with Channel.Directed.Output with Channel.Directed.Net {
-   override def toString = transport.name + ".Transmitter()"
+   override def toString = transport.name + ".Transmitter@" + hashCode().toHexString
 
    @throws( classOf[ IOException ])
    protected def connectChannel() { if( !isConnected ) channel.connect( target )}

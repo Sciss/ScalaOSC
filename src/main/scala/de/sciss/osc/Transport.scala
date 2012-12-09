@@ -25,9 +25,9 @@
 
 package de.sciss.osc
 
-import java.nio.channels.{SocketChannel, DatagramChannel}
+import java.nio.channels.{ServerSocketChannel, SocketChannel, DatagramChannel}
 import de.sciss.osc.{Channel => OSCChannel, Client => OSCClient,
-   Receiver => OSCReceiver, Transmitter => OSCTransmitter}
+   Receiver => OSCReceiver, Transmitter => OSCTransmitter, Server => OSCServer}
 import java.net.SocketAddress
 
 sealed trait Transport { def name: String }
@@ -53,11 +53,11 @@ case object UDP extends Transport.Net {
    }
 
    trait Config extends OSCChannel.Net.Config {
-      override final def toString = name + ".Config"
+      override final def toString = name + ".Config@" + hashCode().toHexString
       def openChannel( discardWildcard: Boolean = false ) : DatagramChannel
    }
    trait ConfigBuilder extends OSCChannel.Net.ConfigBuilder {
-      override final def toString = name + ".ConfigBuilder"
+      override final def toString = name + ".ConfigBuilder@" + hashCode().toHexString
       override def build : Config
    }
 
@@ -129,11 +129,12 @@ case object TCP extends Transport.Net {
    }
 
    trait Config extends Channel.Net.Config {
-      override final def toString = name + ".Config"
+      override final def toString = name + ".Config@" + hashCode().toHexString
       def openChannel( discardWildcard: Boolean = true ) : SocketChannel
+      def openServerChannel( discardWildcard: Boolean = true ) : ServerSocketChannel
    }
    trait ConfigBuilder extends Channel.Net.ConfigBuilder {
-      override final def toString = name + ".ConfigBuilder"
+      override final def toString = name + ".ConfigBuilder@" + hashCode().toHexString
       override def build : Config
    }
 
@@ -171,6 +172,13 @@ case object TCP extends Transport.Net {
    }
 
    type Client = OSCClient with Channel
+
+   object Server {
+      def apply( config: Config = Config.default ) : OSCServer.Net =
+         new impl.TCPServerImpl( config.openServerChannel( discardWildcard = true ), config )
+   }
+
+//   type Server = Server with
 }
 
 /**

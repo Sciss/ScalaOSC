@@ -7,8 +7,8 @@ import java.net.SocketAddress
 private[osc] final class TCPReceiverImpl( val channel: SocketChannel,
                                           protected val target: SocketAddress,
                                           protected val config: TCP.Config )
-extends DirectedReceiverImpl with TCPChannelImpl {
-   def isConnected = channel.isConnected
+extends DirectedReceiverImpl with TCPSingleChannelImpl {
+   def isConnected = channel.isConnected && isThreadRunning
 
    protected def receive() {
       buf.rewind().limit( 4 )	// in TCP mode, first four bytes are packet size in bytes

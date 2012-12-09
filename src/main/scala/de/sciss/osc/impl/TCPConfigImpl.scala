@@ -2,7 +2,7 @@ package de.sciss.osc
 package impl
 
 import java.net.{InetAddress, InetSocketAddress}
-import java.nio.channels.SocketChannel
+import java.nio.channels.{ServerSocketChannel, SocketChannel}
 
 private[osc] final class TCPConfigBuilderImpl extends NetChannelConfigBuilderImpl with TCP.ConfigBuilder {
    def transport = TCP
@@ -13,22 +13,27 @@ private[osc] final case class TCPConfigImpl( bufferSize: Int, codec: PacketCodec
                                              localSocketAddress: InetSocketAddress )
 extends TCP.Config {
    def transport = TCP
-   // XXX factor out common parts with UDP.ConfigImpl
+
    def openChannel( discardWildcard: Boolean ) = {
       val ch      = SocketChannel.open()
-      val addr0   = localSocketAddress
-      val addr    = if( discardWildcard && addr0.getAddress
-            .equals( InetAddress.getByAddress( new Array[ Byte ]( 4 )))) {
-         new InetSocketAddress( InetAddress.getLocalHost, addr0.getPort )
-      } else addr0
-
+      val addr    = localAddress( discardWildcard )
       ch.socket().bind( addr )
       ch
    }
-//      def openChannel() = {
-//         val ch = SocketChannel.open()
-//         ch.socket().bind( localSocketAddress )
-//         ch
-//      }
+
+   private def localAddress( discardWildcard: Boolean ) : InetSocketAddress = {
+      val addr0 = localSocketAddress
+      if( discardWildcard && addr0.getAddress
+            .equals( InetAddress.getByAddress( new Array[ Byte ]( 4 )))) {
+         new InetSocketAddress( InetAddress.getLocalHost, addr0.getPort )
+      } else addr0
+   }
+
+   def openServerChannel( discardWildcard: Boolean ) = {
+      val ch      = ServerSocketChannel.open()
+      val addr    = localAddress( discardWildcard )
+      ch.socket().bind( addr )
+      ch
+   }
 }
 

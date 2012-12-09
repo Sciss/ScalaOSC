@@ -133,7 +133,7 @@ object Channel {
       }
    }
 
-   trait Bidi {
+   trait Bidi extends Channel {
       def dumpIn(  mode: Dump = Dump.Text,
                    stream: PrintStream = Console.err,
                    filter: Dump.Filter = Dump.AllPackets ) : Unit

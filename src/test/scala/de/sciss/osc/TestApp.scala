@@ -15,17 +15,20 @@ object TestApp extends App {
 //            Test.codec()
       case Seq( "--testTCPClient" ) =>
          VariousTests.tcpClient()
+      case Seq( "--testTCPServer" ) =>
+         VariousTests.tcpServer()
       case _ =>
 //         printInfo()
          println(
-"""The following demos are available:
-
-   --pingPong
-   --testTransmitter (UDP|TCP)
-   --testReceiver
-   --testTCPClient
-
-""" )
+            """The following demos are available:
+              |
+              |--pingPong
+              |--testTransmitter (UDP|TCP)
+              |--testReceiver
+              |--testTCPClient
+              |--testTCPServer
+              |""".stripMargin
+         )
          sys.exit( 1 )
    }
 }
