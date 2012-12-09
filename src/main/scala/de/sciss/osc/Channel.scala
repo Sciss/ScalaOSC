@@ -28,7 +28,7 @@ package de.sciss.osc
 import java.io.{ IOException, PrintStream }
 import java.nio.channels.{InterruptibleChannel, Channel => NIOChannel}
 import java.nio.ByteBuffer
-import java.net.{InetAddress, InetSocketAddress}
+import java.net.{SocketAddress, InetAddress, InetSocketAddress}
 
 object Channel {
    type Net = Channel with NetConfigLike
@@ -138,162 +138,49 @@ object Channel {
       }
    }
 
-   private[osc] trait Single extends Channel {
-      @volatile protected var dumpMode: Dump = Dump.Off
-      @volatile protected var printStream : PrintStream	= Console.err
-      @volatile protected var dumpFilter : Dump.Filter = Dump.AllPackets
-
-      protected val bufSync   = new AnyRef
-      protected final val buf	= ByteBuffer.allocateDirect( config.bufferSize )
-
-      /**
-       * Requests to connect the network channel. This may be called several
-       * times, and the implementation should ignore the call when the channel
-       * is already connected.
-       */
-      @throws( classOf[ IOException ])
-      protected def connectChannel() : Unit
-//      protected def isChannelConnected : Boolean
-
-      final def dump( mode: Dump = Dump.Text,
-                      stream: PrintStream = Console.err,
-                      filter: Dump.Filter = Dump.AllPackets ) {
-         dumpMode	   = mode
-         printStream	= stream
-         dumpFilter	= filter
-      }
-
-      /**
-       * Callers should have a lock on the buffer!
-       */
-      protected final def dumpPacket( p: Packet, prefix: String ) {
-         if( (dumpMode ne Dump.Off) && dumpFilter( p )) {
-            printStream.synchronized {
-               printStream.print( prefix )
-               dumpMode match {
-                  case Dump.Text =>
-                     Packet.printTextOn( p, codec, printStream )
-                  case Dump.Hex =>
-                     Packet.printHexOn( buf, printStream )
-                  case Dump.Both =>
-                     Packet.printTextOn( p, codec, printStream )
-                     Packet.printHexOn( buf, printStream )
-                  case _ =>   // satisfy compiler
-               }
-            }
-         }
-      }
-   }
-
    object DirectedInput {
       type Action = Packet => Unit
       val NoAction : Action = _ => ()
    }
-   trait DirectedInput /* extends InputLike */ {
+   trait DirectedInput extends Channel {
       def action : DirectedInput.Action
       def action_=( fun: DirectedInput.Action ) : Unit
-//      var action = DirectedInput.NoAction
    }
 
-   trait DirectedOutput /* extends OutputLike */ {
+   object UndirectedNetInput {
+      type Action = (Packet, SocketAddress) => Unit
+      val NoAction : Action = (_, _) => ()
+   }
+   trait UndirectedNetInput extends Channel {
+      def action: UndirectedNetInput.Action
+      def action_=( value: UndirectedNetInput.Action ) : Unit
+   }
+
+   trait DirectedOutput extends Channel /* extends OutputLike */ {
       def !( p: Packet ) : Unit
    }
-//   trait OutputLike
-   trait Output extends Single /* with OutputLike */ {
-      protected def dumpPacket( p: Packet ) { dumpPacket( p, "s: " )}
-   }
 
-//   trait InputLike
-   trait Input extends Single /* with InputLike */ {
-      protected def dumpPacket( p: Packet ) { dumpPacket( p, "r: " )}
-   }
+   trait Bidi {
+      def dumpIn(  mode: Dump = Dump.Text,
+                   stream: PrintStream = Console.err,
+                   filter: Dump.Filter = Dump.AllPackets ) : Unit
 
-   trait Bidi extends Channel {
-      protected def input: Input
-      protected def output: Output
-
-      final def connect() {
-         input.connect()
-         output.connect()
-      }
-
-      final def isConnected = input.isConnected && output.isConnected
-
-      /**
-       *	Changes the way incoming and outgoing OSC messages are printed to the standard err console.
-       *	By default messages are not printed.
-       *
-       *  @param	mode	one of <code>kDumpOff</code> (don't dump, default),
-       *					<code>kDumpText</code> (dump human readable string),
-       *					<code>kDumpHex</code> (hexdump), or
-       *					<code>kDumpBoth</code> (both text and hex)
-       *	@param	stream	the stream to print on
-       *
-       *	@see	#dumpIn( int, PrintStream )
-       *	@see	#dumpOut( int, PrintStream )
-       *	@see	#kDumpOff
-       *	@see	#kDumpText
-       *	@see	#kDumpHex
-       *	@see	#kDumpBoth
-       */
-      override final def dump( mode: Dump = Dump.Text,
-                         stream: PrintStream = Console.err,
-                         filter: Dump.Filter = Dump.AllPackets ) {
-         dumpIn( mode, stream, filter )
-         dumpOut( mode, stream, filter )
-      }
-
-      /**
-       *	Changes the way incoming messages are dumped
-       *	to the console. By default incoming messages are not
-       *	dumped. Incoming messages are those received
-       *	by the client from the server, before they
-       *	get delivered to registered <code>OSCListener</code>s.
-       *
-       *	@param	mode	see `dump` for details
-       *	@param	stream	the stream to print on
-       *
-       *	@see	#dump( Dump, PrintStream, Dump.Filter )
-       *	@see	#dumpOut( Dump, PrintStream, Dump.Filter )
-       */
-      final def dumpIn( mode: Dump = Dump.Text,
-                        stream: PrintStream = Console.err,
-                        filter: Dump.Filter = Dump.AllPackets ) {
-         input.dump( mode, stream, filter )
-      }
-
-      /**
-       *	Changes the way outgoing messages are dumped
-       *	to the console. By default outgoing messages are not
-       *	dumped. Outgoing messages are those send via
-       *	<code>send</code>.
-       *
-       *	@param	mode	see `dump` for details
-       *	@param	stream	the stream to print on
-       *
-       *	@see	#dump( Dump, PrintStream, Dump.Filter )
-       *	@see	#dumpIn( Dump, PrintStream, Dump.Filter )
-       */
-      final def dumpOut( mode: Dump = Dump.Text,
-                        stream: PrintStream = Console.err,
-                        filter: Dump.Filter = Dump.AllPackets ) {
-         output.dump( mode, stream, filter )
-      }
+      def dumpOut( mode: Dump = Dump.Text,
+                   stream: PrintStream = Console.err,
+                   filter: Dump.Filter = Dump.AllPackets ) : Unit
    }
 }
 
 trait Channel extends Channel.ConfigLike with NIOChannel {
-   protected def config : Channel.Config
-
-   final def bufferSize : Int = config.bufferSize
-   final def codec : PacketCodec = config.codec
+   def bufferSize : Int
+   def codec : PacketCodec
 
    def channel: InterruptibleChannel
 
    /**
     *	Queries whether the channel is still open.
     */
-   final def isOpen : Boolean = channel.isOpen // generalSync.synchronized { !wasClosed }
+   def isOpen : Boolean
 
    /**
     *	Establishes connection for transports requiring

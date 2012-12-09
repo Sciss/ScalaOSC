@@ -29,32 +29,16 @@ import java.io.IOException
 import java.net.SocketAddress
 
 object Transmitter {
-   type Directed = Transmitter with Channel.DirectedOutput
-//   trait Directed extends Transmitter {
-//      def !( p: Packet ) : Unit
-//   }
+   type Directed  = Channel.DirectedOutput
+   type Net       = Channel.Net
 
-   type Net = Transmitter with Channel.Net
-
-   trait UndirectedNet extends Transmitter with Channel.NetConfigLike { // Channel.Net
+   trait UndirectedNet extends Channel /* Transmitter */ with Channel.NetConfigLike { // Channel.Net
       def send( p: Packet, target: SocketAddress ) : Unit
 
-      @throws( classOf[ IOException ])
-      protected final def connectChannel() {}  // XXX or: if( !isOpen ) throw new ChannelClosedException ?
-      final def isConnected = isOpen
+//      @throws( classOf[ IOException ])
+//      protected final def connectChannel() {}  // XXX or: if( !isOpen ) throw new ChannelClosedException ?
+//      final def isConnected = isOpen
    }
 
    type DirectedNet = Directed with Channel.DirectedNet
-}
-
-trait Transmitter extends Channel.Output {
-   @throws( classOf[ IOException ])
-   final def close() {
-      channel.close()
-   }
-
-   @throws( classOf[ IOException ])
-   final def connect() {
-      connectChannel()
-   }
 }
