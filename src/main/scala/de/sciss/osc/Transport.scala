@@ -50,38 +50,16 @@ case object UDP extends Transport.Net {
    object Config {
       def default : Config = apply().build
       implicit def build( b: ConfigBuilder ) : Config = b.build
-      def apply() : ConfigBuilder = new ConfigBuilderImpl
+      def apply() : ConfigBuilder = new impl.UDPConfigBuilderImpl
    }
 
-   sealed trait Config extends OSCChannel.NetConfig {
+   trait Config extends OSCChannel.Net.Config {
       override final def toString = name + ".Config"
       def openChannel( discardWildcard: Boolean = false ) : DatagramChannel
    }
-   sealed trait ConfigBuilder extends OSCChannel.NetConfigBuilder {
+   trait ConfigBuilder extends OSCChannel.Net.ConfigBuilder {
       override final def toString = name + ".ConfigBuilder"
       override def build : Config
-   }
-
-   private final class ConfigBuilderImpl extends OSCChannel.NetConfigBuilderImpl with ConfigBuilder {
-      def transport = UDP
-      def build: Config = ConfigImpl( bufferSize, codec, localSocketAddress )
-   }
-
-   private final case class ConfigImpl( bufferSize: Int, codec: PacketCodec,
-                                        localSocketAddress: InetSocketAddress )
-   extends Config {
-      def transport = UDP
-      def openChannel( discardWildcard: Boolean ) = {
-         val ch      = DatagramChannel.open()
-         val addr0   = localSocketAddress
-         val addr    = if( discardWildcard && addr0.getAddress
-               .equals( InetAddress.getByAddress( new Array[ Byte ]( 4 )))) {
-            new InetSocketAddress( InetAddress.getLocalHost, addr0.getPort )
-         } else addr0
-
-         ch.socket().bind( addr )
-         ch
-      }
    }
 
    object Transmitter {
@@ -108,13 +86,13 @@ case object UDP extends Transport.Net {
 ////      override def channel: DatagramChannel
 ////   }
 
-   trait Channel extends OSCChannel with OSCChannel.NetConfigLike {
+   trait Channel extends OSCChannel with OSCChannel.Net.ConfigLike {
       override def channel: DatagramChannel
    }
 
    object Receiver {
       type Directed     = OSCReceiver.Directed with OSCReceiver.Net
-      type Undirected   = OSCReceiver.UndirectedNet
+      type Undirected   = OSCReceiver.Undirected.Net
 
       def apply() : Undirected = apply( Config.default )
       def apply( config: Config ) : Undirected = apply( config.openChannel(), config )
@@ -158,44 +136,16 @@ case object TCP extends Transport.Net {
    object Config {
       def default : Config = apply().build
       implicit def build( b: ConfigBuilder ) : Config = b.build
-      def apply() : ConfigBuilder = new ConfigBuilderImpl
+      def apply() : ConfigBuilder = new impl.TCPConfigBuilderImpl
    }
 
-   sealed trait Config extends Channel.NetConfig {
+   trait Config extends Channel.Net.Config {
       override final def toString = name + ".Config"
       def openChannel( discardWildcard: Boolean = true ) : SocketChannel
    }
-   sealed trait ConfigBuilder extends Channel.NetConfigBuilder {
+   trait ConfigBuilder extends Channel.Net.ConfigBuilder {
       override final def toString = name + ".ConfigBuilder"
       override def build : Config
-   }
-
-   private final class ConfigBuilderImpl extends Channel.NetConfigBuilderImpl with ConfigBuilder {
-      def transport = TCP
-      def build: Config = ConfigImpl( bufferSize, codec, localSocketAddress )
-   }
-
-   private final case class ConfigImpl( bufferSize: Int, codec: PacketCodec,
-                                        localSocketAddress: InetSocketAddress )
-   extends Config {
-      def transport = TCP
-      // XXX factor out common parts with UDP.ConfigImpl
-      def openChannel( discardWildcard: Boolean ) = {
-         val ch      = SocketChannel.open()
-         val addr0   = localSocketAddress
-         val addr    = if( discardWildcard && addr0.getAddress
-               .equals( InetAddress.getByAddress( new Array[ Byte ]( 4 )))) {
-            new InetSocketAddress( InetAddress.getLocalHost, addr0.getPort )
-         } else addr0
-
-         ch.socket().bind( addr )
-         ch
-      }
-//      def openChannel() = {
-//         val ch = SocketChannel.open()
-//         ch.socket().bind( localSocketAddress )
-//         ch
-//      }
    }
 
    object Transmitter {

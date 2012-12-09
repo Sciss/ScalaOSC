@@ -27,27 +27,10 @@ package de.sciss.osc
 
 import java.io.{ IOException, PrintStream }
 import java.nio.channels.{InterruptibleChannel, Channel => NIOChannel}
-import java.nio.ByteBuffer
 import java.net.{SocketAddress, InetAddress, InetSocketAddress}
 
 object Channel {
-   type Net = Channel with NetConfigLike
-//   trait Net extends Channel with OSCChannelNetConfigLike
-
-   trait DirectedNet extends Channel with NetConfigLike {
-//      private[osc] def target: SocketAddress
-      /**
-       * The remote socket address of this channel. Returns `null` if the
-       * channel has not yet been connected.
-       *
-       * @see  #connect()
-       */
-      def remoteSocketAddress : InetSocketAddress
-      final def remotePort    : Int          = remoteSocketAddress.getPort
-      final def remoteAddress : InetAddress  = remoteSocketAddress.getAddress
-   }
-
-/* sealed */ trait ConfigLike {
+   trait ConfigLike {
       /**
        *	Queries the buffer size used for coding or decoding OSC messages.
        *	This is the maximum size an OSC packet (bundle or message) can grow to.
@@ -69,21 +52,9 @@ object Channel {
       def transport : Transport
 
       def codec : PacketCodec
-
    }
+
    trait Config extends ConfigLike
-
-   trait NetConfigLike extends ConfigLike {
-      override def transport : Transport.Net
-
-      def localSocketAddress : InetSocketAddress
-
-      final def localPort        : Int          = localSocketAddress.getPort
-      final def localAddress     : InetAddress  = localSocketAddress.getAddress
-      final def localIsLoopback  : Boolean      = localSocketAddress.getAddress.isLoopbackAddress
-   }
-
-   trait NetConfig extends Config with NetConfigLike
 
    trait ConfigBuilder extends ConfigLike {
       /**
@@ -97,45 +68,41 @@ object Channel {
       def build : Config
    }
 
-   trait NetConfigBuilder extends ConfigBuilder with NetConfigLike {
-      def localPort_=( port: Int ) : Unit
-      def localAddress_=( address: InetAddress ) : Unit
-      def localSocketAddress_=( address: InetSocketAddress ) : Unit
-      def localIsLoopback_=( loopback: Boolean ) : Unit
+   object Net {
+      trait ConfigLike extends Channel.ConfigLike {
+         override def transport : Transport.Net
 
-      override def build : NetConfig
+         def localSocketAddress : InetSocketAddress
+
+         final def localPort        : Int          = localSocketAddress.getPort
+         final def localAddress     : InetAddress  = localSocketAddress.getAddress
+         final def localIsLoopback  : Boolean      = localSocketAddress.getAddress.isLoopbackAddress
+      }
+
+      trait Config extends Channel.Config with ConfigLike
+
+      trait ConfigBuilder extends Channel.ConfigBuilder with ConfigLike {
+         def localPort_=( port: Int ) : Unit
+         def localAddress_=( address: InetAddress ) : Unit
+         def localSocketAddress_=( address: InetSocketAddress ) : Unit
+         def localIsLoopback_=( loopback: Boolean ) : Unit
+
+         override def build : Config
+      }
    }
 
-   private[osc] trait ConfigBuilderImpl extends ConfigBuilder {
-//      final var bufferSize             = 8192
-      private var bufferSizeVar  = 8192
-      final def bufferSize = bufferSizeVar
-      final def bufferSize_=( size: Int ) {
-         require( size >= 16 )
-         bufferSizeVar = size
-      }
-      final var codec : PacketCodec = PacketCodec.default
-   }
+   type Net = Channel with Net.ConfigLike
 
-   private[osc] trait NetConfigBuilderImpl
-   extends ConfigBuilderImpl with NetConfigBuilder {
-      private var localSocket       = new InetSocketAddress( "0.0.0.0", 0 )
-      final def localSocketAddress  = localSocket
-      final def localSocketAddress_=( addr: InetSocketAddress ) { localSocket = addr }
-
-      final def localPort_=( port: Int ) {
-         localSocket = new InetSocketAddress( localSocket.getAddress, port )
-      }
-
-      final def localAddress_=( address: InetAddress ) {
-         localSocket = new InetSocketAddress( address, localSocket.getPort )
-      }
-
-      final def localIsLoopback_=( loopback: Boolean ) {
-         if( localSocket.getAddress.isLoopbackAddress != loopback ) {
-            localAddress = InetAddress.getByName( if( loopback ) "127.0.0.1" else "0.0.0.0" )
-         }
-      }
+   trait DirectedNet extends Channel with Net.ConfigLike {
+      /**
+       * The remote socket address of this channel. Returns `null` if the
+       * channel has not yet been connected.
+       *
+       * @see  #connect()
+       */
+      def remoteSocketAddress : InetSocketAddress
+      final def remotePort    : Int          = remoteSocketAddress.getPort
+      final def remoteAddress : InetAddress  = remoteSocketAddress.getAddress
    }
 
    object DirectedInput {
@@ -147,13 +114,15 @@ object Channel {
       def action_=( fun: DirectedInput.Action ) : Unit
    }
 
-   object UndirectedNetInput {
-      type Action = (Packet, SocketAddress) => Unit
-      val NoAction : Action = (_, _) => ()
-   }
-   trait UndirectedNetInput extends Channel {
-      def action: UndirectedNetInput.Action
-      def action_=( value: UndirectedNetInput.Action ) : Unit
+   object UndirectedInput {
+      object Net {
+         type Action = (Packet, SocketAddress) => Unit
+         val NoAction : Action = (_, _) => ()
+      }
+      trait Net extends Channel {
+         def action: Net.Action
+         def action_=( value: Net.Action ) : Unit
+      }
    }
 
    trait DirectedOutput extends Channel /* extends OutputLike */ {

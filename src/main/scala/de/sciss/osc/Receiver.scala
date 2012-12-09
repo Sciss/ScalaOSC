@@ -28,7 +28,7 @@ package de.sciss.osc
 import java.net.SocketAddress
 
 object Receiver {
-   type Net       = Channel /* Receiver */ with Channel.NetConfigLike
+   type Net       = Channel /* Receiver */ with Channel.Net.ConfigLike
    type Directed  = Channel.DirectedInput
 
    type DirectedNet = Directed with Net
@@ -36,8 +36,8 @@ object Receiver {
    object Undirected {
       type Action = (Packet, SocketAddress) => Unit
       val NoAction : Action = (_, _) => ()
-   }
 
-   val UndirectedNet    = Channel.UndirectedNetInput
-   type UndirectedNet   = Channel.UndirectedNetInput
+      val Net  = Channel.UndirectedInput.Net
+      type Net = Channel.UndirectedInput.Net
+   }
 }

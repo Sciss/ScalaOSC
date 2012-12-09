@@ -32,7 +32,7 @@ object Transmitter {
    type Directed  = Channel.DirectedOutput
    type Net       = Channel.Net
 
-   trait UndirectedNet extends Channel /* Transmitter */ with Channel.NetConfigLike { // Channel.Net
+   trait UndirectedNet extends Channel /* Transmitter */ with Channel.Net.ConfigLike { // Channel.Net
       def send( p: Packet, target: SocketAddress ) : Unit
 
 //      @throws( classOf[ IOException ])
