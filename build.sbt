@@ -4,7 +4,9 @@ version := "1.1.0"
 
 organization := "de.sciss"
 
-scalaVersion := "2.9.2"
+scalaVersion := "2.10.0"
+
+crossScalaVersions in ThisBuild := Seq( "2.10.0", "2.9.2" )
 
 description := "A library for OpenSoundControl (OSC), a message protocol used in multi-media applications."
 
@@ -14,14 +16,9 @@ licenses := Seq( "LGPL v2.1+" -> url( "http://www.gnu.org/licenses/lgpl-2.1.txt"
 
 resolvers += "Sonatype OSS Releases" at "https://oss.sonatype.org/content/groups/public"
 
-libraryDependencies in ThisBuild <+= scalaVersion { sv =>
-   val v = sv match {
-      case "2.10.0-RC3" => "1.8-B1"
-      case "2.10.0-RC5" => "1.8-B1"
-      case _            => "1.8"
-   }
-   "org.scalatest" %% "scalatest" % v % "test"
-}
+libraryDependencies in ThisBuild ++= Seq(
+   ("org.scalatest" % "scalatest" % "1.8" cross CrossVersion.full) % "test"
+)
 
 retrieveManaged := true
 
