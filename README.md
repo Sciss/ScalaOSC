@@ -24,9 +24,7 @@ For more information, known implementations and the protocol standard, visit [op
 
 ### implementation
 
-ScalaOSC currently provides single ended channels (`Transmitter` to send messages and `Receiver` to run a receiving loop), as well as single sockets in bidirectional mode (`Client`).
-
-The supported transports are UDP and TCP. A TCP server option is currently missing. If you need one, have a look at [NetUtil](http://www.sciss.de/netutil/).
+ScalaOSC currently provides single ended channels (`Transmitter` to send messages and `Receiver` to run a receiving loop), as well as single sockets in bidirectional mode (`Client` and `Server`). The supported transports are UDP and TCP (`Server` obviously requires TCP).
 
 ScalaOSC comes with a codec conforming with the strict [OSC 1.0 specification](http://opensoundcontrol.org/spec-1_0). It can be configured to use the types `h` (64-bit integer), `d` (64-bit floating point), to encode OSC packets themselves as `b` blobs (as used by SuperCollider), to support the boolean tags `T` and `F` and many other optional types of OSC 1.1, including array wrapping with `[` and `]`. The API also allows to extend the codec with custom types.
 
@@ -147,7 +145,7 @@ ScalaOSC is used in the [ScalaCollider](http://www.sciss.de/scalaCollider/) proj
 
 If you want to develop the library, you can set up an IntelliJ IDEA project, using the sbt-idea plugin yet. Have the following contents in `~/.sbt/plugins/build.sbt`:
 
-    addSbtPlugin("com.github.mpeltonen" % "sbt-idea" % "1.1.0")
+    addSbtPlugin("com.github.mpeltonen" % "sbt-idea" % "1.2.0")
 
 Then to create the IDEA project, run `sbt gen-idea`.
 
