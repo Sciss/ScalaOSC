@@ -2,7 +2,7 @@
  * PacketCodec.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2012 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2013 Hanns Holger Rutz. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -660,167 +660,160 @@ object PacketCodec {
 }
 
 trait PacketCodec {
-   codec =>
+  codec =>
 
-   /**
-    * The character set used to encode and decode strings.
-    * Unfortunately, this has not been specified in the OSC
-    * standard. We recommend to either restrict characters
-    * to 7-bit ascii range or to use UTF-8. The default
-    * implementation initially uses UTF-8.
-    */
-   def charsetName: String
+  /**
+   * The character set used to encode and decode strings.
+   * Unfortunately, this has not been specified in the OSC
+   * standard. We recommend to either restrict characters
+   * to 7-bit ascii range or to use UTF-8. The default
+   * implementation initially uses UTF-8.
+   */
+  def charsetName: String
 
-   /**
-    * Prints a textual representation of the given atom
-    * to the given print stream. Implementations should use the
-    * atom encoder suitable for the given value.
-    *
-    * @param   value       the atom to encode
-    * @param   stream      the stream to print on
-    * @param   nestCount   should only be used if the printing
-    *    requires line breaks. Indentation should be 2x nestCount
-    *    space characters.
-    */
-   @throws( classOf[ Exception ])
-   def printAtom( value: Any, stream: PrintStream, nestCount: Int ) : Unit
+  /**
+   * Prints a textual representation of the given atom
+   * to the given print stream. Implementations should use the
+   * atom encoder suitable for the given value.
+   *
+   * @param   value       the atom to encode
+   * @param   stream      the stream to print on
+   * @param   nestCount   should only be used if the printing
+   *                      requires line breaks. Indentation should be 2x nestCount
+   *                      space characters.
+   */
+  @throws(classOf[Exception])
+  def printAtom(value: Any, stream: PrintStream, nestCount: Int): Unit
 
-   /**
-    * Encodes the given bundle
-    * into the provided <code>ByteBuffer</code>,
-    *	beginning at the buffer's current position. To write the
-    *	encoded packet, you will typically call <code>flip()</code>
-    *	on the buffer, then <code>write()</code> on the channel.
-    *
-    *  @param  b  <code>ByteBuffer</code> pointing right at
-    *					the beginning of the osc packet.
-    *					buffer position will be right after the end
-    *				   of the packet when the method returns.
-    */
-   @throws( classOf[ IOException ])
-   def encodeBundle( bndl: Bundle, b: ByteBuffer ) : Unit
+  /**
+   * Encodes the given bundle
+   * into the provided <code>ByteBuffer</code>,
+   * beginning at the buffer's current position. To write the
+   * encoded packet, you will typically call <code>flip()</code>
+   * on the buffer, then <code>write()</code> on the channel.
+   *
+   * @param  b  <code>ByteBuffer</code> pointing right at
+   *            the beginning of the osc packet.
+   *            buffer position will be right after the end
+   *            of the packet when the method returns.
+   */
+  @throws(classOf[IOException])
+  def encodeBundle(bndl: Bundle, b: ByteBuffer): Unit
 
-   /**
-	 *	Encodes the message onto the given <code>ByteBuffer</code>,
-	 *	beginning at the buffer's current position. To write the
-	 *	encoded message, you will typically call <code>flip()</code>
-	 *	on the buffer, then <code>write()</code> on the channel.
-	 *
-	 *  @param  b	<code>ByteBuffer</code> pointing right at
-	 *					the beginning of the osc packet.
-	 *					buffer position will be right after the end
-	 *					of the message when the method returns.
-	 */
-	@throws( classOf[ Exception ])
-	def encodeMessage( msg: Message, b: ByteBuffer ) : Unit
+  /**
+   * Encodes the message onto the given <code>ByteBuffer</code>,
+   * beginning at the buffer's current position. To write the
+   * encoded message, you will typically call <code>flip()</code>
+   * on the buffer, then <code>write()</code> on the channel.
+   *
+   * @param  b	<code>ByteBuffer</code> pointing right at
+   *            the beginning of the osc packet.
+   *            buffer position will be right after the end
+   *            of the message when the method returns.
+   */
+  @throws(classOf[Exception])
+  def encodeMessage(msg: Message, b: ByteBuffer): Unit
 
-//   def encodeAtom( v: Any, tb: ByteBuffer, db: ByteBuffer ) : Unit
+  /**
+   * Calculates the byte size of the encoded message
+   *
+   * @return	the size of the OSC message in bytes
+   */
+  def encodedMessageSize(msg: Message): Int
 
-   /**
-    *	Calculates the byte size of the encoded message
-    *
-    *	@return	the size of the OSC message in bytes
-    */
-   def encodedMessageSize( msg: Message ) : Int
+  /**
+   * Calculates the byte size of the encoded bundle.
+   * This method is final. The size is the sum
+   * of the bundle name, its timetag and the sizes of
+   * each bundle element.
+   *
+   * For contained messages,
+   * `encodedMessageSize` will be called, thus for
+   * implementations of `PacketCodec`, it is sufficient
+   * to overwrite `encodedMessageSize`.
+   */
+  final def encodedBundleSize(bndl: Bundle): Int = {
+    // overhead: name, timetag
+    bndl.packets.foldLeft(16 + (bndl.packets.size << 2))((sum, p) => sum + p.encodedSize(codec))
+  }
 
-//   def encodedAtomSize( v: Any ) : Int
-
-   /**
-    * Calculates the byte size of the encoded bundle.
-    * This method is final. The size is the sum
-    * of the bundle name, its timetag and the sizes of
-    * each bundle element.
-    *
-    * For contained messages,
-    * `encodedMessageSize` will be called, thus for
-    * implementations of `PacketCodec`, it is sufficient
-    * to overwrite `encodedMessageSize`.
-    */
-	final def encodedBundleSize( bndl: Bundle ) : Int = {
-                 // overhead: name, timetag
-      bndl.packets.foldLeft( 16 + (bndl.packets.size << 2) )( (sum, p) => sum + p.encodedSize( codec ))
-	}
-
-   /**
-    * Creates a new packet decoded
-    * from the ByteBuffer. This method tries
-    * to read a null terminated string at the
-    * beginning of the provided buffer. If it
-    * equals the bundle identifier, the
-    * <code>decode</code> of <code>Bundle</code>
-    * is called (which may recursively decode
-    * nested bundles), otherwise the one from
-    * <code>Message</code>.
-    *
-    * This method is final. For messages encountered,
-    * `decodeMessage` is called, , thus for
-    * implementations of `PacketCodec`, it is sufficient
-    * to overwrite `decodeMessage`.
-    *
-    *@param  b   <code>ByteBuffer</code> pointing right at
-    *				the beginning of the packet. the buffer's
-    *				limited should be set appropriately to
-    *				allow the complete packet to be read. when
-    *				the method returns, the buffer's position
-    *				is right after the end of the packet.
-    *
-    *  @return		new decoded OSC packet
-    */
-   @throws( classOf[ Exception ])
-   final def decode( b: ByteBuffer ) : Packet = {
-      try {
-         val name = readString( b )
-         skipToAlign( b )
-         if( name eq /* == */ "#bundle" ) {
-            decodeBundle( b )
-         } else {
-            decodeMessage( name, b )
-         }
-      } catch { case e: BufferUnderflowException =>
-         throw PacketCodec.BufferOverflow( "decode", e )
+  /**
+   * Creates a new packet decoded
+   * from the ByteBuffer. This method tries
+   * to read a null terminated string at the
+   * beginning of the provided buffer. If it
+   * equals the bundle identifier, the
+   * <code>decode</code> of <code>Bundle</code>
+   * is called (which may recursively decode
+   * nested bundles), otherwise the one from
+   * <code>Message</code>.
+   *
+   * This method is final. For messages encountered,
+   * `decodeMessage` is called, , thus for
+   * implementations of `PacketCodec`, it is sufficient
+   * to overwrite `decodeMessage`.
+   *
+   * @param  b   <code>ByteBuffer</code> pointing right at
+   *             the beginning of the packet. the buffer's
+   *             limited should be set appropriately to
+   *             allow the complete packet to be read. when
+   *             the method returns, the buffer's position
+   *             is right after the end of the packet.
+   *
+   * @return		new decoded OSC packet
+   */
+  @throws(classOf[Exception])
+  final def decode(b: ByteBuffer): Packet = {
+    try {
+      val name = readString(b)
+      skipToAlign(b)
+      if (name == "#bundle") {
+        decodeBundle(b)
+      } else {
+        decodeMessage(name, b)
       }
-   }
+    } catch {
+      case e: BufferUnderflowException => throw PacketCodec.BufferOverflow("decode", e)
+    }
+  }
 
-   @throws( classOf[ Exception ])
-   /* protected */ final def decodeBundle( b: ByteBuffer ) : Bundle = {
-      try {
-         val totalLimit = b.limit
-         val p			   = new ListBuffer[ Packet ]
-         val timetag    = b.getLong()
+  @throws(classOf[Exception])
+  final def decodeBundle(b: ByteBuffer): Bundle = {
+    try {
+      val totalLimit  = b.limit
+      val p           = new ListBuffer[Packet]
+      val timetag     = b.getLong()
 
-         while( b.hasRemaining ) {
-            val sz = b.getInt() + b.position // msg size
-            if( sz > totalLimit ) throw new BufferUnderflowException
-            b.limit( sz )
-            p += decode( b )
-            b.limit( totalLimit )
-         }
-         new Bundle( new Timetag( timetag ), p: _* )
-		}
-		catch { case e : BufferUnderflowException =>
-			throw PacketCodec.BufferOverflow( "#bundle", e )
-		}
-	}
+      while (b.hasRemaining) {
+        val sz = b.getInt() + b.position // msg size
+        if (sz > totalLimit) throw new BufferUnderflowException
+        b.limit(sz)
+        p += decode(b)
+        b.limit(totalLimit)
+      }
+      new Bundle(new Timetag(timetag), p: _*)
+    }
+    catch {
+      case e: BufferUnderflowException => throw PacketCodec.BufferOverflow("#bundle", e)
+    }
+  }
 
-   /**
-    * Decodes a message with a given name and buffer holding
-    * its arguments.
-    *
-    * Implementations should be careful to
-    * catch potential instances of `BufferUnderflowException`
-    * or other runtime exception such as `IllegalArgumentException`
-    * and cast them into instances of `PacketCodec.Exception`,
-    * such that the caller can be safe to catch any error by
-    * matching against `PacketCodec.Exception`.
-    *
-    * @param   name  the name of the message which has already
-    *                been decoded when this method is called.
-    * @param   b     the buffer, positioned at the type tags
-    *                list (beginning with `','`).
-    */
-   @throws( classOf[ Exception ])
-   /* protected */ def decodeMessage( name: String, b: ByteBuffer ) : Message
-
-//   def decodeString( b: ByteBuffer ) : String
-//   def encodeString( b: ByteBuffer, s: String ) : Unit
+  /**
+   * Decodes a message with a given name and buffer holding
+   * its arguments.
+   *
+   * Implementations should be careful to
+   * catch potential instances of `BufferUnderflowException`
+   * or other runtime exception such as `IllegalArgumentException`
+   * and cast them into instances of `PacketCodec.Exception`,
+   * such that the caller can be safe to catch any error by
+   * matching against `PacketCodec.Exception`.
+   *
+   * @param   name  the name of the message which has already
+   *                been decoded when this method is called.
+   * @param   b     the buffer, positioned at the type tags
+   *                list (beginning with `','`).
+   */
+  @throws(classOf[Exception])
+  def decodeMessage(name: String, b: ByteBuffer): Message
 }

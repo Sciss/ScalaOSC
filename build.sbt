@@ -1,31 +1,31 @@
-name := "scalaosc"
+name := "ScalaOSC"
 
-version := "1.1.0"
+version := "1.1.1-SNAPSHOT"
 
 organization := "de.sciss"
 
 scalaVersion := "2.10.0"
 
-crossScalaVersions in ThisBuild := Seq( "2.10.0", "2.9.2" )
+// crossScalaVersions in ThisBuild := Seq( "2.10.0", "2.9.2" )
 
 description := "A library for OpenSoundControl (OSC), a message protocol used in multi-media applications."
 
-homepage := Some( url( "https://github.com/Sciss/ScalaOSC" ))
+homepage <<= name { n => Some(url("https://github.com/Sciss/" + n)) }
 
-licenses := Seq( "LGPL v2.1+" -> url( "http://www.gnu.org/licenses/lgpl-2.1.txt" ))
-
-resolvers += "Sonatype OSS Releases" at "https://oss.sonatype.org/content/groups/public"
+licenses := Seq("LGPL v2.1+" -> url("http://www.gnu.org/licenses/lgpl-2.1.txt"))
 
 libraryDependencies in ThisBuild ++= Seq(
-   ("org.scalatest" % "scalatest" % "1.8" cross CrossVersion.full) % "test"
+  "org.scalatest" %% "scalatest" % "1.9.1" % "test"
 )
 
 retrieveManaged := true
 
-scalacOptions ++= Seq( "-deprecation", "-unchecked" )
+scalacOptions ++= Seq("-deprecation", "-unchecked", "-feature")
 
-initialCommands in console := """import de.sciss.osc._
-import Implicits._"""
+initialCommands in console :=
+"""import de.sciss.osc._
+  |import Implicits._
+""".stripMargin
 
 // ---- build info ----
 
@@ -33,9 +33,9 @@ buildInfoSettings
 
 sourceGenerators in Compile <+= buildInfo
 
-buildInfoKeys := Seq( name, organization, version, scalaVersion, description,
-   BuildInfoKey.map( homepage ) { case (k, opt) => k -> opt.get },
-   BuildInfoKey.map( licenses ) { case (_, Seq( (lic, _) )) => "license" -> lic }
+buildInfoKeys := Seq(name, organization, version, scalaVersion, description,
+  BuildInfoKey.map(homepage) { case (k, opt)           => k -> opt.get },
+  BuildInfoKey.map(licenses) { case (_, Seq((lic, _))) => "license" -> lic }
 )
 
 buildInfoPackage := "de.sciss.osc"
@@ -56,10 +56,10 @@ publishArtifact in Test := false
 
 pomIncludeRepository := { _ => false }
 
-pomExtra :=
+pomExtra <<= name { n =>
 <scm>
-  <url>git@github.com:Sciss/ScalaOSC.git</url>
-  <connection>scm:git:git@github.com:Sciss/ScalaOSC.git</connection>
+  <url>git@github.com:Sciss/{n}.git</url>
+  <connection>scm:git:git@github.com:Sciss/{n}.git</connection>
 </scm>
 <developers>
    <developer>
@@ -68,16 +68,14 @@ pomExtra :=
       <url>http://www.sciss.de</url>
    </developer>
 </developers>
+}
 
 // ---- ls.implicit.ly ----
 
-seq( lsSettings :_* )
+seq(lsSettings :_*)
 
-(LsKeys.tags in LsKeys.lsync) := Seq( "osc", "open-sound-control", "sound", "network" )
+(LsKeys.tags in LsKeys.lsync) := Seq("osc", "open-sound-control", "sound", "network")
 
-(LsKeys.ghUser in LsKeys.lsync) := Some( "Sciss" )
+(LsKeys.ghUser in LsKeys.lsync) := Some("Sciss")
 
-(LsKeys.ghRepo in LsKeys.lsync) := Some( "ScalaOSC" )
-
-// bug in ls -- doesn't find the licenses from global scope
-(licenses in LsKeys.lsync) := Seq( "LGPL v2.1+" -> url( "http://www.gnu.org/licenses/lgpl-2.1.txt" ))
+(LsKeys.ghRepo in LsKeys.lsync) <<= name(Some(_))
