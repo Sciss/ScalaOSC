@@ -133,21 +133,7 @@ class ScalaOSCSuite extends FeatureSpec with GivenWhenThen {
       }
 
      scenario("Nested bundle coding") {
-       val m1   = Message("/on")
-       val m2   = Message("/tw")
-       val m3   = Message("/th", Bundle.now(m1, m2))
-       val b    = Bundle.now(m3)
-       val bb   = ByteBuffer.allocate(8192)
-       val c    = PacketCodec().packetsAsBlobs().build
-       b.encode(c, bb)
-       bb.flip()
-       val res  = c.decode(bb)
-       res match {
-         case Bundle(Timetag.now, Message("/three", 5, 6, m1b: ByteBuffer)) =>
-           c.decode(m1b) match {
-             case Bundle(Timetag.now, `m1`, `m2`) =>
-           }
-       }
+       NestedBundleTest.run()
      }
    }
 

@@ -26,6 +26,7 @@
 package de.sciss.osc
 
 import java.net.{InetAddress, InetSocketAddress}
+import language.implicitConversions
 
 object Implicits {
    implicit def stringToInetAddress( host: String )                  = InetAddress.getByName( host )

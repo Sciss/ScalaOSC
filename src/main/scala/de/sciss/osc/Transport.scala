@@ -29,18 +29,22 @@ import java.nio.channels.{ServerSocketChannel, SocketChannel, DatagramChannel}
 import de.sciss.osc.{Channel => OSCChannel, Client => OSCClient,
    Receiver => OSCReceiver, Transmitter => OSCTransmitter, Server => OSCServer}
 import java.net.SocketAddress
+import language.implicitConversions
 
-sealed trait Transport { def name: String }
+sealed trait Transport {
+  def name: String
+}
 
 object Transport {
-   sealed trait Net extends Transport
 
-   def apply( name: String ) : Transport = name.toUpperCase match {
-      case UDP.name  => UDP
-      case TCP.name  => TCP
-      case File.name => File
-      case _         => throw new IllegalArgumentException( name )
-   }
+  sealed trait Net extends Transport
+
+  def apply(name: String): Transport = name.toUpperCase match {
+    case UDP.name   => UDP
+    case TCP.name   => TCP
+    case File.name  => File
+    case _          => throw new IllegalArgumentException(name)
+  }
 }
 
 case object UDP extends Transport.Net {
