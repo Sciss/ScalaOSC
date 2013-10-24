@@ -6,7 +6,7 @@ ScalaOSC is an OpenSoundControl (OSC) library for the Scala programming language
 
 ### requirements / installation
 
-ScalaOSC currently builds against Scala 2.10 (default) and 2.9.2, using sbt 0.12. It uses the I/O API from Java 1.6. Use the [NetUtil](http://www.sciss.de/netutil/) Java OSC library if you require compatibility with Java SE 1.4.
+ScalaOSC currently builds against Scala 2.10 (default) and 2.9.2, using sbt 0.13. It uses the I/O API from Java 1.6. Use the [NetUtil](http://www.sciss.de/netutil/) Java OSC library if you require compatibility with Java SE 1.4.
 
 To link to ScalaOSC:
 
