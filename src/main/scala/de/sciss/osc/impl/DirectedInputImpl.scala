@@ -1,6 +1,19 @@
+/*
+ * DirectedInputImpl.scala
+ * (ScalaOSC)
+ *
+ * Copyright (c) 2018-2014 Hanns Holger Rutz. All rights reserved.
+ *
+ * This software is published under the GNU Lesser General Public License v2.1+
+ *
+ *
+ * For further information, please contact Hanns Holger Rutz at
+ * contact@sciss.de
+ */
+
 package de.sciss.osc
 package impl
 
 private[osc] trait DirectedInputImpl extends DirectedImpl with Channel.Directed.Input {
-   final var action: Channel.Directed.Input.Action = Channel.Directed.Input.NoAction
+  final var action: Channel.Directed.Input.Action = Channel.Directed.Input.NoAction
 }

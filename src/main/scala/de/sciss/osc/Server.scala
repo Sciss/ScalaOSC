@@ -1,20 +1,29 @@
+/*
+ * Server.scala
+ * (ScalaOSC)
+ *
+ * Copyright (c) 2018-2014 Hanns Holger Rutz. All rights reserved.
+ *
+ * This software is published under the GNU Lesser General Public License v2.1+
+ *
+ *
+ * For further information, please contact Hanns Holger Rutz at
+ * contact@sciss.de
+ */
+
 package de.sciss.osc
 
 object Server {
-   type Net = Server with Channel.Net.ConfigLike
+  type Net = Server with Channel.Net.ConfigLike
 
-   def apply( config: TCP.Config ) : Server.Net = TCP.Server( config )
+  def apply(config: TCP.Config): Server.Net = TCP.Server(config)
 }
+
 trait Server extends Channel.Bidi {
-   type Connection <: Channel.Directed.Output
+  type Connection <: Channel.Directed.Output
 
-   type Action = (Packet, Connection) => Unit
+  type Action = (Packet, Connection) => Unit
 
-   def action: Action
-   def action_=( value: Action ) : Unit
-
-//   @throws( classOf[ IOException ])
-//   def send( p: Packet, target: Connection ) : Unit
-
-//   def config: TCP.Config
+  def action: Action
+  def action_=(value: Action): Unit
 }

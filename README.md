@@ -1,12 +1,12 @@
-## ScalaOSC
+# ScalaOSC
 
-### statement
+## statement
 
-ScalaOSC is an OpenSoundControl (OSC) library for the Scala programming language. It is (C)opyright 2008&ndash;2013 by Hanns Holger Rutz. All rights reserved. ScalaOSC is released under the [GNU Lesser General Public License](https://raw.github.com/Sciss/ScalaOSC/master/licenses/ScalaOSC-License.txt) and comes with absolutely no warranties. To contact the author, send an email to `contact at sciss.de`
+ScalaOSC is an OpenSoundControl (OSC) library for the Scala programming language. It is (C)opyright 2008&ndash;2014 by Hanns Holger Rutz. All rights reserved. ScalaOSC is released under the [GNU Lesser General Public License](https://raw.github.com/Sciss/ScalaOSC/master/licenses/ScalaOSC-License.txt) and comes with absolutely no warranties. To contact the author, send an email to `contact at sciss.de`
 
-### requirements / installation
+## requirements / installation
 
-ScalaOSC currently builds against Scala 2.10 (default) and 2.9.2, using sbt 0.13. It uses the I/O API from Java 1.6. Use the [NetUtil](http://www.sciss.de/netutil/) Java OSC library if you require compatibility with Java SE 1.4.
+ScalaOSC currently builds against Scala 2.10 using sbt 0.13. It uses the I/O API from Java 1.6. Use the [NetUtil](http://www.sciss.de/netutil/) Java OSC library if you require compatibility with Java SE 1.4.
 
 To link to ScalaOSC:
 
@@ -14,7 +14,7 @@ To link to ScalaOSC:
 
 The current version `v` is `"1.1.2+"`
 
-### overview
+## overview
 
 OpenSoundControl (OSC) is a protocol to exchange messages between systems, typically over a network using UDP or TCP, and typically to control sound or multimedia applications.
 
@@ -24,13 +24,13 @@ OSC is a generic protocol and not restricted to sound applications: For example,
 
 For more information, known implementations and the protocol standard, visit [opensoundcontrol.org](http://opensoundcontrol.org/).
 
-### implementation
+## implementation
 
 ScalaOSC currently provides single ended channels (`Transmitter` to send messages and `Receiver` to run a receiving loop), as well as single sockets in bidirectional mode (`Client` and `Server`). The supported transports are UDP and TCP (`Server` obviously requires TCP).
 
 ScalaOSC comes with a codec conforming with the strict [OSC 1.0 specification](http://opensoundcontrol.org/spec-1_0). It can be configured to use the types `h` (64-bit integer), `d` (64-bit floating point), to encode OSC packets themselves as `b` blobs (as used by SuperCollider), to support the boolean tags `T` and `F` and many other optional types of OSC 1.1, including array wrapping with `[` and `]`. The API also allows to extend the codec with custom types.
 
-### documentation and examples
+## documentation and examples
 
 An example of setting up a client that talks to the SuperCollider server running on UDP port 57110:
 
@@ -143,20 +143,12 @@ Further examples can be found in the headers of the API docs, e.g. by looking up
 
 ScalaOSC is used in the [ScalaCollider](http://www.sciss.de/scalaCollider/) project, so you may take a look at its usage there.
 
-### creating an IntelliJ IDEA project
-
-If you want to develop the library, you can set up an IntelliJ IDEA project, using the sbt-idea plugin yet. Have the following contents in `~/.sbt/plugins/build.sbt`:
-
-    addSbtPlugin("com.github.mpeltonen" % "sbt-idea" % "1.2.0")
-
-Then to create the IDEA project, run `sbt gen-idea`.
-
-### todo
+## todo
 
 The TCP server uses one thread per connection right now. This is fine for most scenarios were only one or two clients
 are connected. A future version might use asynchronous I/O with thread pooling. Also a file protocol conforming to
 SuperCollider's binary OSC file format is planned.
 
-### download
+## download
 
 The current version can be downloaded from [github.com/Sciss/ScalaOSC](http://github.com/Sciss/ScalaOSC).

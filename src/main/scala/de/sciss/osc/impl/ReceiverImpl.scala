@@ -1,36 +1,49 @@
+/*
+ * ReceiverImpl.scala
+ * (ScalaOSC)
+ *
+ * Copyright (c) 2018-2014 Hanns Holger Rutz. All rights reserved.
+ *
+ * This software is published under the GNU Lesser General Public License v2.1+
+ *
+ *
+ * For further information, please contact Hanns Holger Rutz at
+ * contact@sciss.de
+ */
+
 package de.sciss.osc
 package impl
 
 import java.nio.channels.{ClosedChannelException, AsynchronousCloseException}
 import java.io.IOException
 import java.net.SocketAddress
+import scala.util.control.NonFatal
 
 private[osc] trait ReceiverImpl extends SingleInputChannelImpl with ThreadedImpl {
-   rcv =>
+  rcv =>
 
-   final protected def threadLoop() {
-      try {
-         receive()
-      } catch {
-         case _: AsynchronousCloseException  => closedException()
-         case _: ClosedChannelException      => closedException()
-      }
-   }
+  final protected def threadLoop(): Unit =
+    try {
+      receive()
+    } catch {
+      case _: AsynchronousCloseException => closedException()
+      case _: ClosedChannelException     => closedException()
+    }
 
-   @throws( classOf[ IOException ])
-   protected def receive() : Unit
+  @throws(classOf[IOException])
+  protected def receive(): Unit
 
-   @throws( classOf[ IOException ])
-   final def close() {
-      stopThread()
-      channel.close()
-   }
+  @throws(classOf[IOException])
+  final def close(): Unit = {
+    stopThread()
+    channel.close()
+  }
 
-   @throws( classOf[ IOException ])
-   final def connect() {
-      connectChannel()
-      startThread()
-   }
+  @throws(classOf[IOException])
+  final def connect(): Unit = {
+    connectChannel()
+    startThread()
+  }
 
    /*
       Idea:
@@ -41,43 +54,45 @@ private[osc] trait ReceiverImpl extends SingleInputChannelImpl with ThreadedImpl
 }
 
 private[osc] trait DirectedReceiverImpl extends ReceiverImpl with DirectedInputImpl {
-   override def toString = transport.name + ".Receiver(" + target + ")@" + hashCode().toHexString
+  override def toString = s"${transport.name}.Receiver($target)@${hashCode().toHexString}"
 
-   @throws( classOf[ PacketCodec.Exception ])
-   final protected def flipDecodeDispatch() {
-      buf.flip()
-      val p = codec.decode( buf )
-      dumpPacket( p )
-      try {
-         action.apply( p )
-      } catch {
-         case e: Throwable => e.printStackTrace() // XXX eventually error handler?
-      }
-   }
+  @throws(classOf[PacketCodec.Exception])
+  final protected def flipDecodeDispatch(): Unit = {
+    buf.flip()
+    val p = codec.decode(buf)
+    dumpPacket(p)
+    try {
+      action.apply(p)
+    } catch {
+      case NonFatal(e) => e.printStackTrace() // XXX eventually error handler?
+    }
+  }
 }
 
 private[osc] trait UndirectedNetReceiverImpl extends ReceiverImpl with UndirectedNetInputImpl {
-   @throws( classOf[ IOException ])
-   protected final def connectChannel() {}  // XXX or: if( !isOpen ) throw new ChannelClosedException ?
-   final def isConnected = isOpen && isThreadRunning
 
-   override def toString = transport.name + ".Receiver@" + hashCode().toHexString
+  @throws(classOf[IOException])
+  protected final def connectChannel() = ()
 
-   /**
+  // XXX or: if( !isOpen ) throw new ChannelClosedException ?
+  final def isConnected = isOpen && isThreadRunning
+
+  override def toString = s"${transport.name}.Receiver@${hashCode().toHexString}"
+
+  /**
     * @param   sender   the remote socket from which the packet was sent.
     *                   this may be `null` in which case this method does nothing.
     */
-   @throws( classOf[ Exception ])
-   protected final def flipDecodeDispatch( sender: SocketAddress ) {
-      if( sender != null ) /* try */ {
-         buf.flip()
-         val p = codec.decode( buf )
-         dumpPacket( p )
-         try {
-            action.apply( p, sender )
-         } catch {
-            case e: Throwable => e.printStackTrace() // XXX eventually error handler?
-         }
+  @throws(classOf[Exception])
+  protected final def flipDecodeDispatch(sender: SocketAddress): Unit =
+    if (sender != null) /* try */ {
+      buf.flip()
+      val p = codec.decode(buf)
+      dumpPacket(p)
+      try {
+        action.apply(p, sender)
+      } catch {
+        case NonFatal(e) => e.printStackTrace() // XXX eventually error handler?
       }
-   }
+    }
 }
