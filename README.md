@@ -12,7 +12,7 @@ To link to ScalaOSC:
 
     libraryDependencies += "de.sciss" %% "scalaosc" % v
 
-The current version `v` is `"1.1.2+"`
+The current version `v` is `"1.1.3+"`
 
 ## overview
 

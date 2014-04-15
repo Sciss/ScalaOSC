@@ -1,6 +1,6 @@
 name                  := "ScalaOSC"
 
-version               := "1.1.3-SNAPSHOT"
+version               := "1.1.3"
 
 organization          := "de.sciss"
 
@@ -18,7 +18,7 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "2.1.3" % "test"
 )
 
-// retrieveManaged := true
+retrieveManaged := true
 
 scalacOptions       ++= Seq("-deprecation", "-unchecked", "-feature", "-Xfuture")
 
