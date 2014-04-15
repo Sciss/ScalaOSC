@@ -16,7 +16,7 @@ class ScalaOSCSuite extends FeatureSpec with GivenWhenThen {
   val RAND_SEED     = 0L
   val DUMP_IN       = false
 
-  feature("Conforming messages can be en- and decodec") {
+  feature("Conforming messages can be en- and decoded") {
     info ("Several random messages are generated")
     info ("with args conforming to different codec specs")
 
@@ -101,7 +101,7 @@ class ScalaOSCSuite extends FeatureSpec with GivenWhenThen {
           Packet.printHexOn(bb, Console.out)
         }
 
-        assert(sz1 == sz2, "Reported message size " + sz1 + " != actual " + sz2)
+        assert(sz1 == sz2, s"Reported message size $sz1 != actual $sz2")
 
         val out = c.decode(bb).asInstanceOf[Message]
         //            when( "an original message is compared to the one that went through the codec" )
@@ -121,10 +121,10 @@ class ScalaOSCSuite extends FeatureSpec with GivenWhenThen {
       info("When several unsupported types are put in a message:")
       info("- the encoder should fail to operate")
 
-      def throwAny(v: Any) {
+      def throwAny(v: Any): Unit = {
         bb.clear()
         c.encodeMessage(Message("/test", v), bb)
-        fail("Codec should not support argument '" + v + "'")
+        fail(s"Codec should not support argument '$v'")
       }
 
       try {
@@ -143,12 +143,12 @@ class ScalaOSCSuite extends FeatureSpec with GivenWhenThen {
   }
 
   def checkMessageEquality(a: Message, b: Message): Unit = {
-    assert(a.name == b.name, "Message names divert: '" + a.name + "' != '" + b.name + "'")
-    assert(a.size == b.size, "Message arg counts divert: " + a.size + " != " + b.size)
+    assert(a.name == b.name, s"Message names divert: '${a.name}' != '${b.name}'")
+    assert(a.size == b.size, s"Message arg counts divert: ${a.size} != ${b.size}")
     a.args.zip(b.args).foreach { case (aa, ba) =>
       val aaf = fixArgEquality(aa)
       val baf = fixArgEquality(ba)
-      assert(aaf == baf, "Message arg diverts: '" + aaf + "' != '" + baf + "'")
+      assert(aaf == baf, s"Message arg diverts: '$aaf' != '$baf'")
     }
   }
 

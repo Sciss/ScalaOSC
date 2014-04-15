@@ -18,24 +18,25 @@ import java.nio.channels.DatagramChannel
 import java.net.SocketAddress
 import java.io.IOException
 
-private[osc] final class DirectedUDPTransmitterImpl( val channel: DatagramChannel,
-                                                     protected val target: SocketAddress,
-                                                     protected val config: UDP.Config )
-extends UDPTransmitterImpl with Channel.Directed.Output with Channel.Directed.Net {
-   override def toString = transport.name + ".Transmitter@" + hashCode().toHexString
+private[osc] final class DirectedUDPTransmitterImpl(val channel: DatagramChannel,
+                                                    protected val target: SocketAddress,
+                                                    protected val config: UDP.Config)
+  extends UDPTransmitterImpl with Channel.Directed.Output with Channel.Directed.Net {
 
-   @throws( classOf[ IOException ])
-   protected def connectChannel() { if( !isConnected ) channel.connect( target )}
-   def isConnected = channel.isConnected
+  override def toString = s"${transport.name}.Transmitter@${hashCode().toHexString}"
 
-   @throws( classOf[ IOException ])
-   def !( p: Packet ) {
-      bufSync.synchronized {
-         buf.clear()
-         p.encode( codec, buf )
-         buf.flip()
-         dumpPacket( p )
-         channel.write( buf )
-      }
-   }
+  @throws(classOf[IOException])
+  protected def connectChannel(): Unit =
+    if (!isConnected) channel.connect(target)
+
+  def isConnected: Boolean = channel.isConnected
+
+  @throws(classOf[IOException])
+  def !(p: Packet): Unit = bufSync.synchronized {
+    buf.clear()
+    p.encode(codec, buf)
+    buf.flip()
+    dumpPacket(p)
+    channel.write(buf)
+  }
 }
