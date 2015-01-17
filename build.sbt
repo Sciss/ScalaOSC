@@ -1,12 +1,12 @@
 name                  := "ScalaOSC"
 
-version               := "1.1.3"
+version               := "1.1.4-SNAPSHOT"
 
 organization          := "de.sciss"
 
-scalaVersion          := "2.11.0"
+scalaVersion          := "2.11.5"
 
-crossScalaVersions    := Seq("2.11.0", "2.10.4")
+crossScalaVersions    := Seq("2.11.5", "2.10.4")
 
 description           := "A library for OpenSoundControl (OSC), a message protocol used in multi-media applications."
 
@@ -15,11 +15,9 @@ homepage              := Some(url("https://github.com/Sciss/" + name.value))
 licenses              := Seq("LGPL v2.1+" -> url("http://www.gnu.org/licenses/lgpl-2.1.txt"))
 
 libraryDependencies +=
-  "org.scalatest" %% "scalatest" % "2.1.3" % "test"
+  "org.scalatest" %% "scalatest" % "2.2.3" % "test"
 
-retrieveManaged := true
-
-scalacOptions       ++= Seq("-deprecation", "-unchecked", "-feature", "-Xfuture")
+scalacOptions       ++= Seq("-deprecation", "-unchecked", "-feature", "-Xfuture", "-encoding", "utf8")
 
 initialCommands in console :=
   """import de.sciss.osc._
@@ -44,7 +42,7 @@ buildInfoPackage := "de.sciss.osc"
 publishMavenStyle := true
 
 publishTo :=
-  Some(if (version.value endsWith "-SNAPSHOT")
+  Some(if (isSnapshot.value)
     "Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
   else
     "Sonatype Releases"  at "https://oss.sonatype.org/service/local/staging/deploy/maven2"
