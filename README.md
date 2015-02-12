@@ -1,6 +1,6 @@
 # ScalaOSC
 
-[![Flattr this](http://api.flattr.com/button/flattr-badge-large.png)](http://flattr.com/thing/2926624/ScissScalaOSC-on-GitHub")
+[![Flattr this](http://api.flattr.com/button/flattr-badge-large.png)](http://flattr.com/thing/2926624/ScissScalaOSC-on-GitHub)
 
 ## statement
 
