@@ -1,6 +1,7 @@
 # ScalaOSC
 
 [![Flattr this](http://api.flattr.com/button/flattr-badge-large.png)](http://flattr.com/thing/2926624/ScissScalaOSC-on-GitHub)
+[![Build Status](https://travis-ci.org/Sciss/ScalaOSC.svg?branch=master)](https://travis-ci.org/Sciss/ScalaOSC)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/de.sciss/scalaosc_2.11/badge.svg)](https://maven-badges.herokuapp.com/maven-central/de.sciss/scalaosc_2.11)
 
 ## statement
