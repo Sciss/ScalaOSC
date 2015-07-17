@@ -2,7 +2,7 @@
  * Channel.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2014 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2015 Hanns Holger Rutz. All rights reserved.
  *
  * This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -121,7 +121,7 @@ object Channel {
     }
 
     trait Output extends Channel {
-      def !(p: Packet): Unit
+      def ! (p: Packet): Unit
     }
   }
 

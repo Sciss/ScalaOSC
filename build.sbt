@@ -1,12 +1,12 @@
 name                  := "ScalaOSC"
 
-version               := "1.1.4"
+version               := "1.1.5"
 
 organization          := "de.sciss"
 
-scalaVersion          := "2.11.6"
+scalaVersion          := "2.11.7"
 
-crossScalaVersions    := Seq("2.11.6", "2.10.5")
+crossScalaVersions    := Seq("2.11.7", "2.10.5")
 
 description           := "A library for OpenSoundControl (OSC), a message protocol used in multi-media applications."
 

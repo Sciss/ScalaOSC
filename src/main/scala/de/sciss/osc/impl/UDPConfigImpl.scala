@@ -2,7 +2,7 @@
  * UDPConfigImpl.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2014 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2015 Hanns Holger Rutz. All rights reserved.
  *
  * This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -18,7 +18,7 @@ import java.net.{InetAddress, InetSocketAddress}
 import java.nio.channels.DatagramChannel
 
 private[osc] final class UDPConfigBuilderImpl extends NetChannelConfigBuilderImpl with UDP.ConfigBuilder {
-  def transport = UDP
+  def transport: UDP.type = UDP
 
   def build: UDP.Config = UDPConfigImpl(bufferSize, codec, localSocketAddress)
 }
@@ -27,7 +27,7 @@ private[osc] final case class UDPConfigImpl(bufferSize: Int, codec: PacketCodec,
                                             localSocketAddress: InetSocketAddress)
   extends UDP.Config {
 
-  def transport = UDP
+  def transport: UDP.type = UDP
 
   def openChannel(discardWildcard: Boolean): DatagramChannel = {
     val ch    = DatagramChannel.open()

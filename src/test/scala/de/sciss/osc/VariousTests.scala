@@ -1,7 +1,6 @@
 package de.sciss.osc
 
 import java.io.IOException
-import java.net.InetAddress
 
 object VariousTests {
 //	def codec() {
@@ -43,7 +42,6 @@ object VariousTests {
 //	}
 
   def receiver(): Unit = {
-    import Implicits._
 
     println( """
                |Receiver test
@@ -61,7 +59,7 @@ object VariousTests {
 
     rcv.dump(Dump.Both)
     rcv.action = {
-      case (Message(name, _ @ _ *), _) =>
+      case (Message(name, xs @ _ *), _) =>
       println("Received message '" + name + "'")
       if (name == "/quit") sync.synchronized(sync.notifyAll())
       case (p, addr) => println("Ignoring: " + p + " from " + addr)
@@ -90,7 +88,7 @@ object VariousTests {
       trns.connect()
       //println( trns.target )
       trns ! Message("/s_new", "default", 1000, 0, 0, "amp", 0f)
-      for (i <- (1 to 8)) {
+      for (i <- 1 to 8) {
         trns ! Message("/n_set", 1000, "freq", i * 333, "amp", 0.5f)
         Thread.sleep(200)
       }

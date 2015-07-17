@@ -7,6 +7,7 @@ import java.nio.ByteBuffer
   To run this test copy + paste the following into sbt:
 
   test-only de.sciss.osc.ScalaOSCSuite
+
 */
 class ScalaOSCSuite extends FeatureSpec with GivenWhenThen {
   val NUM_MESSAGES  = 5000
@@ -27,12 +28,12 @@ class ScalaOSCSuite extends FeatureSpec with GivenWhenThen {
         val t1 = System.currentTimeMillis()
         body
         val t2 = System.currentTimeMillis()
-        println("For " + name + " the tests took " + formatSeconds((t2 - t1) * 0.001))
+        println(s"For $name the tests took ${formatSeconds((t2 - t1) * 0.001)}")
       }
 
     def randName(): String = {
       val sz = rnd.nextInt(MAX_NAME - 1) + 1
-      "/" + Seq.fill(sz)((rnd.nextInt(0x7F) + 1).toChar).mkString
+      Seq.fill(sz)((rnd.nextInt(0x7F) + 1).toChar).mkString("/", "", "")
     }
 
     def randInt(): Int = rnd.nextInt()

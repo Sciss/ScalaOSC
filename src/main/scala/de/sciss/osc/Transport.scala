@@ -2,7 +2,7 @@
  * Transport.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2014 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2015 Hanns Holger Rutz. All rights reserved.
  *
  * This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -13,11 +13,12 @@
 
 package de.sciss.osc
 
-import java.nio.channels.{ServerSocketChannel, SocketChannel, DatagramChannel}
-import de.sciss.osc.{Channel => OSCChannel, Client => OSCClient,
-   Receiver => OSCReceiver, Transmitter => OSCTransmitter, Server => OSCServer}
 import java.net.SocketAddress
-import language.implicitConversions
+import java.nio.channels.{DatagramChannel, ServerSocketChannel, SocketChannel}
+
+import de.sciss.osc.{Channel => OSCChannel, Client => OSCClient, Receiver => OSCReceiver, Server => OSCServer, Transmitter => OSCTransmitter}
+
+import scala.language.implicitConversions
 
 sealed trait Transport {
   def name: String
@@ -45,13 +46,13 @@ case object UDP extends Transport.Net {
   }
 
   trait Config extends OSCChannel.Net.Config {
-    override final def toString = s"$name.Config@${hashCode().toHexString}"
+    override final def toString: String = s"$name.Config@${hashCode().toHexString}"
 
     def openChannel(discardWildcard: Boolean = false): DatagramChannel
   }
 
   trait ConfigBuilder extends OSCChannel.Net.ConfigBuilder {
-    override final def toString = s"$name.ConfigBuilder@${hashCode().toHexString}"
+    override final def toString: String = s"$name.ConfigBuilder@${hashCode().toHexString}"
 
     override def build: Config
   }
@@ -130,7 +131,7 @@ case object TCP extends Transport.Net {
   }
 
   trait Config extends Channel.Net.Config {
-    override final def toString = s"$name.Config@${hashCode().toHexString}"
+    override final def toString: String = s"$name.Config@${hashCode().toHexString}"
 
     def openChannel(discardWildcard: Boolean = true): SocketChannel
 
@@ -138,7 +139,7 @@ case object TCP extends Transport.Net {
   }
 
   trait ConfigBuilder extends Channel.Net.ConfigBuilder {
-    override final def toString = s"$name.ConfigBuilder@${hashCode().toHexString}"
+    override final def toString: String = s"$name.ConfigBuilder@${hashCode().toHexString}"
 
     override def build: Config
   }
@@ -186,7 +187,6 @@ case object TCP extends Transport.Net {
     def apply(config: Config = Config.default): OSCServer.Net =
       new impl.TCPServerImpl(config.openServerChannel(discardWildcard = true), config)
   }
-
 }
 
 /** XXX TODO -- this transport has not yet been implemented. */

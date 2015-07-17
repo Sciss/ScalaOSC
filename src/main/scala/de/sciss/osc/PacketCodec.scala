@@ -2,7 +2,7 @@
  * PacketCodec.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2014 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2015 Hanns Holger Rutz. All rights reserved.
  *
  * This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -13,42 +13,43 @@
 
 package de.sciss.osc
 
-import collection.mutable.ListBuffer
-import java.nio.{BufferUnderflowException, BufferOverflowException, ByteBuffer}
-import java.io.{PrintStream, IOException}
-import annotation.switch
-import language.implicitConversions
-import Packet._
+import java.io.{IOException, PrintStream}
+import java.nio.{BufferOverflowException, BufferUnderflowException, ByteBuffer}
 
-/**
- *	A packet codec defines how the translation between Java objects
- *	and OSC atoms is accomplished. For example, by default, when
- *	an OSC message is assembled for transmission, the encoder will
- *	translate a<code>java.lang.Integer</code> argument into
- *	a four byte integer with typetag <code>'i'</code>. Or when
- *	a received message is being decoded, finding an atom typetagged
- *	<code>'f'</code>, the decoder will create a <code>java.lang.Float</code>
- *	out of it.
- *	<p>
- *	This example sounds trivial, but the codec is also able to handle
- *	type conversions. For instance, in the strict OSC 1.0 specification,
- *	only 32bit numeric atoms are defined (<code>'i'</code> and <code>'f'</code>).
- *	A codec with mode <code>MODE_STRICT_V1</code> will reject a
- *	<code>java.lang.Double</code> in the encoding process and not be
- *	able to decode a typetag <code>'d'</code>. A codec with mode
- *	<code>MODE_MODEST</code> automatically breaks down everything the 32bit,
- *	so a <code>java.lang.Double</code> gets encoded as 32bit <code>'f'</code>
- *	and a received atom tagged <code>'d'</code> becomes a
- *	<code>java.lang.Float</code>. Other configurations exist.
- *	<p>
- *	Another important function of the codec is to specify the charset encoding
- *	of strings, something that was overseen in the OSC 1.0 spec. By default,
- *	<code>UTF-8</code> is used so all special characters can be safely encoded.
- *	<p>
- *	Last but not least, using the <code>putDecoder</code> and <code>putEncoder</code>
- *	methods, the codec can be extended to support additional Java classes or
- *	OSC typetags, without the need to subclass <code>PacketCodec</code>.
- */
+import de.sciss.osc.Packet._
+
+import scala.annotation.switch
+import scala.collection.mutable.ListBuffer
+import scala.language.implicitConversions
+
+/** A packet codec defines how the translation between Java objects
+  * and OSC atoms is accomplished. For example, by default, when
+  * an OSC message is assembled for transmission, the encoder will
+  * translate a<code>java.lang.Integer</code> argument into
+  * a four byte integer with typetag <code>'i'</code>. Or when
+  * a received message is being decoded, finding an atom typetagged
+  * <code>'f'</code>, the decoder will create a <code>java.lang.Float</code>
+  * out of it.
+  * <p>
+  * This example sounds trivial, but the codec is also able to handle
+  * type conversions. For instance, in the strict OSC 1.0 specification,
+  * only 32bit numeric atoms are defined (<code>'i'</code> and <code>'f'</code>).
+  * A codec with mode <code>MODE_STRICT_V1</code> will reject a
+  * <code>java.lang.Double</code> in the encoding process and not be
+  * able to decode a typetag <code>'d'</code>. A codec with mode
+  * <code>MODE_MODEST</code> automatically breaks down everything the 32bit,
+  * so a <code>java.lang.Double</code> gets encoded as 32bit <code>'f'</code>
+  * and a received atom tagged <code>'d'</code> becomes a
+  * <code>java.lang.Float</code>. Other configurations exist.
+  * <p>
+  * Another important function of the codec is to specify the charset encoding
+  * of strings, something that was overseen in the OSC 1.0 spec. By default,
+  * <code>UTF-8</code> is used so all special characters can be safely encoded.
+  * <p>
+  * Last but not least, using the <code>putDecoder</code> and <code>putEncoder</code>
+  * methods, the codec can be extended to support additional Java classes or
+  * OSC typetags, without the need to subclass <code>PacketCodec</code>.
+  */
 object PacketCodec {
   final val default: PacketCodec = apply().build
 
@@ -321,7 +322,7 @@ object PacketCodec {
     private val decodeDoubles   = useDoubles  && !doubleToFloat
     private val decodeBooleans  = useBooleans && !booleanToInt
 
-    override def toString = s"PacketCodec@${hashCode().toHexString}"
+    override def toString: String = s"PacketCodec@${hashCode().toHexString}"
 
     private def decodeString(b: ByteBuffer): String = {
       val pos1  = b.position

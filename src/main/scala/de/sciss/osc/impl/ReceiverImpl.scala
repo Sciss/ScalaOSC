@@ -2,7 +2,7 @@
  * ReceiverImpl.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2014 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2015 Hanns Holger Rutz. All rights reserved.
  *
  * This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -14,9 +14,10 @@
 package de.sciss.osc
 package impl
 
-import java.nio.channels.{ClosedChannelException, AsynchronousCloseException}
 import java.io.IOException
 import java.net.SocketAddress
+import java.nio.channels.{AsynchronousCloseException, ClosedChannelException}
+
 import scala.util.control.NonFatal
 
 private[osc] trait ReceiverImpl extends SingleInputChannelImpl with ThreadedImpl {
@@ -54,7 +55,7 @@ private[osc] trait ReceiverImpl extends SingleInputChannelImpl with ThreadedImpl
 }
 
 private[osc] trait DirectedReceiverImpl extends ReceiverImpl with DirectedInputImpl {
-  override def toString = s"${transport.name}.Receiver($target)@${hashCode().toHexString}"
+  override def toString: String = s"${transport.name}.Receiver($target)@${hashCode().toHexString}"
 
   @throws(classOf[PacketCodec.Exception])
   final protected def flipDecodeDispatch(): Unit = {
@@ -72,12 +73,12 @@ private[osc] trait DirectedReceiverImpl extends ReceiverImpl with DirectedInputI
 private[osc] trait UndirectedNetReceiverImpl extends ReceiverImpl with UndirectedNetInputImpl {
 
   @throws(classOf[IOException])
-  protected final def connectChannel() = ()
+  protected final def connectChannel(): Unit = ()
 
   // XXX or: if( !isOpen ) throw new ChannelClosedException ?
-  final def isConnected = isOpen && isThreadRunning
+  final def isConnected: Boolean = isOpen && isThreadRunning
 
-  override def toString = s"${transport.name}.Receiver@${hashCode().toHexString}"
+  override def toString: String = s"${transport.name}.Receiver@${hashCode().toHexString}"
 
   /**
     * @param   sender   the remote socket from which the packet was sent.

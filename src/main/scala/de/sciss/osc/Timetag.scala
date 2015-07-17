@@ -2,7 +2,7 @@
  * Timetag.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2014 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2015 Hanns Holger Rutz. All rights reserved.
  *
  * This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -26,7 +26,7 @@ object Timetag {
   /** Converts a relative time value in seconds, as required
     * for example for scsynth offline rendering, into a raw timetag.
     */
-  def secs(delta: Double) = Timetag((delta.toLong << 32) + ((delta % 1.0) * 0x100000000L + 0.5).toLong)
+  def secs(delta: Double): Timetag = Timetag((delta.toLong << 32) + ((delta % 1.0) * 0x100000000L + 0.5).toLong)
 
   private val datef = new SimpleDateFormat("HH:mm:ss.SSS", Locale.US)
   private val decimf: NumberFormat = {
@@ -50,7 +50,7 @@ object Timetag {
     Timetag((secsSince1900 << 32) | secsFractional)
   }
 
-  private val SECONDS_FROM_1900_TO_1970 = 2208988800L
+  private[osc] val SECONDS_FROM_1900_TO_1970 = 2208988800L
 }
 
 final case class Timetag(raw: Long) {

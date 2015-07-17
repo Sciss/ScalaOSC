@@ -7,7 +7,7 @@ object TestApp extends App {
     case Seq("--testTransmitter", transName) =>
       Transport(transName) match {
         case netTrans: Transport.Net => VariousTests.transmitter(netTrans)
-        case _ => sys.error("Unsupported transport '" + transName + "'")
+        case _ => sys.error(s"Unsupported transport '$transName'")
       }
     case Seq("--testReceiver") =>
       VariousTests.receiver()

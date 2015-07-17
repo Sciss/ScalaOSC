@@ -2,7 +2,7 @@
  * TCPConfigImpl.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2014 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2015 Hanns Holger Rutz. All rights reserved.
  *
  * This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -18,7 +18,7 @@ import java.net.{InetAddress, InetSocketAddress}
 import java.nio.channels.{ServerSocketChannel, SocketChannel}
 
 private[osc] final class TCPConfigBuilderImpl extends NetChannelConfigBuilderImpl with TCP.ConfigBuilder {
-  def transport = TCP
+  def transport: TCP.type = TCP
 
   def build: TCP.Config = TCPConfigImpl(bufferSize, codec, localSocketAddress)
 }
@@ -27,7 +27,7 @@ private[osc] final case class TCPConfigImpl(bufferSize: Int, codec: PacketCodec,
                                             localSocketAddress: InetSocketAddress)
   extends TCP.Config {
 
-  def transport = TCP
+  def transport: TCP.type = TCP
 
   def openChannel(discardWildcard: Boolean): SocketChannel = {
     val ch   = SocketChannel.open()

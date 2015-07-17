@@ -2,7 +2,7 @@
  * TCPClientImpl.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2014 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2015 Hanns Holger Rutz. All rights reserved.
  *
  * This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -22,6 +22,6 @@ private[osc] final class TCPClientImpl(val channel: SocketChannel,
                                        protected val config: TCP.Config)
   extends ClientImpl with TCPSingleChannelImpl {
 
-  protected val input   = TCP.Receiver   (channel, target, config)
-  protected val output  = TCP.Transmitter(channel, target, config)
+  protected val input : TCP.Receiver    = TCP.Receiver   (channel, target, config)
+  protected val output: TCP.Transmitter = TCP.Transmitter(channel, target, config)
 }

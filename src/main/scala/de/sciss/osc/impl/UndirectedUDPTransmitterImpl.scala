@@ -2,7 +2,7 @@
  * UndirectedUDPTransmitterImpl.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2014 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2015 Hanns Holger Rutz. All rights reserved.
  *
  * This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -14,16 +14,15 @@
 package de.sciss.osc
 package impl
 
-import java.nio.channels.DatagramChannel
-import de.sciss.osc.Transmitter
 import java.io.IOException
 import java.net.SocketAddress
+import java.nio.channels.DatagramChannel
 
 private[osc] final class UndirectedUDPTransmitterImpl(val channel: DatagramChannel,
                                                       protected val config: UDP.Config)
   extends UDPTransmitterImpl with Transmitter.Undirected.Net {
 
-  override def toString = s"${transport.name}.Transmitter@${hashCode().toHexString}"
+  override def toString: String = s"${transport.name}.Transmitter@${hashCode().toHexString}"
 
   @throws(classOf[IOException])
   def send(p: Packet, target: SocketAddress): Unit = bufSync.synchronized {
@@ -35,8 +34,8 @@ private[osc] final class UndirectedUDPTransmitterImpl(val channel: DatagramChann
   }
 
   @throws(classOf[IOException])
-  protected def connectChannel() = ()
+  protected def connectChannel(): Unit = ()
 
   // XXX or: if( !isOpen ) throw new ChannelClosedException ?
-  def isConnected = isOpen
+  def isConnected: Boolean = isOpen
 }

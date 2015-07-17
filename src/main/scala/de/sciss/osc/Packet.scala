@@ -2,7 +2,7 @@
  * Packet.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2014 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2015 Hanns Holger Rutz. All rights reserved.
  *
  * This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -14,8 +14,9 @@
 package de.sciss.osc
 
 import java.io.PrintStream
-import java.nio.{ BufferOverflowException, BufferUnderflowException, ByteBuffer }
-import collection.{mutable, LinearSeq, LinearSeqLike}
+import java.nio.{BufferOverflowException, BufferUnderflowException, ByteBuffer}
+
+import scala.collection.{LinearSeq, LinearSeqLike, mutable}
 
 object Packet {
   private val HEX = "0123456789ABCDEF".getBytes
@@ -214,10 +215,7 @@ object Packet {
   }
 
   object Atom {
-    import scala.{Boolean => SBoolean, Byte => SByte, Double => SDouble, Float => SFloat, Int => SInt, Long => SLong,
-    None => SNone, Symbol => SSymbol, Array => SArray}
-    import java.lang.{String => SString}
-    import de.sciss.osc.{Packet => OSCPacket, Timetag => OSCTimetag}
+    import scala.{Byte => SByte}
 
     private def errUnsupported(text: String): Nothing = throw PacketCodec.UnsupportedAtom(text)
 
@@ -295,7 +293,7 @@ final case class Bundle(timetag: Timetag, packets: Packet*)
 	// ---- getting LinearSeqLike to work properly ----
 
   override def newBuilder: mutable.Builder[Packet, Bundle] =
-    new mutable.ArrayBuffer[Packet] mapResult (buf => new Bundle(timetag, packets: _*))
+    new mutable.ArrayBuffer[Packet] mapResult (buf => new Bundle(timetag, buf: _*))
 
   override def iterator: Iterator[Packet] = packets.iterator
 
@@ -324,7 +322,22 @@ final case class Bundle(timetag: Timetag, packets: Packet*)
     if (nestCount == 0) stream.println(" ]") else stream.print(" ]")
   }
 
-  override def toString() = s"Bundle($timetag, ${packets.mkString(", ")})"
+  // override def toString() = s"Bundle($timetag, ${packets.mkString(", ")})"
+
+  override def stringPrefix: String = {
+    val tt = if (timetag.raw == 1) "now"
+    else {
+      val secsSince1900 = (timetag.raw >> 32) & 0xFFFFFFFFL
+      if (secsSince1900 > Timetag.SECONDS_FROM_1900_TO_1970) {
+        s"millis(${timetag.toMillis}L)"
+      } else {
+        s"secs(${timetag.toSecs}"
+      }
+    }
+    s"Bundle.$tt"
+  }
+
+  // override def mkString(start: String, sep: String, end: String): String = super.mkString(start, sep, end)
 }
 
 // ------------------------------
@@ -358,9 +371,12 @@ class Message(val name: String, val args: Any*)
 
   def encodedSize(c: PacketCodec): Int = c.encodedMessageSize(this)
 
-   // recreate stuff we lost when removing case modifier
-   override def toString() = s"Message($name, ${args.mkString(", ")})"
-   override def hashCode() = name.hashCode * 41 + args.hashCode
+  // recreate stuff we lost when removing case modifier
+  override def toString(): String  = s"Message($name, ${args.mkString(", ")})"
+
+  override def stringPrefix: String = s"Message($name)" // what better can we do?
+
+  override def hashCode(): Int     = name.hashCode * 41 + args.hashCode
 
   override def equals(other: Any): Boolean = other match {
     case that: Message  => (that isComparable this) && this.name == that.name && this.args == that.args

@@ -6,7 +6,7 @@
 
 ## statement
 
-ScalaOSC is an OpenSoundControl (OSC) library for the Scala programming language. It is (C)opyright 2008&ndash;2014 by Hanns Holger Rutz. All rights reserved. ScalaOSC is released under the [GNU Lesser General Public License](https://raw.github.com/Sciss/ScalaOSC/master/LICENSE) v2.1+ and comes with absolutely no warranties. To contact the author, send an email to `contact at sciss.de`
+ScalaOSC is an OpenSoundControl (OSC) library for the Scala programming language. It is (C)opyright 2008&ndash;2015 by Hanns Holger Rutz. All rights reserved. ScalaOSC is released under the [GNU Lesser General Public License](https://raw.github.com/Sciss/ScalaOSC/master/LICENSE) v2.1+ and comes with absolutely no warranties. To contact the author, send an email to `contact at sciss.de`
 
 ## requirements / installation
 
@@ -16,7 +16,7 @@ To link to ScalaOSC:
 
     libraryDependencies += "de.sciss" %% "scalaosc" % v
 
-The current version `v` is `"1.1.4"`
+The current version `v` is `"1.1.5"`
 
 ## overview
 

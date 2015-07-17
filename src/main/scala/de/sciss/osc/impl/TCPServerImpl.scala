@@ -2,7 +2,7 @@
  * TCPServerImpl.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2014 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2015 Hanns Holger Rutz. All rights reserved.
  *
  * This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -21,7 +21,7 @@ import java.net.InetSocketAddress
 private[osc] final class TCPServerImpl(val channel: ServerSocketChannel, protected val config: TCP.Config)
   extends TCPChannelImpl with Server with Channel.Net.ConfigLike with ThreadedImpl {
 
-  override def toString = s"${transport.name}.Server@${hashCode().toHexString}"
+  override def toString: String = s"${transport.name}.Server@${hashCode().toHexString}"
 
   private val connSync    = new AnyRef
   private var connections = Set.empty[TCP.Client]
@@ -82,7 +82,7 @@ private[osc] final class TCPServerImpl(val channel: ServerSocketChannel, protect
 
   def connect(): Unit = if (!isConnected) startThread()
 
-  def isConnected = channel.isOpen && isThreadRunning
+  def isConnected: Boolean = channel.isOpen && isThreadRunning
 
   def close(): Unit = {
     stopThread()

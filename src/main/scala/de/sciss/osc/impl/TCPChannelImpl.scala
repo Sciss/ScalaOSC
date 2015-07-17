@@ -2,7 +2,7 @@
  * TCPChannelImpl.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2014 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2015 Hanns Holger Rutz. All rights reserved.
  *
  * This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -20,7 +20,7 @@ import java.nio.channels.SocketChannel
 private[osc] trait TCPChannelImpl extends ChannelImpl {
   protected def config: TCP.Config
 
-  final def transport = config.transport
+  final def transport: Transport.Net = config.transport
 }
 
 private[osc] trait TCPSingleChannelImpl extends TCPChannelImpl with TCP.Channel with DirectedImpl {
