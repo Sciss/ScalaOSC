@@ -18,6 +18,10 @@ To link to ScalaOSC:
 
 The current version `v` is `"1.1.5"`
 
+## contributing
+
+Please see the file [CONTRIBUTING.md](CONTRIBUTING.md)
+
 ## overview
 
 OpenSoundControl (OSC) is a protocol to exchange messages between systems, typically over a network using UDP or TCP, and typically to control sound or multimedia applications.
