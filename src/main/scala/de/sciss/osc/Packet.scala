@@ -26,8 +26,9 @@
 package de.sciss.osc
 
 import java.io.PrintStream
-import java.nio.{ BufferOverflowException, BufferUnderflowException, ByteBuffer }
-import collection.LinearSeqLike
+import java.nio.{BufferOverflowException, BufferUnderflowException, ByteBuffer}
+
+import collection.{LinearSeq, LinearSeqLike}
 import collection.mutable.Builder
 
 object Packet {
@@ -567,12 +568,12 @@ object Bundle {
 
 final case class Bundle( timetag: Timetag, packets: Packet* )
 extends Packet
-with LinearSeqLike[ Packet, Bundle ] {
+with LinearSeq[Packet] {
 //   import Bundle._
 
 	// ---- getting LinearSeqLike to work properly ----
 
-	def newBuilder : Builder[ Packet, Bundle ] = {
+	override def newBuilder : Builder[ Packet, Bundle ] = {
 		new scala.collection.mutable.ArrayBuffer[ Packet ] mapResult (buf => new Bundle( timetag, packets: _* ))
 	}
 
@@ -580,7 +581,7 @@ with LinearSeqLike[ Packet, Bundle ] {
 	override def drop( n: Int ) : Bundle = new Bundle( timetag, packets.drop( n ): _* )
    def apply( idx: Int ) = packets( idx )
    def length: Int = packets.length
-   def seq: TraversableOnce[ Packet ] = this // need for Scala 2.9.0
+//   def seq: TraversableOnce[ Packet ] = this // need for Scala 2.9.0
 
 	// ---- Packet implementation ----
 	def name: String = "#bundle" // Bundle.TAG
@@ -619,12 +620,12 @@ object Message {
 
 class Message( val name: String, val args: Any* )
 extends Packet
-with LinearSeqLike[ Any, Message ] {
+with LinearSeq[Any] {
    import Packet._
    
 	// ---- getting LinearSeqLike to work properly ----
 
-	def newBuilder : Builder[ Any, Message ] = {
+	override def newBuilder : Builder[ Any, Message ] = {
 		new scala.collection.mutable.ArrayBuffer[ Any ] mapResult (buf => new Message( name, buf: _* ))
 	}
 
@@ -632,9 +633,11 @@ with LinearSeqLike[ Any, Message ] {
 	override def drop( n: Int ) : Message = new Message( name, args.drop( n ): _* )
    def apply( idx: Int ) = args( idx )
    def length: Int = args.length
-   def seq: TraversableOnce[ Any ] = this // need for Scala 2.9.0
+//   def seq: TraversableOnce[ Any ] = this // need for Scala 2.9.0
 
-	def encode( c: PacketCodec, b: ByteBuffer ) { c.encodeMessage( this, b )}
+//  def seq: LinearSeq[Any] = this
+
+  def encode( c: PacketCodec, b: ByteBuffer ) { c.encodeMessage( this, b )}
 	def encodedSize( c: PacketCodec ) : Int = c.encodedMessageSize( this )
 
    // recreate stuff we lost when removing case modifier

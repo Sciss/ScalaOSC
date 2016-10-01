@@ -1,51 +1,40 @@
-name := "scalaosc"
-
-version := "0.33"
-
+name         := "scalaosc"
+version      := "0.33"
 organization := "de.sciss"
+scalaVersion := "2.11.8"
+description  := "A library for OpenSoundControl (OSC), a message protocol used in multi-media applications."
+homepage     := Some(url("https://github.com/Sciss/ScalaOSC"))
+licenses     := Seq("LGPL v2.1+" -> url("http://www.gnu.org/licenses/lgpl-2.1.txt"))
 
-scalaVersion := "2.9.1"
+libraryDependencies ++= Seq("org.scalatest" %% "scalatest" % "2.1.3" % "test")
 
-description := "A library for OpenSoundControl (OSC), a message protocol used in multi-media applications."
-
-homepage := Some( url( "https://github.com/Sciss/ScalaOSC" ))
-
-licenses := Seq( "LGPL v2.1+" -> url( "http://www.gnu.org/licenses/lgpl-2.1.txt" ))
-
-libraryDependencies ++= Seq( "org.scalatest" %% "scalatest" % "1.6.1" % "test" )
-
-retrieveManaged := true
-
-scalacOptions ++= Seq( "-deprecation", "-unchecked" )
+scalacOptions ++= Seq("-deprecation", "-unchecked")
 
 // ---- publishing ----
 
-publishTo <<= version { (v: String) =>
-   Some( "Scala Tools Nexus" at "http://nexus.scala-tools.org/content/repositories/".+(
-      if( v.endsWith( "-SNAPSHOT")) "snapshots/" else "releases/"
-   ))
-}
+publishMavenStyle := true
+
+publishTo :=
+   Some(if (isSnapshot.value)
+      "Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
+   else
+      "Sonatype Releases"  at "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+   )
+
+publishArtifact in Test := false
+
+pomIncludeRepository := { _ => false }
 
 pomExtra :=
-<licenses>
-  <license>
-    <name>LGPL v2.1+</name>
-    <url>http://www.gnu.org/licenses/lgpl-2.1.txt</url>
-    <distribution>repo</distribution>
-  </license>
-</licenses>
+<scm>
+  <url>git@github.com:Sciss/ScalaOSC.git</url>
+  <connection>scm:git:git@github.com:Sciss/ScalaOSC.git</connection>
+</scm>
+<developers>
+   <developer>
+      <id>sciss</id>
+      <name>Hanns Holger Rutz</name>
+      <url>http://www.sciss.de</url>
+   </developer>
+</developers>
 
-credentials += Credentials( Path.userHome / ".ivy2" / ".credentials" )
-
-// ---- ls.implicit.ly ----
-
-seq( lsSettings :_* )
-
-(LsKeys.tags in LsKeys.lsync) := Seq( "osc", "open-sound-control", "sound", "network" )
-
-(LsKeys.ghUser in LsKeys.lsync) := Some( "Sciss" )
-
-(LsKeys.ghRepo in LsKeys.lsync) := Some( "ScalaOSC" )
-
-// bug in ls -- doesn't find the licenses from global scope
-(licenses in LsKeys.lsync) := Seq( "LGPL v2.1+" -> url( "http://www.gnu.org/licenses/lgpl-2.1.txt" ))

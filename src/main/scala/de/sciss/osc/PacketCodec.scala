@@ -286,7 +286,7 @@ object PacketCodec {
       }
 
       def encode[ A ]( enc: Atom.Encoder[ A ])( implicit mf: Manifest[ A ]) = {
-         customEnc += mf.erasure -> enc
+         customEnc += mf.runtimeClass -> enc
          this
       }
 
@@ -306,7 +306,7 @@ object PacketCodec {
       }
    }
 
-   private val BUNDLE_TAGB  = "#bundle\0".getBytes
+   private val BUNDLE_TAGB  = "#bundle\u0000".getBytes
 
    private final class Impl( customEnc: Map[ Class[ _ ], Atom.Encoder[ _ ]],
                              customDec: IntMap[ Atom.Decoder[ _ ]],
