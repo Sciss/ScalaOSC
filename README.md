@@ -1,6 +1,5 @@
 # ScalaOSC
 
-[![Flattr this](http://api.flattr.com/button/flattr-badge-large.png)](http://flattr.com/thing/2926624/ScissScalaOSC-on-GitHub)
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/Sciss/ScalaOSC?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.org/Sciss/ScalaOSC.svg?branch=master)](https://travis-ci.org/Sciss/ScalaOSC)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/de.sciss/scalaosc_2.11/badge.svg)](https://maven-badges.herokuapp.com/maven-central/de.sciss/scalaosc_2.11)
