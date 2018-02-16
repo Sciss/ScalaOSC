@@ -1,14 +1,13 @@
 name                  := "ScalaOSC"
 version               := "1.1.5"
 organization          := "de.sciss"
-scalaVersion          := "2.11.7"
-crossScalaVersions    := Seq("2.11.7", "2.10.5")
+scalaVersion          := "2.13.0-M3" // "2.12.4"
+crossScalaVersions    := Seq("2.12.4", "2.11.12")
 description           := "A library for OpenSoundControl (OSC), a message protocol used in multi-media applications."
 homepage              := Some(url(s"https://github.com/Sciss/${name.value}"))
 licenses              := Seq("LGPL v2.1+" -> url("http://www.gnu.org/licenses/lgpl-2.1.txt"))
 
-libraryDependencies +=
-  "org.scalatest" %% "scalatest" % "3.0.0" % "test"
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.5-M1" % "test"
 
 scalacOptions       ++= Seq("-deprecation", "-unchecked", "-feature", "-Xfuture", "-encoding", "utf8")
 
