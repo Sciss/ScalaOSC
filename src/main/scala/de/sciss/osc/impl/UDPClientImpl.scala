@@ -2,7 +2,7 @@
  * UDPClientImpl.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2015 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2018 Hanns Holger Rutz. All rights reserved.
  *
  * This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -14,8 +14,8 @@
 package de.sciss.osc
 package impl
 
-import java.nio.channels.DatagramChannel
 import java.net.SocketAddress
+import java.nio.channels.DatagramChannel
 
 private[osc] final class UDPClientImpl(val channel: DatagramChannel,
                                        protected val target: SocketAddress,

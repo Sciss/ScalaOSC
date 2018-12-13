@@ -2,7 +2,7 @@
  * DirectedUDPTransmitterImpl.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2015 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2018 Hanns Holger Rutz. All rights reserved.
  *
  * This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -14,16 +14,16 @@
 package de.sciss.osc
 package impl
 
-import java.nio.channels.DatagramChannel
-import java.net.SocketAddress
 import java.io.IOException
+import java.net.SocketAddress
+import java.nio.channels.DatagramChannel
 
 private[osc] final class DirectedUDPTransmitterImpl(val channel: DatagramChannel,
                                                     protected val target: SocketAddress,
                                                     protected val config: UDP.Config)
   extends UDPTransmitterImpl with Channel.Directed.Output with Channel.Directed.Net {
 
-  override def toString = s"${transport.name}.Transmitter@${hashCode().toHexString}"
+  override def toString: String = s"${transport.name}.Transmitter@${hashCode().toHexString}"
 
   @throws(classOf[IOException])
   protected def connectChannel(): Unit =

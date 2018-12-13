@@ -59,7 +59,7 @@ object VariousTests {
 
     rcv.dump(Dump.Both)
     rcv.action = {
-      case (Message(name, xs @ _ *), _) =>
+      case (Message(name, _ @ _ *), _) =>
       println("Received message '" + name + "'")
       if (name == "/quit") sync.synchronized(sync.notifyAll())
       case (p, addr) => println("Ignoring: " + p + " from " + addr)
@@ -97,7 +97,7 @@ object VariousTests {
       trns ! M("/n_free", 1000)
 
     } catch {
-      case e1: InterruptedException => ()
+      case _: InterruptedException => ()
       case e2: IOException =>
         println(e2.getClass.getName + " : " + e2.getLocalizedMessage)
     }
@@ -126,7 +126,7 @@ object VariousTests {
   def tcpServer(): Unit = {
     val server = TCP.Server()
     server.action = {
-      case (Message(name, args@_*), from) =>
+      case (Message(_, args @ _*), from) =>
         from ! Message("/pong", args: _*)
     }
     server.connect()

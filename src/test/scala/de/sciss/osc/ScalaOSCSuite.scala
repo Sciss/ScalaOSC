@@ -1,7 +1,8 @@
 package de.sciss.osc
 
-import org.scalatest.{FeatureSpec, GivenWhenThen}
 import java.nio.ByteBuffer
+
+import org.scalatest.{FeatureSpec, GivenWhenThen}
 
 /*
   To run this test copy + paste the following into sbt:
@@ -56,7 +57,7 @@ class ScalaOSCSuite extends FeatureSpec with GivenWhenThen {
       rnd.nextBytes(arr)
       ByteBuffer.wrap(arr)
     }
-    def wchoose[T](seq: Traversable[T])(fun: T => Double): T = {
+    def wchoose[T](seq: Iterable[T])(fun: T => Double): T = {
       val i = rnd.nextDouble()
       var sum = 0.0
       seq find {
@@ -145,7 +146,7 @@ class ScalaOSCSuite extends FeatureSpec with GivenWhenThen {
 
   def checkMessageEquality(a: Message, b: Message): Unit = {
     assert(a.name == b.name, s"Message names divert: '${a.name}' != '${b.name}'")
-    assert(a.size == b.size, s"Message arg counts divert: ${a.size} != ${b.size}")
+    assert(a.args.size == b.args.size, s"Message arg counts divert: ${a.args.size} != ${b.args.size}")
     a.args.zip(b.args).foreach { case (aa, ba) =>
       val aaf = fixArgEquality(aa)
       val baf = fixArgEquality(ba)

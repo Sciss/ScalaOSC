@@ -2,7 +2,7 @@
  * PacketCodec.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2015 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2018 Hanns Holger Rutz. All rights reserved.
  *
  * This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -19,7 +19,6 @@ import java.nio.{BufferOverflowException, BufferUnderflowException, ByteBuffer}
 import de.sciss.osc.Packet._
 
 import scala.annotation.switch
-import scala.collection.mutable.ListBuffer
 import scala.language.implicitConversions
 
 /** A packet codec defines how the translation between Java objects
@@ -135,7 +134,7 @@ object PacketCodec {
       *
       * On the Scala side, we wish to enforce a immutable type, hence
       * `collection.immutable.IndexedSeq` was chosen over `Array` for the decoder,
-      * while the encoder accepts any `Traversable`
+      * while the encoder accepts any `Iterable`
       */
     def arrays(): Builder
 
@@ -186,7 +185,7 @@ object PacketCodec {
     var useTimetags   = false
     var usePackets    = false
 
-    def v1_0() = {
+    def v1_0(): this.type = {
       customEnc       = Map.empty
       useDoubles      = false
       useLongs        = false
@@ -204,19 +203,19 @@ object PacketCodec {
       this
     }
 
-    def doubles() = {
+    def doubles(): this.type = {
       useDoubles      = true
       doubleToFloat   = false
       this
     }
 
-    def longs() = {
+    def longs(): this.type = {
       useLongs        = true
       longToInt       = false
       this
     }
 
-    def symbols() = {
+    def symbols(): this.type = {
       useSymbols      = true
       this
     }
@@ -226,62 +225,62 @@ object PacketCodec {
     //         this
     //      }
 
-    def arrays() = {
+    def arrays(): this.type = {
       useArrays       = true
       this
     }
 
-    def booleans() = {
+    def booleans(): this.type = {
       useBooleans     = true
       booleanToInt    = false
       this
     }
 
-    def none() = {
+    def none(): this.type = {
       useNone         = true
       this
     }
 
-    def impulse() = {
+    def impulse(): this.type = {
       useImpulse      = true
       this
     }
 
-    def timetags() = {
+    def timetags(): this.type = {
       useTimetags     = true
       this
     }
 
     // ---- SuperCollider types ----
-    def doublesAsFloats() = {
+    def doublesAsFloats(): this.type = {
       useDoubles      = true
       doubleToFloat   = true
       this
     }
 
-    def longsAsInts() = {
+    def longsAsInts(): this.type = {
       useLongs        = true
       longToInt       = true
       this
     }
 
-    def booleansAsInts() = {
+    def booleansAsInts(): this.type = {
       useBooleans     = true
       booleanToInt    = true
       this
     }
 
-    def packetsAsBlobs() = {
+    def packetsAsBlobs(): this.type = {
       usePackets      = true
       this
     }
 
-    def encode[A](clazz: Class[A], enc: Atom.Encoder[A]) = {
+    def encode[A](clazz: Class[A], enc: Atom.Encoder[A]): this.type = {
       customEnc += clazz -> enc
       this
     }
 
-    def decode[A](tag: Byte, dec: Atom.Decoder[A]) = {
+    def decode[A](tag: Byte, dec: Atom.Decoder[A]): this.type = {
       customDec += tag.toInt -> dec
       this
     }
@@ -347,7 +346,7 @@ object PacketCodec {
     @throws(classOf[IOException])
     def encodeBundle(bndl: Bundle, b: ByteBuffer): Unit =
       try {
-        b.put(BUNDLE_TAGB).putLong(bndl.timetag.raw)
+        b.put(BUNDLE_TAGB).putLong(bndl.timeTag.raw)
         bndl.packets.foreach { p =>
           // b.mark() -- do _not_ use mark. Java idiocy, this is not a stack, so we can't nest bundles
           val pos0 = b.position
@@ -363,12 +362,12 @@ object PacketCodec {
       }
 
     @inline private def encodeAtomType(v: Any, tb: ByteBuffer): Unit = v match {
-      case i: Int                     => tb.put(0x69.toByte) // 'i'
-      case f: Float                   => tb.put(0x66.toByte) // 'f'
-      case s: String                  => tb.put(0x73.toByte) // 's'
-      case h: Long    if useLongs     => tb.put(
+      case _: Int                     => tb.put(0x69.toByte) // 'i'
+      case _: Float                   => tb.put(0x66.toByte) // 'f'
+      case _: String                  => tb.put(0x73.toByte) // 's'
+      case _: Long    if useLongs     => tb.put(
         if (longToInt) 0x69.toByte /* 'i' */ else 0x68.toByte /* 'h' */)
-      case d: Double  if useDoubles   => tb.put(
+      case _: Double  if useDoubles   => tb.put(
         if (doubleToFloat) 0x66.toByte /* 'f' */ else 0x64.toByte /* 'd' */)
       case b: Boolean if useBooleans  => tb.put(
           if (booleanToInt) 0x69.toByte /* 'i' */
@@ -377,19 +376,19 @@ object PacketCodec {
           }
         )
       //          case c: Char if( useChars )           =>
-      case blob: ByteBuffer           => tb.put(0x62.toByte) // 'b'
-      case p: Packet  if  usePackets  => tb.put(0x62.toByte) // 'b'
-      // be careful to place the Traversable after the Packet case, because
+      case _: ByteBuffer              => tb.put(0x62.toByte) // 'b'
+      case _: Packet  if  usePackets  => tb.put(0x62.toByte) // 'b'
+      // be careful to place the Iterable after the Packet case, because
       // the packets extends linear seq!
-      case c: Traversable[_] if useArrays =>
+      case c: Iterable[_] if useArrays =>
         tb.put(0x5B.toByte)
         c.foreach(encodeAtomType(_, tb))
         tb.put(0x5D.toByte)
 
       case None       if useNone      => tb.put(0x4E.toByte) // 'N'
-      case u: Unit    if useImpulse   => tb.put(0x49.toByte) // 'I'
-      case t: Timetag if useTimetags  => tb.put(0x74.toByte) // 't'
-      case s: Symbol  if useSymbols   => tb.put(0x53.toByte) // 'S'
+      case _: Unit    if useImpulse   => tb.put(0x49.toByte) // 'I'
+      case _: TimeTag if useTimetags  => tb.put(0x74.toByte) // 't'
+      case _: Symbol  if useSymbols   => tb.put(0x53.toByte) // 'S'
       case _ =>
         val r     = v.asInstanceOf[AnyRef]
         val atom  = customEnc.getOrElse(r.getClass, Atom.Unsupported).asInstanceOf[Atom[r.type]]
@@ -428,12 +427,12 @@ object PacketCodec {
         p.encode(this, db)
         db.putInt(pos, db.position - pos2)
 
-      // be careful to place the Traversable after the Packet case, because
+      // be careful to place the Iterable after the Packet case, because
       // the packets extends linear seq!
-      case c: Traversable[_]  if useArrays    => c.foreach(encodeAtomData(_, db))
+      case c: Iterable[_]     if useArrays    => c.foreach(encodeAtomData(_, db))
       case None               if useNone      =>
-      case u: Unit            if useImpulse   =>
-      case t: Timetag         if useTimetags  => db.putLong(t.raw)
+      case _: Unit            if useImpulse   =>
+      case t: TimeTag         if useTimetags  => db.putLong(t.raw)
       case s: Symbol          if useSymbols   => encodeString(db, s.name)
       case v: Any =>
         val r     = v.asInstanceOf[AnyRef]
@@ -458,7 +457,7 @@ object PacketCodec {
       //          case p: Packet
       case 0x4E if useNone        => None
       case 0x49 if useImpulse     => ()
-      case 0x74 if useTimetags    => new Timetag(db.getLong())
+      case 0x74 if useTimetags    => new TimeTag(db.getLong())
       case 0x53 if useSymbols     => Symbol(decodeString(db))
       case ti =>
         customDec.getOrElse(ti, Atom.Unsupported).decode(this, tt, db)
@@ -476,9 +475,9 @@ object PacketCodec {
       case p: Packet    if usePackets   =>
         stream.println()
         p.printTextOn(this, stream, nestCount + 1)
-      // be careful to place the Traversable after the Packet case, because
+      // (obsolete:) be careful to place the Traversable after the Packet case, because
       // the packets extends linear seq!
-      case c: Traversable[_] if useArrays =>
+      case c: Iterable[_] if useArrays =>
         stream.print("[ ")
         var sec = false
         c.foreach { v =>
@@ -491,9 +490,9 @@ object PacketCodec {
         }
         stream.print(" ]")
       case None         if useNone      => stream.print(None)
-      case u: Unit      if useImpulse   => stream.print(())
-      case t: Timetag   if useTimetags  => stream.print(t)
-      case s: Symbol    if useSymbols   => stream.print(None)
+      case _: Unit      if useImpulse   => stream.print(())
+      case t: TimeTag   if useTimetags  => stream.print(t)
+      case _: Symbol    if useSymbols   => stream.print(None)
       case r: AnyRef =>
         val atom = customEnc.getOrElse(r.getClass, Atom.Unsupported).asInstanceOf[Atom[AnyRef]]
         atom.printTextOn(codec, r, stream, nestCount)
@@ -518,8 +517,8 @@ object PacketCodec {
       }
 
     def encodedMessageSize(msg: Message): Int = {
-      def loop(vs: Traversable[Any]): (Int, Int) = {
-        val it  = vs.toIterator
+      def loop(vs: Iterable[Any]): (Int, Int) = {
+        val it  = vs.iterator
         var tsz = 0
         var dsz = 0
         while (it.hasNext) {
@@ -535,15 +534,15 @@ object PacketCodec {
             // case c: Char if( useChars ) => 4
             case blob: ByteBuffer                   => (blob.remaining() + 7) & ~3
             case p: Packet          if usePackets   => p.encodedSize(codec) + 4
-            // be careful to place the Traversable after the Packet case, because
+            // (obsolete:) be careful to place the Traversable after the Packet case, because
             // the packets extends linear seq!
-            case c: Traversable[_]  if useArrays    =>
+            case c: Iterable[_]  if useArrays    =>
               val (tsz1, dsz1) = loop(c)
               tsz += tsz1 + 1 // a tag for each element plus terminator
               dsz1
             case None               if useNone      => 0
             case u: Unit            if useImpulse   => 0
-            case t: Timetag         if useTimetags  => 8
+            case t: TimeTag         if useTimetags  => 8
             case s: Symbol          if useSymbols   => (s.name.getBytes(charsetName).length + 4) & ~3
             case r: AnyRef =>
               // val r = v.asInstanceOf[ AnyRef ]
@@ -703,7 +702,7 @@ trait PacketCodec {
   final def decodeBundle(b: ByteBuffer): Bundle =
     try {
       val totalLimit  = b.limit
-      val p           = new ListBuffer[Packet]
+      val p           = Seq.newBuilder[Packet]
       val timetag     = b.getLong()
 
       while (b.hasRemaining) {
@@ -713,7 +712,7 @@ trait PacketCodec {
         p += decode(b)
         b.limit(totalLimit)
       }
-      new Bundle(new Timetag(timetag), p: _*)
+      new Bundle(new TimeTag(timetag), p.result(): _*)
     } catch {
       case e: BufferUnderflowException => throw PacketCodec.BufferOverflow("#bundle", e)
     }

@@ -2,7 +2,7 @@
  * Packet.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2015 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2018 Hanns Holger Rutz. All rights reserved.
  *
  * This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -15,8 +15,6 @@ package de.sciss.osc
 
 import java.io.PrintStream
 import java.nio.{BufferOverflowException, BufferUnderflowException, ByteBuffer}
-
-import scala.collection.{LinearSeq, LinearSeqLike, mutable}
 
 object Packet {
   private val HEX = "0123456789ABCDEF".getBytes
@@ -268,40 +266,26 @@ sealed trait Packet {
 // they need to be in the same file due to the sealed restriction...
 
 object Bundle {
-   /** Creates a bundle with timetag given by
+   /** Creates a bundle with time-tag given by
      * a system clock value in milliseconds since
      * jan 1 1970, as returned by System.currentTimeMillis
      */
    def millis(abs: Long, packets: Packet*): Bundle =
-     new Bundle(Timetag.millis(abs), packets: _*)
+     new Bundle(TimeTag.millis(abs), packets: _*)
 
-   /** Creates a bundle with timetag given by
+   /** Creates a bundle with time-tag given by
      * a relative value in seconds, as required
      * for example for scsynth offline rendering
      */
    def secs(delta: Double, packets: Packet*): Bundle =
-     new Bundle(Timetag.secs(delta), packets: _*)
+     new Bundle(TimeTag.secs(delta), packets: _*)
 
-   /** Creates a bundle with special timetag 'now' */
-   def now(packets: Packet*): Bundle = new Bundle(Timetag.now, packets: _*)
+   /** Creates a bundle with special time-tag 'now' */
+   def now(packets: Packet*): Bundle = new Bundle(TimeTag.now, packets: _*)
 }
 
-final case class Bundle(timetag: Timetag, packets: Packet*)
-  extends Packet
-  with LinearSeq[Packet] with LinearSeqLike[Packet, Bundle] {
-
-	// ---- getting LinearSeqLike to work properly ----
-
-  override def newBuilder: mutable.Builder[Packet, Bundle] =
-    new mutable.ArrayBuffer[Packet] mapResult (buf => new Bundle(timetag, buf: _*))
-
-  override def iterator: Iterator[Packet] = packets.iterator
-
-  override def drop(n: Int): Bundle = new Bundle(timetag, packets.drop(n): _*)
-
-  def apply(idx: Int): Packet = packets(idx)
-
-  def length: Int = packets.length
+final case class Bundle(timeTag: TimeTag, packets: Packet*)
+  extends Packet {
 
 	// ---- Packet implementation ----
 	def name: String = "#bundle" // Bundle.TAG
@@ -313,7 +297,7 @@ final case class Bundle(timetag: Timetag, packets: Packet*)
 
   private[osc] def printTextOn(c: PacketCodec, stream: PrintStream, nestCount: Int): Unit = {
     stream.print("  " * nestCount)
-    stream.print(s"[ #bundle, $timetag")
+    stream.print(s"[ #bundle, $timeTag")
     val ncInc = nestCount + 1
     packets.foreach { v =>
       stream.println(',')
@@ -322,22 +306,18 @@ final case class Bundle(timetag: Timetag, packets: Packet*)
     if (nestCount == 0) stream.println(" ]") else stream.print(" ]")
   }
 
-  // override def toString() = s"Bundle($timetag, ${packets.mkString(", ")})"
-
-  override def stringPrefix: String = {
-    val tt = if (timetag.raw == 1) "now"
+  override def toString: String = {
+    val tt = if (timeTag.raw == 1) "now"
     else {
-      val secsSince1900 = (timetag.raw >> 32) & 0xFFFFFFFFL
-      if (secsSince1900 > Timetag.SECONDS_FROM_1900_TO_1970) {
-        s"millis(${timetag.toMillis}L)"
+      val secsSince1900 = (timeTag.raw >> 32) & 0xFFFFFFFFL
+      if (secsSince1900 > TimeTag.SECONDS_FROM_1900_TO_1970) {
+        s"millis(${timeTag.toMillis}L)"
       } else {
-        s"secs(${timetag.toSecs}"
+        s"secs(${timeTag.toSecs}"
       }
     }
-    s"Bundle.$tt"
+    packets.mkString(s"Bundle.$tt(", ", ", ")")
   }
-
-  // override def mkString(start: String, sep: String, end: String): String = super.mkString(start, sep, end)
 }
 
 // ------------------------------
@@ -349,34 +329,19 @@ object Message {
 }
 
 class Message(val name: String, val args: Any*)
-  extends Packet
-  with LinearSeq[Any] with LinearSeqLike[Any, Message] {
+  extends Packet {
 
   import Packet._
    
-	// ---- getting LinearSeqLike to work properly ----
-
-  override def newBuilder: mutable.Builder[Any, Message] =
-    new mutable.ArrayBuffer[Any] mapResult (buf => new Message(name, buf: _*))
-
-  override def iterator: Iterator[Any] = args.iterator
-
-  override def drop(n: Int): Message = new Message(name, args.drop(n): _*)
-
-  def apply(idx: Int): Any = args(idx)
-
-  def length: Int = args.length
-
   def encode(c: PacketCodec, b: ByteBuffer): Unit = c.encodeMessage(this, b)
 
   def encodedSize(c: PacketCodec): Int = c.encodedMessageSize(this)
 
   // recreate stuff we lost when removing case modifier
-  override def toString(): String  = s"Message($name, ${args.mkString(", ")})"
+  override def toString: String =
+    args.mkString(s"Message($name, ", ", ", ")")
 
-  override def stringPrefix: String = s"Message($name)" // what better can we do?
-
-  override def hashCode(): Int     = name.hashCode * 41 + args.hashCode
+  override def hashCode(): Int = name.hashCode * 41 + args.hashCode
 
   override def equals(other: Any): Boolean = other match {
     case that: Message  => (that isComparable this) && this.name == that.name && this.args == that.args

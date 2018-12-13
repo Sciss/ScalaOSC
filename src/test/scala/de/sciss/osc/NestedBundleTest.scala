@@ -17,9 +17,9 @@ object NestedBundleTest extends App {
     Packet.printHexOn(bb, Console.out)
     val res  = c.decode(bb)
     res match {
-      case Bundle(Timetag.now, Message("/3", bb1: ByteBuffer)) =>
+      case Bundle(TimeTag.now, Message("/3", bb1: ByteBuffer)) =>
         c.decode(bb1) match {
-          case Bundle(Timetag.now, `m1`, `m2`) =>
+          case Bundle(TimeTag.now, `m1`, `m2`) =>
         }
     }
   }

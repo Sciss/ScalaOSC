@@ -2,7 +2,7 @@
  * TCPTransmitterImpl.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2015 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2018 Hanns Holger Rutz. All rights reserved.
  *
  * This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -14,9 +14,9 @@
 package de.sciss.osc
 package impl
 
-import java.nio.channels.SocketChannel
-import java.net.SocketAddress
 import java.io.IOException
+import java.net.SocketAddress
+import java.nio.channels.SocketChannel
 
 private[osc] final class TCPTransmitterImpl(val channel: SocketChannel,
                                             protected val target: SocketAddress,

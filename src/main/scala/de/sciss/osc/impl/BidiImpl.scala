@@ -2,7 +2,7 @@
  * BidiImpl.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2015 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2018 Hanns Holger Rutz. All rights reserved.
  *
  * This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -30,7 +30,7 @@ private[osc] trait BidiImpl extends ChannelImpl with Channel.Bidi {
     output.close()
   }
 
-  final def isConnected = input.isConnected && output.isConnected
+  final def isConnected: Boolean = input.isConnected && output.isConnected
 
    /** Changes the way incoming and outgoing OSC messages are printed to the standard err console.
      *	By default messages are not printed.

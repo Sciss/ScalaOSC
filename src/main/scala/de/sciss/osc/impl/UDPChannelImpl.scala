@@ -2,7 +2,7 @@
  * UDPChannelImpl.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2015 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2018 Hanns Holger Rutz. All rights reserved.
  *
  * This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -24,12 +24,12 @@ private[osc] trait UDPChannelImpl extends ChannelImpl with UDP.Channel {
 
   override def channel: DatagramChannel
 
-  final def localSocketAddress = {
+  final def localSocketAddress: InetSocketAddress = {
     val so = channel.socket()
     new InetSocketAddress(so.getLocalAddress, so.getLocalPort)
   }
 
-  final def remoteSocketAddress = {
+  final def remoteSocketAddress: InetSocketAddress = {
     val so = channel.socket()
     new InetSocketAddress(so.getInetAddress, so.getPort)
   }

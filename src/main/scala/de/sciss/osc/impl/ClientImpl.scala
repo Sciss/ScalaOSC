@@ -2,7 +2,7 @@
  * ClientImpl.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2015 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2018 Hanns Holger Rutz. All rights reserved.
  *
  * This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -20,9 +20,9 @@ private[osc] trait ClientImpl
   override protected def input : Channel.Directed.Input
   override protected def output: Channel.Directed.Output
 
-  override def toString = s"${transport.name}.Client($target)@${hashCode().toHexString}"
+  override def toString: String = s"${transport.name}.Client($target)@${hashCode().toHexString}"
 
-  final def action = input.action
+  final def action: Channel.Directed.Input.Action = input.action
   final def action_=(fun: Channel.Directed.Input.Action): Unit = input.action = fun
 
   final def ! (p: Packet): Unit = output ! p
