@@ -101,7 +101,7 @@ object PacketCodec {
       * packets are encoded with on a TCP stream
       * (see the `TCP` documentation for more information).
       */
-    final def v1_1(): Builder = v1_0().booleans().none().impulse().timetags()
+    final def v1_1(): Builder = v1_0().booleans().none().impulse().timeTags()
 
     /** Resets the builder to SuperCollider server spec.
       * That is, strict OSC 1.0, plus array support,
@@ -146,7 +146,7 @@ object PacketCodec {
 
     def impulse(): Builder
 
-    def timetags(): Builder
+    def timeTags(): Builder
 
     // ---- SuperCollider types ----
     def doublesAsFloats(): Builder
@@ -246,7 +246,7 @@ object PacketCodec {
       this
     }
 
-    def timetags(): this.type = {
+    def timeTags(): this.type = {
       useTimetags     = true
       this
     }
@@ -647,7 +647,7 @@ trait PacketCodec {
 
   /** Calculates the byte size of the encoded bundle.
     * This method is final. The size is the sum
-    * of the bundle name, its timetag and the sizes of
+    * of the bundle name, its time-tag and the sizes of
     * each bundle element.
     *
     * For contained messages,
@@ -656,7 +656,7 @@ trait PacketCodec {
     * to overwrite `encodedMessageSize`.
     */
   final def encodedBundleSize(bndl: Bundle): Int = {
-    // overhead: name, timetag
+    // overhead: name, time-tag
     bndl.packets.foldLeft(16 + (bndl.packets.size << 2))((sum, p) => sum + p.encodedSize(codec))
   }
 
@@ -702,8 +702,10 @@ trait PacketCodec {
   final def decodeBundle(b: ByteBuffer): Bundle =
     try {
       val totalLimit  = b.limit
+      // N.B.: `scala.Seq` means `s.c.Seq` in Scala <= 2.12 and `s.c.i.Seq` in Scala >= 2.13
+      // this is correct here, as pass it as var-args to `Bundle` which also changes in that respect.
       val p           = Seq.newBuilder[Packet]
-      val timetag     = b.getLong()
+      val timeTag     = b.getLong()
 
       while (b.hasRemaining) {
         val sz = b.getInt() + b.position // msg size
@@ -712,7 +714,7 @@ trait PacketCodec {
         p += decode(b)
         b.limit(totalLimit)
       }
-      new Bundle(new TimeTag(timetag), p.result(): _*)
+      new Bundle(new TimeTag(timeTag), p.result(): _*)
     } catch {
       case e: BufferUnderflowException => throw PacketCodec.BufferOverflow("#bundle", e)
     }
