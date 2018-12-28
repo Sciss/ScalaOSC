@@ -1,5 +1,5 @@
 name                  := "ScalaOSC"
-version               := "1.2.0-SNAPSHOT"
+version               := "1.2.0"
 organization          := "de.sciss"
 scalaVersion          := "2.13.0-M5"
 crossScalaVersions    := Seq("2.12.8", "2.11.12", "2.13.0-M5")
