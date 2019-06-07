@@ -13,7 +13,7 @@ absolutely no warranties. To contact the author, send an email to `contact at sc
 
 ## requirements / installation
 
-ScalaOSC builds against Scala 2.12, 2.11 using sbt.
+ScalaOSC builds against Scala 2.13, 2.12, 2.11 using sbt.
 
 To link to ScalaOSC:
 
