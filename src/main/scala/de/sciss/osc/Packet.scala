@@ -45,9 +45,9 @@ object Packet {
     * @see	java.nio.Buffer#position()
     */
   def printHexOn(b: ByteBuffer, stream: PrintStream): Unit = {
-    val pos0 = b.position
+    val pos0: Int = b.position
     try {
-      val lim = b.limit
+      val lim: Int = b.limit
       val txt = new Array[Byte](74)
 
       var j = 0
@@ -139,9 +139,9 @@ object Packet {
     */
   @throws(classOf[BufferUnderflowException])
   def readString(b: ByteBuffer): String = {
-    val pos = b.position
+    val pos: Int = b.position
     while (b.get != 0) ()
-    val len = b.position - pos
+    val len = (b.position: Int) - pos
     val bytes = new Array[Byte](len)
     b.position(pos)
     b.get(bytes)
@@ -162,7 +162,7 @@ object Packet {
     */
   @throws(classOf[BufferOverflowException])
   def terminateAndPadToAlign(b: ByteBuffer): Unit =
-    b.put(PAD, 0, 4 - (b.position & 0x03))
+    b.put(PAD, 0, 4 - ((b.position: Int) & 0x03))
 
   /** Adds as many zero padding bytes as necessary to
     * stop on a 4 byte alignment. if the buffer position
@@ -176,7 +176,7 @@ object Packet {
     */
   @throws(classOf[BufferOverflowException])
   def padToAlign(b: ByteBuffer): Unit =
-    b.put(PAD, 0, -b.position & 0x03) // nearest 4-align
+    b.put(PAD, 0, -(b.position: Int) & 0x03) // nearest 4-align
 
   /** Advances in the buffer as long there
     * are non-zero bytes, then advance to a
@@ -189,11 +189,11 @@ object Packet {
     */
   @throws(classOf[BufferUnderflowException])
   def skipToValues(b: ByteBuffer): Unit = {
-		while( b.get != 0x00 ) ()
-		val newPos = (b.position + 3) & ~3
-		if( newPos > b.limit ) throw new BufferUnderflowException
-		b.position( newPos )
-	}
+    while (b.get != 0x00) ()
+    val newPos = ((b.position: Int) + 3) & ~3
+    if (newPos > (b.limit: Int)) throw new BufferUnderflowException
+    b.position(newPos)
+  }
 
   /** Advances the current buffer position
     * to an integer of four bytes. The position
@@ -207,8 +207,8 @@ object Packet {
     */
   @throws(classOf[BufferUnderflowException])
   def skipToAlign(b: ByteBuffer): Unit = {
-    val newPos = (b.position + 3) & ~3
-    if (newPos > b.limit) throw new BufferUnderflowException
+    val newPos = ((b.position: Int) + 3) & ~3
+    if (newPos > (b.limit: Int)) throw new BufferUnderflowException
     b.position(newPos)
   }
 

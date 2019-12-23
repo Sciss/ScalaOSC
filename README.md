@@ -3,6 +3,7 @@
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/Sciss/ScalaOSC?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.org/Sciss/ScalaOSC.svg?branch=master)](https://travis-ci.org/Sciss/ScalaOSC)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/de.sciss/scalaosc_2.12/badge.svg)](https://maven-badges.herokuapp.com/maven-central/de.sciss/scalaosc_2.12)
+<a href="https://liberapay.com/sciss/donate"><img alt="Donate using Liberapay" src="https://liberapay.com/assets/widgets/donate.svg" height="24"></a>
 
 ## statement
 
@@ -11,15 +12,17 @@ by Hanns Holger Rutz. All rights reserved. ScalaOSC is released under
 the [GNU Lesser General Public License](https://git.iem.at/sciss/ScalaOSC/raw/master/LICENSE) v2.1+ and comes with
 absolutely no warranties. To contact the author, send an email to `contact at sciss.de`
 
+Please consider supporting this project through Liberapay (see badge above) – thank you!
+
 ## requirements / installation
 
-ScalaOSC builds against Scala 2.13, 2.12, 2.11 using sbt.
+ScalaOSC builds against Scala 2.13, 2.12 using sbt. The last version to support Scala 2.11 was 1.2.0.
 
 To link to ScalaOSC:
 
     libraryDependencies += "de.sciss" %% "scalaosc" % v
 
-The current version `v` is `"1.2.0"`
+The current version `v` is `"1.2.1"`
 
 ## contributing
 

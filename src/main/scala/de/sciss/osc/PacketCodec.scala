@@ -324,16 +324,16 @@ object PacketCodec {
     override def toString: String = s"PacketCodec@${hashCode().toHexString}"
 
     private def decodeString(b: ByteBuffer): String = {
-      val pos1  = b.position
+      val pos1: Int = b.position
       while (b.get() != 0) {}
-      val pos2  = b.position - 1
+      val pos2  = (b.position: Int) - 1
       b.position(pos1)
       val len   = pos2 - pos1
       val bytes = new Array[Byte](len)
       b.get(bytes, 0, len)
       val s     = new String(bytes, charsetName)
       val pos3  = (pos2 + 4) & ~3
-      if (pos3 > b.limit) throw new BufferUnderflowException
+      if (pos3 > (b.limit: Int)) throw new BufferUnderflowException
       b.position(pos3)
       s
     }
@@ -349,11 +349,11 @@ object PacketCodec {
         b.put(BUNDLE_TAGB).putLong(bndl.timeTag.raw)
         bndl.packets.foreach { p =>
           // b.mark() -- do _not_ use mark. Java idiocy, this is not a stack, so we can't nest bundles
-          val pos0 = b.position
+          val pos0: Int = b.position
           b.putInt(0) // calculate size later
-          val pos1 = b.position
+          val pos1: Int = b.position
           p.encode(codec, b)
-          val pos2 = b.position
+          val pos2: Int = b.position
           b.position(pos0)
           b.putInt(pos2 - pos1).position(pos2)
         }
@@ -415,17 +415,17 @@ object PacketCodec {
       //          case c: Char if( useChars )           =>
       case blob: ByteBuffer =>
         db.putInt(blob.remaining)
-        val pos = blob.position
+        val pos: Int = blob.position
         db.put(blob)
         blob.position(pos)
         padToAlign(db)
 
       case p: Packet    if usePackets =>
-        val pos   = db.position
+        val pos: Int = db.position
         val pos2  = pos + 4
         db.putInt(0) // dummy to skip to data; properly throws BufferOverflowException
         p.encode(this, db)
-        db.putInt(pos, db.position - pos2)
+        db.putInt(pos, (db.position: Int) - pos2)
 
       // be careful to place the Iterable after the Packet case, because
       // the packets extends linear seq!
@@ -701,14 +701,14 @@ trait PacketCodec {
   @throws(classOf[Exception])
   final def decodeBundle(b: ByteBuffer): Bundle =
     try {
-      val totalLimit  = b.limit
+      val totalLimit: Int = b.limit
       // N.B.: `scala.Seq` means `s.c.Seq` in Scala <= 2.12 and `s.c.i.Seq` in Scala >= 2.13
       // this is correct here, as pass it as var-args to `Bundle` which also changes in that respect.
       val p           = Seq.newBuilder[Packet]
       val timeTag     = b.getLong()
 
       while (b.hasRemaining) {
-        val sz = b.getInt() + b.position // msg size
+        val sz = b.getInt() + (b.position: Int) // msg size
         if (sz > totalLimit) throw new BufferUnderflowException
         b.limit(sz)
         p += decode(b)
