@@ -2,7 +2,7 @@
  * PacketCodec.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2018 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2020 Hanns Holger Rutz. All rights reserved.
  *
  * This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -313,13 +313,14 @@ object PacketCodec {
                            useNone:         Boolean,
                            useImpulse:      Boolean,
                            useTimetags:     Boolean,
-                           usePackets:      Boolean)
+                           usePackets:      Boolean,
+                          )
     extends PacketCodec {
     codec =>
 
-    private val decodeLongs     = useLongs    && !longToInt
-    private val decodeDoubles   = useDoubles  && !doubleToFloat
-    private val decodeBooleans  = useBooleans && !booleanToInt
+    private[this] final val decodeLongs     = useLongs    && !longToInt
+    private[this] final val decodeDoubles   = useDoubles  && !doubleToFloat
+    private[this] final val decodeBooleans  = useBooleans && !booleanToInt
 
     override def toString: String = s"PacketCodec@${hashCode().toHexString}"
 
@@ -440,7 +441,8 @@ object PacketCodec {
         atom.encodeData(codec, r, db)
     }
 
-    @inline private def decodeAtomData(tt: Byte, db: ByteBuffer): Any = (tt.toInt: @switch) match {
+    // XXX TODO --- https://github.com/lampepfl/dotty/issues/8634
+    @inline private def decodeAtomData(tt: Byte, db: ByteBuffer): Any = (tt.toInt /*: @switch*/) match {
       case 0x69                   => db.getInt()        // 'i'
       case 0x66                   => db.getFloat()      // 'f'
       case 0x73                   => decodeString(db)   // 's'

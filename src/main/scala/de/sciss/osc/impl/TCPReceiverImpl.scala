@@ -2,7 +2,7 @@
  * TCPReceiverImpl.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2018 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2020 Hanns Holger Rutz. All rights reserved.
  *
  * This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -26,10 +26,11 @@ private[osc] final class TCPReceiverImpl(val channel: SocketChannel,
 
   protected def receive(): Unit = {
     buf.rewind().limit(4) // in TCP mode, first four bytes are packet size in bytes
-    do {
+    while ({
       val len = channel.read(buf)
       if (len == -1) throw new ClosedChannelException
-    } while (buf.hasRemaining)
+      buf.hasRemaining
+    }) ()
 
     buf.rewind()
     val packetSize = buf.getInt()

@@ -2,7 +2,8 @@ package de.sciss.osc
 
 import java.nio.ByteBuffer
 
-import org.scalatest.{FeatureSpec, GivenWhenThen}
+import org.scalatest.featurespec.AnyFeatureSpec
+import org.scalatest.GivenWhenThen
 
 /*
   To run this test copy + paste the following into sbt:
@@ -10,7 +11,7 @@ import org.scalatest.{FeatureSpec, GivenWhenThen}
   test-only de.sciss.osc.ScalaOSCSuite
 
 */
-class ScalaOSCSuite extends FeatureSpec with GivenWhenThen {
+class ScalaOSCSuite extends AnyFeatureSpec with GivenWhenThen {
   val NUM_MESSAGES  = 5000
   val MAX_ARGS      = 100
   val MAX_NAME      = 40

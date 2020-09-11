@@ -2,7 +2,7 @@
  * Packet.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2018 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2020 Hanns Holger Rutz. All rights reserved.
  *
  * This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -266,29 +266,29 @@ sealed trait Packet {
 // they need to be in the same file due to the sealed restriction...
 
 object Bundle {
-   /** Creates a bundle with time-tag given by
-     * a system clock value in milliseconds since
-     * jan 1 1970, as returned by System.currentTimeMillis
-     */
-   def millis(abs: Long, packets: Packet*): Bundle =
-     new Bundle(TimeTag.millis(abs), packets: _*)
+  /** Creates a bundle with time-tag given by
+    * a system clock value in milliseconds since
+    * jan 1 1970, as returned by System.currentTimeMillis
+    */
+  def millis(abs: Long, packets: Packet*): Bundle =
+    new Bundle(TimeTag.millis(abs), packets: _*)
 
-   /** Creates a bundle with time-tag given by
-     * a relative value in seconds, as required
-     * for example for scsynth offline rendering
-     */
-   def secs(delta: Double, packets: Packet*): Bundle =
-     new Bundle(TimeTag.secs(delta), packets: _*)
+  /** Creates a bundle with time-tag given by
+    * a relative value in seconds, as required
+    * for example for scsynth offline rendering
+    */
+  def secs(delta: Double, packets: Packet*): Bundle =
+    new Bundle(TimeTag.secs(delta), packets: _*)
 
-   /** Creates a bundle with special time-tag 'now' */
-   def now(packets: Packet*): Bundle = new Bundle(TimeTag.now, packets: _*)
+  /** Creates a bundle with special time-tag 'now' */
+  def now(packets: Packet*): Bundle = new Bundle(TimeTag.now, packets: _*)
 }
 
 final case class Bundle(timeTag: TimeTag, packets: Packet*)
   extends Packet {
-
-	// ---- Packet implementation ----
-	def name: String = "#bundle" // Bundle.TAG
+  
+  // ---- Packet implementation ----
+  def name: String = "#bundle" // Bundle.TAG
 
   @throws(classOf[Exception])
   def encode(c: PacketCodec, b: ByteBuffer): Unit = c.encodeBundle(this, b)

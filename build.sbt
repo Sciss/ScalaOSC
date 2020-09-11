@@ -1,17 +1,25 @@
 lazy val commonSettings = Seq(
   name                  := "ScalaOSC",
-  version               := "1.2.1",
+  version               := "1.2.2",
   organization          := "de.sciss",
-  scalaVersion          := "2.12.10",
-  crossScalaVersions    := Seq("2.12.10", "2.13.1"),
+  scalaVersion          := "2.13.3",
+  crossScalaVersions    := Seq("0.27.0-RC1", "2.13.3", "2.12.12"),
   description           := "A library for OpenSoundControl (OSC), a message protocol used in multi-media applications.",
   homepage              := Some(url(s"https://git.iem.at/sciss/${name.value}")),
   licenses              := Seq("LGPL v2.1+" -> url("http://www.gnu.org/licenses/lgpl-2.1.txt")),
   libraryDependencies += {
-    "org.scalatest" %% "scalatest" % "3.1.0" % Test
+    "org.scalatest" %% "scalatest" % "3.2.2" % Test
   },
   scalacOptions       ++= Seq("-deprecation", "-unchecked", "-feature", "-Xsource:2.13", "-encoding", "utf8", "-Xlint:-stars-align,_"),
-  scalacOptions in (Compile, compile) ++= (if (scala.util.Properties.isJavaAtLeast("9")) Seq("-release", "8") else Nil), // JDK >8 breaks API; skip scala-doc
+  scalacOptions in (Compile, compile) ++= {
+    val jdkGt8  = scala.util.Properties.isJavaAtLeast("9")
+    val isDotty = scalaVersion.value.startsWith("0.")  // https://github.com/lampepfl/dotty/issues/8634 
+    if (!isDotty && jdkGt8) Seq("-release", "8") else Nil // JDK >8 breaks API; skip scala-doc
+  },
+  sources in (Compile, doc) := {
+    val isDotty = scalaVersion.value.startsWith("0.")  // https://github.com/lampepfl/dotty/issues/8634 
+    if (isDotty) Nil else (sources in (Compile, doc)).value // bug in dottydoc
+  },
   initialCommands in console :=
     """import de.sciss.osc._
       |import Implicits._

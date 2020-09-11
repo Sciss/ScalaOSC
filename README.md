@@ -1,16 +1,16 @@
 # ScalaOSC
 
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/Sciss/ScalaOSC?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Build Status](https://travis-ci.org/Sciss/ScalaOSC.svg?branch=master)](https://travis-ci.org/Sciss/ScalaOSC)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/de.sciss/scalaosc_2.12/badge.svg)](https://maven-badges.herokuapp.com/maven-central/de.sciss/scalaosc_2.12)
+[![Build Status](https://travis-ci.org/Sciss/ScalaOSC.svg?branch=main)](https://travis-ci.org/Sciss/ScalaOSC)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/de.sciss/scalaosc_2.13/badge.svg)](https://maven-badges.herokuapp.com/maven-central/de.sciss/scalaosc_2.13)
 <a href="https://liberapay.com/sciss/donate"><img alt="Donate using Liberapay" src="https://liberapay.com/assets/widgets/donate.svg" height="24"></a>
 
 ## statement
 
-ScalaOSC is an OpenSoundControl (OSC) library for the Scala programming language. It is (C)opyright 2008&ndash;2019
+ScalaOSC is an OpenSoundControl (OSC) library for the Scala programming language. It is (C)opyright 2008&ndash;2020
 by Hanns Holger Rutz. All rights reserved. ScalaOSC is released under 
-the [GNU Lesser General Public License](https://git.iem.at/sciss/ScalaOSC/raw/master/LICENSE) v2.1+ and comes with
-absolutely no warranties. To contact the author, send an email to `contact at sciss.de`
+the [GNU Lesser General Public License](https://git.iem.at/sciss/ScalaOSC/raw/main/LICENSE) v2.1+ and comes with
+absolutely no warranties. To contact the author, send an e-mail to `contact at sciss.de`
 
 Please consider supporting this project through Liberapay (see badge above) – thank you!
 
@@ -22,7 +22,7 @@ To link to ScalaOSC:
 
     libraryDependencies += "de.sciss" %% "scalaosc" % v
 
-The current version `v` is `"1.2.1"`
+The current version `v` is `"1.2.2"`
 
 ## contributing
 
