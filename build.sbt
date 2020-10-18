@@ -1,14 +1,26 @@
+lazy val deps = new {
+  val main = new {
+    val scalaJavaLocales = "1.0.0"
+  }
+  val test = new {
+    val scalaTest = "3.2.2"
+  }
+}
+
+lazy val commonJvmSettings = Seq(
+  crossScalaVersions    := Seq("0.27.0-RC1", "2.13.3", "2.12.12"),
+)
+
 lazy val commonSettings = Seq(
   name                  := "ScalaOSC",
   version               := "1.2.2",
   organization          := "de.sciss",
   scalaVersion          := "2.13.3",
-  crossScalaVersions    := Seq("0.27.0-RC1", "2.13.3", "2.12.12"),
   description           := "A library for OpenSoundControl (OSC), a message protocol used in multi-media applications.",
   homepage              := Some(url(s"https://git.iem.at/sciss/${name.value}")),
   licenses              := Seq("LGPL v2.1+" -> url("http://www.gnu.org/licenses/lgpl-2.1.txt")),
   libraryDependencies += {
-    "org.scalatest" %% "scalatest" % "3.2.2" % Test
+    "org.scalatest" %%% "scalatest" % deps.test.scalaTest % Test
   },
   scalacOptions       ++= Seq("-deprecation", "-unchecked", "-feature", "-Xsource:2.13", "-encoding", "utf8", "-Xlint:-stars-align,_"),
   scalacOptions in (Compile, compile) ++= {
@@ -26,9 +38,10 @@ lazy val commonSettings = Seq(
       |""".stripMargin
 )
 
-lazy val root = project.in(file("."))
+lazy val root = crossProject(JVMPlatform, JSPlatform).in(file("."))
   .enablePlugins(BuildInfoPlugin)
   .settings(commonSettings)
+  .jvmSettings(commonJvmSettings)
   .settings(publishSettings)
   .settings(
     buildInfoKeys := Seq(name, organization, version, scalaVersion, description,
@@ -36,6 +49,11 @@ lazy val root = project.in(file("."))
       BuildInfoKey.map(licenses) { case (_, Seq((lic, _))) => "license" -> lic }
     ),
     buildInfoPackage := "de.sciss.osc"
+  )
+  .jsSettings(
+    libraryDependencies ++= Seq(
+      "io.github.cquiroz" %%% "scala-java-locales" % deps.main.scalaJavaLocales
+    )
   )
 
 lazy val publishSettings = Seq(

@@ -1,6 +1,6 @@
 package de.sciss.osc
 
-import java.nio.ByteBuffer
+import java.nio.{Buffer, ByteBuffer}
 
 import org.scalatest.featurespec.AnyFeatureSpec
 import org.scalatest.GivenWhenThen
@@ -94,9 +94,9 @@ class ScalaOSCSuite extends AnyFeatureSpec with GivenWhenThen {
         //            when( "the codec is asked for the encoded message size" )
         val sz1 = c.encodedMessageSize(in)
         //            then( "the result should be equal to the size of the actually encoded message" )
-        bb.clear()
+        (bb: Buffer).clear()
         in.encode(c, bb)
-        bb.flip()
+        (bb: Buffer).flip()
         val sz2 = bb.limit()
 
         if (DUMP_IN) {
@@ -113,9 +113,9 @@ class ScalaOSCSuite extends AnyFeatureSpec with GivenWhenThen {
 
         //            when( "a decoded message is received" )
         //            then( "it should be possible to re-encode and then re-decode it" )
-        bb.clear()
+        (bb: Buffer).clear()
         out.encode(c, bb)
-        bb.flip()
+        (bb: Buffer).flip()
         val out2 = c.decode(bb).asInstanceOf[Message]
         //            then( "it should be equal to the input as well" )
         checkMessageEquality(in, out2)
@@ -125,7 +125,7 @@ class ScalaOSCSuite extends AnyFeatureSpec with GivenWhenThen {
       info("- the encoder should fail to operate")
 
       def throwAny(v: Any): Unit = {
-        bb.clear()
+        (bb: Buffer).clear()
         c.encodeMessage(Message("/test", v), bb)
         fail(s"Codec should not support argument '$v'")
       }
@@ -160,7 +160,7 @@ class ScalaOSCSuite extends AnyFeatureSpec with GivenWhenThen {
       val arr = new Array[Byte](b.remaining())
       val p   = b.position()
       b.get(arr)
-      b.position(p)
+      (b: Buffer).position(p)
       arr.toIndexedSeq
 
     case f: Float if f.isNaN => 0f // two NaNs do not report to be equal!
