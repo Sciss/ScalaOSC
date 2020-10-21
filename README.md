@@ -10,19 +10,27 @@
 ScalaOSC is an OpenSoundControl (OSC) library for the Scala programming language. It is (C)opyright 2008&ndash;2020
 by Hanns Holger Rutz. All rights reserved. ScalaOSC is released under 
 the [GNU Lesser General Public License](https://git.iem.at/sciss/ScalaOSC/raw/main/LICENSE) v2.1+ and comes with
-absolutely no warranties. To contact the author, send an e-mail to `contact at sciss.de`
+absolutely no warranties. To contact the author, send an e-mail to `contact at sciss.de`.
 
 Please consider supporting this project through Liberapay (see badge above) – thank you!
 
 ## requirements / installation
 
-ScalaOSC builds against Scala 2.13, 2.12 using sbt. The last version to support Scala 2.11 was 1.2.0.
+ScalaOSC builds with sbt against Scala 2.13, 2.12, Dotty (JVM).
+The last version to support Scala 2.11 was 1.2.0.
 
 To link to ScalaOSC:
 
     libraryDependencies += "de.sciss" %% "scalaosc" % v
 
 The current version `v` is `"1.2.2"`
+
+__N.B.:__ A version is published for Scala 2.13 on Scala.js, but due to type-safety issues it does not
+maintain the contract of the library under JVM. The artefact is published solely for the purpose of
+experimenting with Scala.js. To make ScalaOSC work correctly under Scala.js, a major rewrite will be necessary.
+You can use ScalaOSC under Scala.js, but numeric arguments may be misleadingly encoded; for example
+the floating-point number `1.0f` passed to `osc.Message` will be encoded with an integer `'i'` type-tag instead of
+the expected float `'f'` type-tag.
 
 ## contributing
 
@@ -39,7 +47,8 @@ one of the first systems to use OSC &ndash;, but also to communicate with hardwa
 OSC is a generic protocol and not restricted to sound applications:
 For example, [SwingOSC](http://www.sciss.de/swingOSC/) uses OSC to provide network access to the Java Virtual Machine.
 
-For more information, known implementations and the protocol standard, visit [opensoundcontrol.org](http://opensoundcontrol.org/).
+For more information, known implementations and the protocol standard, visit 
+[opensoundcontrol.org](http://opensoundcontrol.org/).
 
 ## implementation
 
@@ -162,7 +171,8 @@ client ! Message("/ping", 1, 2.3f)
 
 Further examples can be found in the headers of the API docs, e.g. by looking up the documentation for `UDP.Client`.
 
-ScalaOSC is used in the [ScalaCollider](http://www.sciss.de/scalaCollider/) project, so you may take a look at its usage there.
+ScalaOSC is used in the [ScalaCollider](http://www.sciss.de/scalaCollider/) project, so you may take a look at its
+usage there.
 
 ## todo
 
