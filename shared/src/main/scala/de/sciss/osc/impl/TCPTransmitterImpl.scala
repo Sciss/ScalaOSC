@@ -16,6 +16,7 @@ package impl
 
 import java.io.IOException
 import java.net.SocketAddress
+import java.nio.Buffer
 import java.nio.channels.SocketChannel
 
 private[osc] final class TCPTransmitterImpl(val channel: SocketChannel,
@@ -29,11 +30,11 @@ private[osc] final class TCPTransmitterImpl(val channel: SocketChannel,
 
   @throws(classOf[IOException])
   def ! (p: Packet): Unit = bufSync.synchronized {
-    buf.clear()
-    buf.position(4)
+    (buf: Buffer).clear()
+    (buf: Buffer).position(4)
     p.encode(codec, buf)
     val len = buf.position() - 4
-    buf.flip()
+    (buf: Buffer).flip()
     buf.putInt(0, len)
     dumpPacket(p)
     channel.write(buf)

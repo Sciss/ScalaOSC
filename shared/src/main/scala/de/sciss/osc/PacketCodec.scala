@@ -14,7 +14,7 @@
 package de.sciss.osc
 
 import java.io.{IOException, PrintStream}
-import java.nio.{BufferOverflowException, BufferUnderflowException, ByteBuffer}
+import java.nio.{Buffer, BufferOverflowException, BufferUnderflowException, ByteBuffer}
 
 import de.sciss.osc.Packet._
 
@@ -328,14 +328,14 @@ object PacketCodec {
       val pos1: Int = b.position
       while (b.get() != 0) {}
       val pos2  = (b.position: Int) - 1
-      b.position(pos1)
+      (b: Buffer).position(pos1)
       val len   = pos2 - pos1
       val bytes = new Array[Byte](len)
       b.get(bytes, 0, len)
       val s     = new String(bytes, charsetName)
       val pos3  = (pos2 + 4) & ~3
       if (pos3 > (b.limit: Int)) throw new BufferUnderflowException
-      b.position(pos3)
+      (b: Buffer).position(pos3)
       s
     }
 
@@ -355,8 +355,8 @@ object PacketCodec {
           val pos1: Int = b.position
           p.encode(codec, b)
           val pos2: Int = b.position
-          b.position(pos0)
-          b.putInt(pos2 - pos1).position(pos2)
+          (b: Buffer).position(pos0)
+          (b.putInt(pos2 - pos1): Buffer).position(pos2)
         }
       } catch {
         case e: BufferOverflowException => throw PacketCodec.BufferOverflow(bndl.name, e)
@@ -418,7 +418,7 @@ object PacketCodec {
         db.putInt(blob.remaining)
         val pos: Int = blob.position
         db.put(blob)
-        blob.position(pos)
+        (blob: Buffer).position(pos)
         padToAlign(db)
 
       case p: Packet    if usePackets =>
@@ -712,9 +712,9 @@ trait PacketCodec {
       while (b.hasRemaining) {
         val sz = b.getInt() + (b.position: Int) // msg size
         if (sz > totalLimit) throw new BufferUnderflowException
-        b.limit(sz)
+        (b: Buffer).limit(sz)
         p += decode(b)
-        b.limit(totalLimit)
+        (b: Buffer).limit(totalLimit)
       }
       new Bundle(new TimeTag(timeTag), p.result(): _*)
     } catch {

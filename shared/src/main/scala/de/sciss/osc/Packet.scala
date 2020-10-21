@@ -14,7 +14,7 @@
 package de.sciss.osc
 
 import java.io.PrintStream
-import java.nio.{BufferOverflowException, BufferUnderflowException, ByteBuffer}
+import java.nio.{Buffer, BufferOverflowException, BufferUnderflowException, ByteBuffer}
 
 object Packet {
   private val HEX = "0123456789ABCDEF".getBytes
@@ -62,7 +62,7 @@ object Packet {
       txt(56) = 0x7C.toByte
 
       stream.println()
-      b.position(0)
+      (b: Buffer).position(0)
       i = 0; while (i < lim) {
         j = 0
         txt(j) = HEX((i >> 12) & 0xF); j += 1
@@ -92,7 +92,7 @@ object Packet {
       }
       stream.println()
     } finally {
-      b.position(pos0)
+      (b: Buffer).position(pos0)
     }
   }
 
@@ -143,7 +143,7 @@ object Packet {
     while (b.get != 0) ()
     val len = (b.position: Int) - pos
     val bytes = new Array[Byte](len)
-    b.position(pos)
+    (b: Buffer).position(pos)
     b.get(bytes)
     new String(bytes, 0, len - 1)
   }
@@ -192,7 +192,7 @@ object Packet {
     while (b.get != 0x00) ()
     val newPos = ((b.position: Int) + 3) & ~3
     if (newPos > (b.limit: Int)) throw new BufferUnderflowException
-    b.position(newPos)
+    (b: Buffer).position(newPos)
   }
 
   /** Advances the current buffer position
@@ -209,7 +209,7 @@ object Packet {
   def skipToAlign(b: ByteBuffer): Unit = {
     val newPos = ((b.position: Int) + 3) & ~3
     if (newPos > (b.limit: Int)) throw new BufferUnderflowException
-    b.position(newPos)
+    (b: Buffer).position(newPos)
   }
 
   object Atom {

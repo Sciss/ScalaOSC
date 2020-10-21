@@ -2,8 +2,8 @@ package de.sciss.osc
 
 import java.nio.{Buffer, ByteBuffer}
 
-import org.scalatest.featurespec.AnyFeatureSpec
 import org.scalatest.GivenWhenThen
+import org.scalatest.featurespec.AnyFeatureSpec
 
 /*
   To run this test copy + paste the following into sbt:

@@ -16,6 +16,7 @@ package impl
 
 import java.io.IOException
 import java.net.SocketAddress
+import java.nio.Buffer
 import java.nio.channels.DatagramChannel
 
 private[osc] final class UndirectedUDPTransmitterImpl(val channel: DatagramChannel,
@@ -26,9 +27,9 @@ private[osc] final class UndirectedUDPTransmitterImpl(val channel: DatagramChann
 
   @throws(classOf[IOException])
   def send(p: Packet, target: SocketAddress): Unit = bufSync.synchronized {
-    buf.clear()
+    (buf: Buffer).clear()
     p.encode(codec, buf)
-    buf.flip()
+    (buf: Buffer).flip()
     dumpPacket(p)
     channel.send(buf, target)
   }

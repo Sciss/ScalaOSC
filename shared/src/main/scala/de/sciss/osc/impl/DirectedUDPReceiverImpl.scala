@@ -15,6 +15,7 @@ package de.sciss.osc
 package impl
 
 import java.net.SocketAddress
+import java.nio.Buffer
 import java.nio.channels.DatagramChannel
 
 private[osc] final class DirectedUDPReceiverImpl(val channel: DatagramChannel,
@@ -27,7 +28,7 @@ private[osc] final class DirectedUDPReceiverImpl(val channel: DatagramChannel,
   protected def connectChannel(): Unit = if (!channel.isConnected) channel.connect(target)
 
   protected def receive(): Unit = {
-    buf.clear()
+    (buf: Buffer).clear()
     channel.receive(buf)
     flipDecodeDispatch()
   }

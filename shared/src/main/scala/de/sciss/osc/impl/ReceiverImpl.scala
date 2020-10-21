@@ -16,6 +16,7 @@ package impl
 
 import java.io.IOException
 import java.net.SocketAddress
+import java.nio.Buffer
 import java.nio.channels.{AsynchronousCloseException, ClosedChannelException}
 
 import scala.util.control.NonFatal
@@ -59,7 +60,7 @@ private[osc] trait DirectedReceiverImpl extends ReceiverImpl with DirectedInputI
 
   @throws(classOf[PacketCodec.Exception])
   final protected def flipDecodeDispatch(): Unit = {
-    buf.flip()
+    (buf: Buffer).flip()
     val p = codec.decode(buf)
     dumpPacket(p)
     try {
@@ -87,7 +88,7 @@ private[osc] trait UndirectedNetReceiverImpl extends ReceiverImpl with Undirecte
   @throws(classOf[Exception])
   protected final def flipDecodeDispatch(sender: SocketAddress): Unit =
     if (sender != null) /* try */ {
-      buf.flip()
+      (buf: Buffer).flip()
       val p = codec.decode(buf)
       dumpPacket(p)
       try {

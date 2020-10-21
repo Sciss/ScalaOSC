@@ -13,7 +13,7 @@ lazy val commonJvmSettings = Seq(
 
 lazy val commonSettings = Seq(
   name                  := "ScalaOSC",
-  version               := "1.2.2",
+  version               := "1.2.3",
   organization          := "de.sciss",
   scalaVersion          := "2.13.3",
   description           := "A library for OpenSoundControl (OSC), a message protocol used in multi-media applications.",
@@ -24,13 +24,11 @@ lazy val commonSettings = Seq(
   },
   scalacOptions       ++= Seq("-deprecation", "-unchecked", "-feature", "-Xsource:2.13", "-encoding", "utf8", "-Xlint:-stars-align,_"),
   scalacOptions in (Compile, compile) ++= {
-    val jdkGt8  = scala.util.Properties.isJavaAtLeast("9")
-    val isDotty = scalaVersion.value.startsWith("0.")  // https://github.com/lampepfl/dotty/issues/8634 
-    if (!isDotty && jdkGt8) Seq("-release", "8") else Nil // JDK >8 breaks API; skip scala-doc
+    val jdkGt8 = scala.util.Properties.isJavaAtLeast("9")
+    if (!isDotty.value && jdkGt8) Seq("-release", "8") else Nil // JDK >8 breaks API; skip scala-doc
   },
   sources in (Compile, doc) := {
-    val isDotty = scalaVersion.value.startsWith("0.")  // https://github.com/lampepfl/dotty/issues/8634 
-    if (isDotty) Nil else (sources in (Compile, doc)).value // bug in dottydoc
+    if (isDotty.value) Nil else (sources in (Compile, doc)).value // bug in dottydoc
   },
   initialCommands in console :=
     """import de.sciss.osc._

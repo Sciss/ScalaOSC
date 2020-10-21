@@ -15,6 +15,7 @@ package de.sciss.osc
 package impl
 
 import java.net.SocketAddress
+import java.nio.Buffer
 import java.nio.channels.{ClosedChannelException, SocketChannel}
 
 private[osc] final class TCPReceiverImpl(val channel: SocketChannel,
@@ -25,16 +26,16 @@ private[osc] final class TCPReceiverImpl(val channel: SocketChannel,
   def isConnected: Boolean = channel.isConnected && isThreadRunning
 
   protected def receive(): Unit = {
-    buf.rewind().limit(4) // in TCP mode, first four bytes are packet size in bytes
+    (buf: Buffer).rewind().limit(4) // in TCP mode, first four bytes are packet size in bytes
     while ({
       val len = channel.read(buf)
       if (len == -1) throw new ClosedChannelException
       buf.hasRemaining
     }) ()
 
-    buf.rewind()
+    (buf: Buffer).rewind()
     val packetSize = buf.getInt()
-    buf.rewind().limit(packetSize)
+    (buf: Buffer).rewind().limit(packetSize)
 
     while (buf.hasRemaining) {
       val len = channel.read(buf)

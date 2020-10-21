@@ -14,6 +14,7 @@
 package de.sciss.osc
 package impl
 
+import java.nio.Buffer
 import java.nio.channels.DatagramChannel
 
 private[osc] final class UndirectedUDPReceiverImpl(val channel: DatagramChannel,
@@ -21,7 +22,7 @@ private[osc] final class UndirectedUDPReceiverImpl(val channel: DatagramChannel,
   extends UndirectedNetReceiverImpl with UDPChannelImpl with Channel.Undirected.Input.Net {
 
   protected def receive(): Unit = {
-    buf.clear()
+    (buf: Buffer).clear()
     val sender = channel.receive(buf)
     flipDecodeDispatch(sender)
   }
