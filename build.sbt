@@ -3,12 +3,12 @@ lazy val deps = new {
     val scalaJavaLocales = "1.0.0"
   }
   val test = new {
-    val scalaTest = "3.2.2"
+    val scalaTest = "3.2.3"
   }
 }
 
 lazy val commonJvmSettings = Seq(
-  crossScalaVersions    := Seq("0.27.0-RC1", "2.13.3", "2.12.12"),
+  crossScalaVersions    := Seq("3.0.0-M1", "2.13.3", "2.12.12"),
 )
 
 lazy val commonSettings = Seq(
