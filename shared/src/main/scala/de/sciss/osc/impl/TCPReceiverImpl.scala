@@ -2,7 +2,7 @@
  * TCPReceiverImpl.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2020 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2021 Hanns Holger Rutz. All rights reserved.
  *
  * This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -21,7 +21,7 @@ import java.nio.channels.{ClosedChannelException, SocketChannel}
 private[osc] final class TCPReceiverImpl(val channel: SocketChannel,
                                          protected val target: SocketAddress,
                                          protected val config: TCP.Config)
-  extends DirectedReceiverImpl with TCPSingleChannelImpl {
+  extends DirectedReceiverImpl with SingleChannelDirectImpl with ThreadedReceiverImpl with TCPSingleChannelImpl {
 
   def isConnected: Boolean = channel.isConnected && isThreadRunning
 

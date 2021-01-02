@@ -2,7 +2,7 @@
  * Receiver.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2020 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2021 Hanns Holger Rutz. All rights reserved.
  *
  * This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -24,7 +24,9 @@ object Receiver {
   }
 
   object Undirected {
+    @deprecated("Will be removed", since = "1.2.4")
     type Action = (Packet, SocketAddress) => Unit
+    @deprecated("Will be removed", since = "1.2.4")
     val NoAction: Action = (_, _) => ()
 
     val  Net = Channel.Undirected.Input.Net
@@ -34,7 +36,9 @@ object Receiver {
    // convenient redirection
 
   def apply(target: SocketAddress, config: Channel.Net.Config): Receiver.Directed.Net = config match {
-    case udp: UDP.Config => UDP.Receiver(target, udp)
-    case tcp: TCP.Config => TCP.Receiver(target, tcp)
+    case udp: UDP     .Config => UDP    .Receiver(target, udp )
+    case tcp: TCP     .Config => TCP    .Receiver(target, tcp )
+    case b  : Browser .Config => Browser.Receiver(target, b   )
+    case _ => throw new IllegalArgumentException(s"Unsupported config $config")
   }
 }

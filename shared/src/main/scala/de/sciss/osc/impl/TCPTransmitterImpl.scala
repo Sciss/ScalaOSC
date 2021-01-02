@@ -2,7 +2,7 @@
  * TCPTransmitterImpl.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2020 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2021 Hanns Holger Rutz. All rights reserved.
  *
  * This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -22,11 +22,14 @@ import java.nio.channels.SocketChannel
 private[osc] final class TCPTransmitterImpl(val channel: SocketChannel,
                                             protected val target: SocketAddress,
                                             protected val config: TCP.Config)
-  extends TransmitterImpl with TCPSingleChannelImpl with Channel.Directed.Output {
+  extends TransmitterImpl with SingleChannelDirectImpl with TCPSingleChannelImpl with Channel.Directed.Output {
 
   override def toString: String = s"${TCP.name}.Transmitter($target)@${hashCode().toHexString}"
 
   def isConnected: Boolean = channel.isConnected
+
+  @throws(classOf[IOException])
+  def connect(): Unit = connectChannel()
 
   @throws(classOf[IOException])
   def ! (p: Packet): Unit = bufSync.synchronized {

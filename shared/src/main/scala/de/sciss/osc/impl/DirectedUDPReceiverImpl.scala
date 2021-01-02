@@ -2,7 +2,7 @@
  * DirectedUDPReceiverImpl.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2020 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2021 Hanns Holger Rutz. All rights reserved.
  *
  * This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -21,7 +21,7 @@ import java.nio.channels.DatagramChannel
 private[osc] final class DirectedUDPReceiverImpl(val channel: DatagramChannel,
                                                  protected val target: SocketAddress,
                                                  protected val config: UDP.Config)
-  extends DirectedReceiverImpl with UDPChannelImpl {
+  extends DirectedReceiverImpl with SingleChannelDirectImpl with ThreadedReceiverImpl with UDPChannelImpl {
 
   def isConnected: Boolean = channel.isConnected && isThreadRunning
 

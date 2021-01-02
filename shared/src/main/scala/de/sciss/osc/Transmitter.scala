@@ -2,7 +2,7 @@
  * Transmitter.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2020 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2021 Hanns Holger Rutz. All rights reserved.
  *
  * This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -32,7 +32,9 @@ object Transmitter {
   // convenient redirection
 
   def apply(target: SocketAddress, config: Channel.Net.Config): Transmitter.Directed.Net = config match {
-    case udp: UDP.Config => UDP.Transmitter(target, udp)
-    case tcp: TCP.Config => TCP.Transmitter(target, tcp)
+    case udp: UDP     .Config => UDP    .Transmitter(target, udp)
+    case tcp: TCP     .Config => TCP    .Transmitter(target, tcp)
+    case b  : Browser .Config => Browser.Transmitter(target, b  )
+    case _ => throw new IllegalArgumentException(s"Unsupported config $config")
   }
 }

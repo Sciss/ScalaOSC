@@ -2,7 +2,7 @@
  * ReceiverImpl.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2020 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2021 Hanns Holger Rutz. All rights reserved.
  *
  * This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -21,8 +21,15 @@ import java.nio.channels.{AsynchronousCloseException, ClosedChannelException}
 
 import scala.util.control.NonFatal
 
-private[osc] trait ReceiverImpl extends SingleInputChannelImpl with ThreadedImpl {
+private[osc] trait ThreadedReceiverImpl extends SingleInputChannelImpl with ThreadedImpl {
   rcv =>
+
+  /** Requests to connect the network channel. This may be called several
+    * times, and the implementation should ignore the call when the channel
+    * is already connected.
+    */
+  @throws(classOf[IOException])
+  protected def connectChannel(): Unit
 
   final protected def threadLoop(): Unit =
     try {
@@ -55,7 +62,7 @@ private[osc] trait ReceiverImpl extends SingleInputChannelImpl with ThreadedImpl
     */
 }
 
-private[osc] trait DirectedReceiverImpl extends ReceiverImpl with DirectedInputImpl {
+private[osc] trait DirectedReceiverImpl extends SingleInputChannelImpl /*ReceiverImpl*/ with DirectedInputImpl {
   override def toString: String = s"${transport.name}.Receiver($target)@${hashCode().toHexString}"
 
   @throws(classOf[PacketCodec.Exception])
@@ -71,13 +78,13 @@ private[osc] trait DirectedReceiverImpl extends ReceiverImpl with DirectedInputI
   }
 }
 
-private[osc] trait UndirectedNetReceiverImpl extends ReceiverImpl with UndirectedNetInputImpl {
+private[osc] trait UndirectedNetReceiverImpl extends SingleInputChannelImpl /*ReceiverImpl*/ with UndirectedNetInputImpl {
 
   @throws(classOf[IOException])
   protected final def connectChannel(): Unit = ()
 
   // XXX or: if( !isOpen ) throw new ChannelClosedException ?
-  final def isConnected: Boolean = isOpen && isThreadRunning
+  // final def isConnected: Boolean = isOpen && isThreadRunning
 
   override def toString: String = s"${transport.name}.Receiver@${hashCode().toHexString}"
 

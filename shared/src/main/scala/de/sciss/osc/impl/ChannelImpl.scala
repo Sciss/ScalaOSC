@@ -2,7 +2,7 @@
  * ChannelImpl.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2020 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2021 Hanns Holger Rutz. All rights reserved.
  *
  * This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -25,20 +25,18 @@ private[osc] trait ChannelImpl extends Channel {
   final def isOpen    : Boolean     = channel.isOpen
 }
 
+private[osc] trait SingleChannelDirectImpl extends SingleChannelImpl {
+  final protected val buf: ByteBuffer = ByteBuffer.allocateDirect(config.bufferSize)
+}
+
 private[osc] trait SingleChannelImpl extends ChannelImpl {
   @volatile protected var dumpMode   : Dump         = Dump.Off
   @volatile protected var printStream: PrintStream  = Console.err
   @volatile protected var dumpFilter : Dump.Filter  = Dump.AllPackets
 
   final protected val bufSync = new AnyRef
-  final protected val buf     = ByteBuffer.allocateDirect(config.bufferSize)
 
-  /** Requests to connect the network channel. This may be called several
-    * times, and the implementation should ignore the call when the channel
-    * is already connected.
-    */
-  @throws(classOf[IOException])
-  protected def connectChannel(): Unit
+  protected def buf: ByteBuffer
 
   final def dump(mode: Dump, stream: PrintStream, filter: Dump.Filter): Unit = {
     dumpMode    = mode

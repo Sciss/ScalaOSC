@@ -2,7 +2,7 @@
  * PacketCodec.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2020 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2021 Hanns Holger Rutz. All rights reserved.
  *
  * This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -18,7 +18,6 @@ import java.nio.{Buffer, BufferOverflowException, BufferUnderflowException, Byte
 
 import de.sciss.osc.Packet._
 
-import scala.annotation.switch
 import scala.language.implicitConversions
 
 /** A packet codec defines how the translation between Java objects
@@ -527,12 +526,12 @@ object PacketCodec {
           val v = it.next()
           tsz += 1
           dsz += ((v match {
-            case i: Int                             => 4
-            case f: Float                           => 4
+            case _: Int                             => 4
+            case _: Float                           => 4
             case s: String                          => (s.getBytes(charsetName).length + 4) & ~3
-            case h: Long            if useLongs     => if (longToInt    ) 4 else 8
-            case d: Double          if useDoubles   => if (doubleToFloat) 4 else 8
-            case b: Boolean         if useBooleans  => if (booleanToInt ) 4 else 0
+            case _: Long            if useLongs     => if (longToInt    ) 4 else 8
+            case _: Double          if useDoubles   => if (doubleToFloat) 4 else 8
+            case _: Boolean         if useBooleans  => if (booleanToInt ) 4 else 0
             // case c: Char if( useChars ) => 4
             case blob: ByteBuffer                   => (blob.remaining() + 7) & ~3
             case p: Packet          if usePackets   => p.encodedSize(codec) + 4
@@ -543,8 +542,8 @@ object PacketCodec {
               tsz += tsz1 + 1 // a tag for each element plus terminator
               dsz1
             case None               if useNone      => 0
-            case u: Unit            if useImpulse   => 0
-            case t: TimeTag         if useTimetags  => 8
+            case _: Unit            if useImpulse   => 0
+            case _: TimeTag         if useTimetags  => 8
             case s: Symbol          if useSymbols   => (s.name.getBytes(charsetName).length + 4) & ~3
             case r: AnyRef =>
               // val r = v.asInstanceOf[ AnyRef ]

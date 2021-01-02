@@ -6,7 +6,7 @@ object VariousTests {
 //	def codec() {
 //// NOTE: scalacheck doesn't seem to be compatible with
 ////		 scala 2.8 BETA, and i cannot get the sources
-//// 		 to compile due to more stupid dependancies.
+//// 		 to compile due to more stupid dependencies.
 //// 	     so screw scalacheck for the moment....
 ///*
 //		import _root_.org.scalacheck._
@@ -33,10 +33,10 @@ object VariousTests {
 //			(decArgs == msg.args) :| ("args before: " + msg.args + " / after: " + decArgs.toList )
 //		}
 //		c = new PacketCodec( PacketCodec.MODE_STRICT_V1 )
-//		val strictProp = forAll( strictListGen )( checka )
+//		val strictProp = forAll( strictListGen )( check )
 //		strictProp.check
 //		c = new PacketCodec( PacketCodec.MODE_FAT_V1 )
-//		val fatProp = forAll( fatListGen )( checka )
+//		val fatProp = forAll( fatListGen )( check )
 //		fatProp.check
 //*/
 //	}

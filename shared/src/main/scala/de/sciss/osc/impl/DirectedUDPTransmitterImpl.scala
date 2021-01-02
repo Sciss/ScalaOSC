@@ -2,7 +2,7 @@
  * DirectedUDPTransmitterImpl.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2020 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2021 Hanns Holger Rutz. All rights reserved.
  *
  * This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -27,7 +27,7 @@ private[osc] final class DirectedUDPTransmitterImpl(val channel: DatagramChannel
   override def toString: String = s"${transport.name}.Transmitter@${hashCode().toHexString}"
 
   @throws(classOf[IOException])
-  protected def connectChannel(): Unit =
+  def connect(): Unit =
     if (!isConnected) channel.connect(target)
 
   def isConnected: Boolean = channel.isConnected

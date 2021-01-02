@@ -1,17 +1,16 @@
 package de.sciss.osc
 
-import java.nio.{Buffer, ByteBuffer}
-
-import org.scalatest.GivenWhenThen
 import org.scalatest.featurespec.AnyFeatureSpec
+
+import java.nio.{Buffer, ByteBuffer}
 
 /*
   To run this test copy + paste the following into sbt:
 
-  test-only de.sciss.osc.ScalaOSCSuite
+  testOnly de.sciss.osc.ScalaOSCSuite
 
 */
-class ScalaOSCSuite extends AnyFeatureSpec with GivenWhenThen {
+class ScalaOSCSuite extends AnyFeatureSpec {
   val NUM_MESSAGES  = 5000
   val MAX_ARGS      = 100
   val MAX_NAME      = 40
@@ -19,14 +18,14 @@ class ScalaOSCSuite extends AnyFeatureSpec with GivenWhenThen {
   val RAND_SEED     = 0L
   val DUMP_IN       = false
 
-  feature("Conforming messages can be en- and decoded") {
+  Feature("Conforming messages can be en- and decoded") {
     info ("Several random messages are generated")
     info ("with args conforming to different codec specs")
 
     val rnd = new util.Random(RAND_SEED)
 
-    def scenarioWithTime(name: String, descr: String)(body: => Unit): Unit =
-      scenario(descr) {
+    def ScenarioWithTime(name: String, descr: String)(body: => Unit): Unit =
+      Scenario(descr) {
         val t1 = System.currentTimeMillis()
         body
         val t2 = System.currentTimeMillis()
@@ -78,7 +77,7 @@ class ScalaOSCSuite extends AnyFeatureSpec with GivenWhenThen {
 
     def randStrictArg(): Any = wchoose(strictArgs)(_._1)._2()
 
-    scenarioWithTime("strict", "Strict 1.0 codec is verified") {
+    ScenarioWithTime("strict", "Strict 1.0 codec is verified") {
       val c   = PacketCodec().build
       val bb  = ByteBuffer.allocate(8192)
 
@@ -87,7 +86,7 @@ class ScalaOSCSuite extends AnyFeatureSpec with GivenWhenThen {
       info("- the decoded messages should be equal to their input")
       info("- it should be possible to re-encode and re-decode the decoded messages")
 
-      for (i <- 0 until NUM_MESSAGES) {
+      for (_ <- 0 until NUM_MESSAGES) {
         val numArgs = rnd.nextInt(MAX_ARGS)
         val in      = Message(randName(), Seq.fill(numArgs)(randStrictArg()): _*)
 
@@ -136,11 +135,11 @@ class ScalaOSCSuite extends AnyFeatureSpec with GivenWhenThen {
         throwAny(false) // booleans not supported
         throwAny(Message("/m")) // packets not supported
       } catch {
-        case pce: PacketCodec.Exception => // expected
+        case _: PacketCodec.Exception => // expected
       }
     }
 
-    scenario("Nested bundle coding") {
+    Scenario("Nested bundle coding") {
       NestedBundleTest.run()
     }
   }

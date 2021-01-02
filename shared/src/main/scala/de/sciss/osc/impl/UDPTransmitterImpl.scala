@@ -2,7 +2,7 @@
  * UDPTransmitterImpl.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2020 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2021 Hanns Holger Rutz. All rights reserved.
  *
  * This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -14,4 +14,4 @@
 package de.sciss.osc
 package impl
 
-private[osc] trait UDPTransmitterImpl extends TransmitterImpl with UDPChannelImpl
+private[osc] trait UDPTransmitterImpl extends TransmitterImpl with SingleChannelDirectImpl with UDPChannelImpl

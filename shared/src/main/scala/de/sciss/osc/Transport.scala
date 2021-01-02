@@ -2,7 +2,7 @@
  * Transport.scala
  * (ScalaOSC)
  *
- * Copyright (c) 2008-2020 Hanns Holger Rutz. All rights reserved.
+ * Copyright (c) 2008-2021 Hanns Holger Rutz. All rights reserved.
  *
  * This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -15,7 +15,6 @@ package de.sciss.osc
 
 import java.net.SocketAddress
 import java.nio.channels.{DatagramChannel, ServerSocketChannel, SocketChannel}
-
 import de.sciss.osc.{Channel => OSCChannel, Client => OSCClient, Receiver => OSCReceiver, Server => OSCServer, Transmitter => OSCTransmitter}
 
 import scala.language.implicitConversions
@@ -27,10 +26,10 @@ object Transport {
   sealed trait Net extends Transport
 
   def apply(name: String): Transport = name.toUpperCase match {
-    case UDP .name  => UDP
-    case TCP .name  => TCP
-    case File.name  => File
-    case _          => throw new IllegalArgumentException(name)
+    case UDP    .name => UDP
+    case TCP    .name => TCP
+    case Browser.name => Browser
+    case _            => throw new IllegalArgumentException(name)
   }
 }
 
@@ -189,7 +188,49 @@ case object TCP extends Transport.Net {
   }
 }
 
-/** XXX TODO -- this transport has not yet been implemented. */
+/** XXX TODO -- this transport has not yet been implemented. Remove in major version */
+@deprecated("This transport is unsupported and will be removed", since = "1.2.4")
 case object File extends Transport {
   final val name = "File"
+}
+
+/** A simple direct invocation protocol for communication client-side within a browser.
+  * Encoding and decoding goes through JavaScript's `Uint8Array`.
+  */
+case object Browser extends Transport.Net {
+  final val name = "Browser"
+
+  object Config {
+    def default: Config = apply().build
+
+    implicit def build(b: ConfigBuilder): Config = b.build
+
+    def apply(): ConfigBuilder = new impl.BrowserConfigBuilderImpl
+  }
+
+  trait Config extends OSCChannel.Net.Config {
+    override final def toString: String = s"$name.Config@${hashCode().toHexString}"
+  }
+
+  trait ConfigBuilder extends OSCChannel.Net.ConfigBuilder {
+    override final def toString: String = s"$name.ConfigBuilder@${hashCode().toHexString}"
+
+    override def build: Config
+  }
+
+  object Transmitter extends BrowserTransmitterPlatform {
+    type Directed   = OSCTransmitter.Directed  .Net with Channel
+    type Undirected = OSCTransmitter.Undirected.Net with Channel
+  }
+
+  object Receiver extends BrowserReceiverPlatform {
+    type Directed   = OSCReceiver.Directed with OSCReceiver.Net
+    type Undirected = OSCReceiver.Undirected.Net
+  }
+
+  trait Channel extends OSCChannel with OSCChannel.Net.ConfigLike
+
+  object Client extends BrowserClientPlatform
+
+  type Client = OSCClient with Channel
 }

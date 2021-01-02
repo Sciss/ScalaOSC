@@ -1,4 +1,7 @@
-lazy val projectVersion = "1.2.3"
+lazy val baseName       = "ScalaOSC"
+lazy val baseNameL      = baseName.toLowerCase()
+lazy val projectVersion = "1.2.4-SNAPSHOT"
+lazy val mimaVersion    = "1.2.0"
 
 lazy val deps = new {
   val main = new {
@@ -13,13 +16,12 @@ lazy val deps = new {
 ThisBuild / version      := projectVersion
 ThisBuild / organization := "de.sciss"
 
-
 lazy val commonJvmSettings = Seq(
-  crossScalaVersions    := Seq("3.0.0-M2", "2.13.4", "2.12.12"),
+  crossScalaVersions    := Seq("3.0.0-M2", "2.13.4", "2.12.12"),  // 3.0.0-M3 ScalaTest is not working yet
 )
 
 lazy val commonSettings = Seq(
-  name                  := "ScalaOSC",
+  name                  := baseName,
 //  version               := projectVersion,
 //  organization          := "de.sciss",
   scalaVersion          := "2.13.4",
@@ -29,7 +31,10 @@ lazy val commonSettings = Seq(
   libraryDependencies += {
     "org.scalatest" %%% "scalatest" % deps.test.scalaTest % Test
   },
-  scalacOptions       ++= Seq("-deprecation", "-unchecked", "-feature", "-Xsource:2.13", "-encoding", "utf8", "-Xlint:-stars-align,_"),
+  scalacOptions       ++= Seq("-deprecation", "-unchecked", "-feature", "-encoding", "utf8"),
+  scalacOptions ++= {
+    if (isDotty.value) Nil else Seq("-Xsource:2.13", "-Xlint:-stars-align,_")
+  },
   scalacOptions in (Compile, compile) ++= {
     val jdkGt8 = scala.util.Properties.isJavaAtLeast("9")
     if (!isDotty.value && jdkGt8) Seq("-release", "8") else Nil // JDK >8 breaks API; skip scala-doc
@@ -53,7 +58,8 @@ lazy val root = crossProject(JVMPlatform, JSPlatform).in(file("."))
       BuildInfoKey.map(homepage) { case (k, opt)           => k -> opt.get },
       BuildInfoKey.map(licenses) { case (_, Seq((lic, _))) => "license" -> lic }
     ),
-    buildInfoPackage := "de.sciss.osc"
+    buildInfoPackage := "de.sciss.osc",
+    mimaPreviousArtifacts := Set("de.sciss" %% baseNameL % mimaVersion),
   )
   .jsSettings(
     libraryDependencies ++= Seq(
