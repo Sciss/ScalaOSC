@@ -14,11 +14,9 @@
 package de.sciss.osc
 package impl
 
-import java.net.SocketAddress
-
-private[osc] final class BrowserClientImpl(protected val target: SocketAddress,
+private[osc] final class BrowserClientImpl(protected val target: Browser.Address,
                                            protected val config: Browser.Config)
-  extends ClientImpl with BrowserChannelImpl {
+  extends ClientImpl[Browser.Address] with BrowserChannelImpl {
 
   protected val input : Browser.Receiver   .Directed = Browser.Receiver   (target, config)
   protected val output: Browser.Transmitter.Directed = Browser.Transmitter(target, config)

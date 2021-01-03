@@ -20,7 +20,7 @@ import java.nio.channels.DatagramChannel
 private[osc] final class UDPClientImpl(val channel: DatagramChannel,
                                        protected val target: SocketAddress,
                                        protected val config: UDP.Config)
-  extends ClientImpl with UDPChannelImpl {
+  extends ClientImpl[SocketAddress] with UDPChannelImpl {
 
   protected val input : UDP.Receiver   .Directed = UDP.Receiver   (channel, target, config)
   protected val output: UDP.Transmitter.Directed = UDP.Transmitter(channel, target, config)

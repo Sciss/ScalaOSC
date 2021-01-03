@@ -20,9 +20,10 @@ object Transmitter {
   type Net      = Channel.Net
 
   object Undirected {
-    trait Net extends Channel with Channel.Net.ConfigLike {
-      def send(p: Packet, target: SocketAddress): Unit
-    }
+    trait Net extends Undirected[SocketAddress] with Channel.Net.ConfigLike
+  }
+  trait Undirected[Address] extends Channel {
+    def send(p: Packet, target: Address): Unit
   }
 
   object Directed {
@@ -34,7 +35,6 @@ object Transmitter {
   def apply(target: SocketAddress, config: Channel.Net.Config): Transmitter.Directed.Net = config match {
     case udp: UDP     .Config => UDP    .Transmitter(target, udp)
     case tcp: TCP     .Config => TCP    .Transmitter(target, tcp)
-    case b  : Browser .Config => Browser.Transmitter(target, b  )
     case _ => throw new IllegalArgumentException(s"Unsupported config $config")
   }
 }

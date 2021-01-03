@@ -15,23 +15,18 @@ package de.sciss.osc
 package impl
 
 import java.io.IOException
-import java.net.{InetSocketAddress, SocketAddress}
 
 private[osc] final class UndirectedBrowserTransmitterImpl(protected val driver: BrowserDriver.Repr,
                                                           protected val config: Browser.Config)
-  extends BrowserTransmitterImpl with Transmitter.Undirected.Net {
+  extends BrowserTransmitterImpl with Browser.Transmitter.Undirected {
 
   override def isConnected: Boolean = isOpen
 
   override def connect(): Unit = ()
 
-  override def send(p: Packet, target: SocketAddress): Unit = target match {
-    case remote: InetSocketAddress =>
-      val key = remote.getPort.toString
-      val ep  = driver.getOrElse(key, throw new IOException(s"Target endpoint $key not found"))
-      send(p, ep)
-
-    case _ =>
-      throw new UnsupportedOperationException(s"target $target is not an InetSocketAddress")
+  override def send(p: Packet, target: Browser.Address): Unit = {
+    val key = target.port.toString
+    val ep  = driver.getOrElse(key, throw new IOException(s"Target endpoint $key not found"))
+    send(p, ep)
   }
 }

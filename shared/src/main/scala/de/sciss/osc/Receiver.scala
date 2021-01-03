@@ -16,7 +16,7 @@ package de.sciss.osc
 import java.net.SocketAddress
 
 object Receiver {
-  type Net      = Channel /* Receiver */ with Channel.Net.ConfigLike
+  type Net      = Channel with Channel.Net.ConfigLike
   type Directed = Channel.Directed.Input
 
   object Directed {
@@ -38,7 +38,6 @@ object Receiver {
   def apply(target: SocketAddress, config: Channel.Net.Config): Receiver.Directed.Net = config match {
     case udp: UDP     .Config => UDP    .Receiver(target, udp )
     case tcp: TCP     .Config => TCP    .Receiver(target, tcp )
-    case b  : Browser .Config => Browser.Receiver(target, b   )
     case _ => throw new IllegalArgumentException(s"Unsupported config $config")
   }
 }

@@ -16,20 +16,14 @@ package de.sciss.osc
 import de.sciss.osc.Browser.Config
 import de.sciss.osc.impl.BrowserDriver
 
-import java.net.{InetSocketAddress, SocketAddress}
-
 trait BrowserReceiverPlatform {
   def apply(): Browser.Receiver.Undirected = apply(Config.default)
 
   def apply(config: Config): Browser.Receiver.Undirected =
     new impl.UndirectedBrowserReceiverImpl(BrowserDriver(), config)
 
-  def apply(target: SocketAddress): Browser.Receiver.Directed = apply(target, Config.default)
+  def apply(target: Browser.Address): Browser.Receiver.Directed = apply(target, Config.default)
 
-  def apply(target: SocketAddress, config: Config): Browser.Receiver.Directed = target match {
-    case remote: InetSocketAddress =>
-      new impl.DirectedBrowserReceiverImpl(BrowserDriver(), remote.getPort, config)
-
-    case _ => throw new UnsupportedOperationException(s"target $target is not an InetSocketAddress")
-  }
+  def apply(target: Browser.Address, config: Config): Browser.Receiver.Directed =
+    new impl.DirectedBrowserReceiverImpl(BrowserDriver(), target, config)
 }

@@ -13,10 +13,10 @@
 
 package de.sciss.osc
 
-import java.net.SocketAddress
-import java.nio.channels.{DatagramChannel, ServerSocketChannel, SocketChannel}
 import de.sciss.osc.{Channel => OSCChannel, Client => OSCClient, Receiver => OSCReceiver, Server => OSCServer, Transmitter => OSCTransmitter}
 
+import java.net.SocketAddress
+import java.nio.channels.{DatagramChannel, ServerSocketChannel, SocketChannel}
 import scala.language.implicitConversions
 
 sealed trait Transport {
@@ -197,8 +197,10 @@ case object File extends Transport {
 /** A simple direct invocation protocol for communication client-side within a browser.
   * Encoding and decoding goes through JavaScript's `Uint8Array`.
   */
-case object Browser extends Transport.Net {
+case object Browser extends Transport {
   final val name = "Browser"
+
+  final case class Address(port: Int)
 
   object Config {
     def default: Config = apply().build
@@ -208,27 +210,35 @@ case object Browser extends Transport.Net {
     def apply(): ConfigBuilder = new impl.BrowserConfigBuilderImpl
   }
 
-  trait Config extends OSCChannel.Net.Config {
+  trait ConfigLike extends OSCChannel.ConfigLike {
+    def localAddress: Browser.Address
+  }
+
+  trait Config extends OSCChannel.Config with ConfigLike {
     override final def toString: String = s"$name.Config@${hashCode().toHexString}"
   }
 
-  trait ConfigBuilder extends OSCChannel.Net.ConfigBuilder {
+  trait ConfigBuilder extends OSCChannel.ConfigBuilder with ConfigLike {
     override final def toString: String = s"$name.ConfigBuilder@${hashCode().toHexString}"
+
+    def localAddress_=(address: Browser.Address): Unit
 
     override def build: Config
   }
 
   object Transmitter extends BrowserTransmitterPlatform {
-    type Directed   = OSCTransmitter.Directed  .Net with Channel
-    type Undirected = OSCTransmitter.Undirected.Net with Channel
+    trait Directed    extends OSCTransmitter.Directed with Channel
+    trait Undirected  extends OSCTransmitter.Undirected[Browser.Address] with Channel
   }
 
   object Receiver extends BrowserReceiverPlatform {
-    type Directed   = OSCReceiver.Directed with OSCReceiver.Net
-    type Undirected = OSCReceiver.Undirected.Net
+    trait Directed   extends OSCReceiver.Directed with Channel
+    trait Undirected extends Channel {
+      var action: (Packet, Browser.Address) => Unit
+    }
   }
 
-  trait Channel extends OSCChannel with OSCChannel.Net.ConfigLike
+  trait Channel extends OSCChannel with ConfigLike
 
   object Client extends BrowserClientPlatform
 

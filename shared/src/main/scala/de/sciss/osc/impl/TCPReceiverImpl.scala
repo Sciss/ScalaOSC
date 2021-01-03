@@ -21,7 +21,10 @@ import java.nio.channels.{ClosedChannelException, SocketChannel}
 private[osc] final class TCPReceiverImpl(val channel: SocketChannel,
                                          protected val target: SocketAddress,
                                          protected val config: TCP.Config)
-  extends DirectedReceiverImpl with SingleChannelDirectImpl with ThreadedReceiverImpl with TCPSingleChannelImpl {
+  extends DirectedReceiverImpl[SocketAddress]
+    with SingleChannelDirectImpl
+    with ThreadedReceiverImpl
+    with TCPSingleChannelImpl {
 
   def isConnected: Boolean = channel.isConnected && isThreadRunning
 

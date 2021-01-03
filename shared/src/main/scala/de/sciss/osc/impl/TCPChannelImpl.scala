@@ -14,7 +14,7 @@
 package de.sciss.osc
 package impl
 
-import java.net.InetSocketAddress
+import java.net.{InetSocketAddress, SocketAddress}
 import java.nio.channels.SocketChannel
 
 private[osc] trait TCPChannelImpl extends ChannelImpl {
@@ -23,7 +23,7 @@ private[osc] trait TCPChannelImpl extends ChannelImpl {
   final def transport: Transport.Net = config.transport
 }
 
-private[osc] trait TCPSingleChannelImpl extends TCPChannelImpl with TCP.Channel with DirectedImpl {
+private[osc] trait TCPSingleChannelImpl extends TCPChannelImpl with TCP.Channel with DirectedImpl[SocketAddress] {
   override def channel: SocketChannel
 
   override protected def config: TCP.Config

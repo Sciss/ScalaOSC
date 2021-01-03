@@ -17,14 +17,15 @@ package impl
 import de.sciss.osc.Channel.Directed.Input.{Action, NoAction}
 
 private[osc] final class DirectedBrowserReceiverImpl(driver: BrowserDriver.Repr,
-                                                     remotePort: Int, config: Browser.Config)
+                                                     remoteSocketAddress: Browser.Address,
+                                                     config: Browser.Config)
   extends BrowserReceiverImpl(driver, config)
-    with Channel.Directed.Input with Channel.Net.ConfigLike {
+    with Channel.Directed.Input with Browser.ConfigLike with Browser.Receiver.Directed {
 
   var action: Action = NoAction
 
   override protected def filterPort(remotePort: Int): Boolean =
-    remotePort == this.remotePort
+    remotePort == remoteSocketAddress.port
 
   override protected def dispatch(p: Packet, remotePort: Int): Unit =
     action(p)

@@ -30,6 +30,6 @@ private[osc] trait BrowserTransmitterImpl extends TransmitterImpl with BrowserCh
     val sz = buf.limit()
     dumpPacket(p)
     val uInt8Buf = new Uint8Array(arrayBuf, 0, sz)
-    ep.receive(localPort, uInt8Buf)
+    ep.receive(localAddress.port, uInt8Buf)
   }
 }

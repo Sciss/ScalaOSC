@@ -14,7 +14,6 @@
 package de.sciss.osc
 package impl
 
-import java.net.InetSocketAddress
 import java.nio.ByteBuffer
 import java.nio.channels.InterruptibleChannel
 import scala.scalajs.js.typedarray.{ArrayBuffer, TypedArrayBuffer}
@@ -29,7 +28,9 @@ private[osc] trait BrowserChannelImpl extends ChannelImpl with Browser.Channel {
 
   override protected def config: Browser.Config
 
-  final def transport: Transport.Net = config.transport
+  final def transport: Transport = config.transport
+
+  final def localAddress: Browser.Address = config.localAddress
 
   override object channel extends InterruptibleChannel {
     private[this] var _open = true
@@ -39,6 +40,4 @@ private[osc] trait BrowserChannelImpl extends ChannelImpl with Browser.Channel {
 
     override def isOpen: Boolean = _open
   }
-
-  override def localSocketAddress: InetSocketAddress = config.localSocketAddress
 }

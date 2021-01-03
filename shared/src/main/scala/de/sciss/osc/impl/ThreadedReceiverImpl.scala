@@ -15,7 +15,6 @@ package de.sciss.osc
 package impl
 
 import java.io.IOException
-import java.net.SocketAddress
 import java.nio.Buffer
 import java.nio.channels.{AsynchronousCloseException, ClosedChannelException}
 
@@ -62,7 +61,7 @@ private[osc] trait ThreadedReceiverImpl extends SingleInputChannelImpl with Thre
     */
 }
 
-private[osc] trait DirectedReceiverImpl extends SingleInputChannelImpl /*ReceiverImpl*/ with DirectedInputImpl {
+private[osc] trait DirectedReceiverImpl[Address] extends SingleInputChannelImpl with DirectedInputImpl[Address] {
   override def toString: String = s"${transport.name}.Receiver($target)@${hashCode().toHexString}"
 
   @throws(classOf[PacketCodec.Exception])
@@ -78,7 +77,10 @@ private[osc] trait DirectedReceiverImpl extends SingleInputChannelImpl /*Receive
   }
 }
 
-private[osc] trait UndirectedNetReceiverImpl extends SingleInputChannelImpl /*ReceiverImpl*/ with UndirectedNetInputImpl {
+private[osc] trait UndirectedNetReceiverImpl[Address >: Null]
+  extends SingleInputChannelImpl /*ReceiverImpl*/ /*with UndirectedNetInputImpl*/ {
+
+  protected def action: (Packet, Address) => Unit
 
   @throws(classOf[IOException])
   protected final def connectChannel(): Unit = ()
@@ -93,7 +95,7 @@ private[osc] trait UndirectedNetReceiverImpl extends SingleInputChannelImpl /*Re
     *                   this may be `null` in which case this method does nothing.
     */
   @throws(classOf[Exception])
-  protected final def flipDecodeDispatch(sender: SocketAddress): Unit =
+  protected final def flipDecodeDispatch(sender: Address): Unit =
     if (sender != null) /* try */ {
       (buf: Buffer).flip()
       val p = codec.decode(buf)

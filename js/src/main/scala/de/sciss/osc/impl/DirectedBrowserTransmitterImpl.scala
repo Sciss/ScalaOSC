@@ -15,12 +15,11 @@ package de.sciss.osc
 package impl
 
 import java.io.IOException
-import java.net.InetSocketAddress
 
 private[osc] final class DirectedBrowserTransmitterImpl(protected val driver: BrowserDriver.Repr,
-                                                        val remoteSocketAddress: InetSocketAddress,
+                                                        val remoteAddress: Browser.Address,
                                                         protected val config: Browser.Config)
-  extends BrowserTransmitterImpl with Channel.Directed.Output with Channel.Directed.Net {
+  extends BrowserTransmitterImpl with Channel.Directed.Output with Browser.Transmitter.Directed {
 
   override def !(p: Packet): Unit = bufSync.synchronized {
     if (ep == null) throw new IOException("Channel not yet connected")
@@ -31,7 +30,7 @@ private[osc] final class DirectedBrowserTransmitterImpl(protected val driver: Br
 
   def connect(): Unit = bufSync.synchronized {
     if (!isConnected) {
-      val key = remotePort.toString
+      val key = remoteAddress.port.toString
       ep      = driver.getOrElse(key, throw new IOException(s"Target endpoint $key not found"))
     }
   }

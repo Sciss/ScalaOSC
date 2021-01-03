@@ -14,12 +14,18 @@
 package de.sciss.osc
 package impl
 
+import de.sciss.osc.Channel.Undirected.Input.Net.Action
+
+import java.net.SocketAddress
 import java.nio.Buffer
 import java.nio.channels.DatagramChannel
 
 private[osc] final class UndirectedUDPReceiverImpl(val channel: DatagramChannel,
                                                    protected val config: UDP.Config)
-  extends UndirectedNetReceiverImpl with SingleChannelDirectImpl with ThreadedReceiverImpl with UDPChannelImpl with Channel.Undirected.Input.Net {
+  extends UndirectedNetReceiverImpl[SocketAddress]
+    with SingleChannelDirectImpl with ThreadedReceiverImpl with UDPChannelImpl with Channel.Undirected.Input.Net {
+
+  override var action: Action = ???
 
   override def isConnected: Boolean = isOpen && isThreadRunning
 

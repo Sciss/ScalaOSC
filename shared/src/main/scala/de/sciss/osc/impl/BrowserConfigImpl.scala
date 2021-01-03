@@ -14,17 +14,17 @@
 package de.sciss.osc
 package impl
 
-import java.net.InetSocketAddress
-
-private[osc] final class BrowserConfigBuilderImpl extends NetChannelConfigBuilderImpl with Browser.ConfigBuilder {
+private[osc] final class BrowserConfigBuilderImpl extends ChannelConfigBuilderImpl with Browser.ConfigBuilder {
   def transport: Browser.type = Browser
 
+  override var localAddress: Browser.Address = Browser.Address(0)
+
   def build: Browser.Config =
-    BrowserConfigImpl(bufferSize = bufferSize, codec = codec, localSocketAddress = localSocketAddress)
+    BrowserConfigImpl(bufferSize = bufferSize, codec = codec, localAddress = localAddress)
 }
 
 private[osc] final case class BrowserConfigImpl(bufferSize: Int, codec: PacketCodec,
-                                                localSocketAddress: InetSocketAddress)
+                                                localAddress: Browser.Address)
   extends Browser.Config {
 
   def transport: Browser.type = Browser

@@ -15,10 +15,8 @@ package de.sciss.osc
 
 import de.sciss.osc.Browser.Config
 
-import java.net.SocketAddress
-
 // no constructors on the JVM
 trait BrowserReceiverPlatform {
-  def apply(target: SocketAddress, config: Config): Browser.Receiver.Directed =
+  def apply(target: Int, config: Config): Browser.Receiver.Directed =
     throw new UnsupportedOperationException("Browser.Receiver not supported on the JVM")
 }

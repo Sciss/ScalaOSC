@@ -29,7 +29,7 @@ private[osc] abstract class BrowserReceiverImpl(driver: BrowserDriver.Repr,
 
   override def connect(): Unit = bufSync.synchronized {
     if (!isConnected) {
-      val key = localPort.toString
+      val key = localAddress.port.toString
       if (driver.contains(key)) throw new AlreadyBoundException
 
       driver.put(key, ep)
@@ -70,7 +70,7 @@ private[osc] abstract class BrowserReceiverImpl(driver: BrowserDriver.Repr,
 
   override def close(): Unit = bufSync.synchronized {
     channel.close()
-    val key = localPort.toString
+    val key = localAddress.port.toString
     driver.remove(key)
     _connected = false
   }

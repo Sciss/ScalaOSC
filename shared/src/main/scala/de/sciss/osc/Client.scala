@@ -21,7 +21,6 @@ object Client {
   def apply(target: SocketAddress, config: Channel.Net.Config): Client.Net = config match {
     case udp: UDP     .Config => UDP    .Client(target, udp )
     case tcp: TCP     .Config => TCP    .Client(target, tcp )
-    case b  : Browser .Config => Browser.Client(target, b   )
     case _ => throw new IllegalArgumentException(s"Unsupported config $config")
   }
 }

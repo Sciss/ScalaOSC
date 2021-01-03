@@ -21,7 +21,10 @@ import java.nio.channels.DatagramChannel
 private[osc] final class DirectedUDPReceiverImpl(val channel: DatagramChannel,
                                                  protected val target: SocketAddress,
                                                  protected val config: UDP.Config)
-  extends DirectedReceiverImpl with SingleChannelDirectImpl with ThreadedReceiverImpl with UDPChannelImpl {
+  extends DirectedReceiverImpl[SocketAddress]
+    with SingleChannelDirectImpl
+    with ThreadedReceiverImpl
+    with UDPChannelImpl {
 
   def isConnected: Boolean = channel.isConnected && isThreadRunning
 

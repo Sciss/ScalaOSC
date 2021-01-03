@@ -14,7 +14,7 @@
 package de.sciss.osc
 package impl
 
-import java.io.{IOException, PrintStream}
+import java.io.PrintStream
 import java.nio.ByteBuffer
 
 private[osc] trait ChannelImpl extends Channel {

@@ -14,16 +14,16 @@
 package de.sciss.osc
 package impl
 
-import java.net.InetSocketAddress
-
 private[osc] final class UndirectedBrowserReceiverImpl(driver: BrowserDriver.Repr, config: Browser.Config)
   extends BrowserReceiverImpl(driver, config)
-    with UndirectedNetReceiverImpl {
+    with UndirectedNetReceiverImpl[Browser.Address] with Browser.Receiver.Undirected {
+
+  override var action: (Packet, Browser.Address) => Unit = _
 
   override protected def filterPort(remotePort: Int): Boolean = true
 
   override protected def dispatch(p: Packet, remotePort: Int): Unit = {
-    val target = InetSocketAddress.createUnresolved("127.0.0.1", remotePort)
+    val target = Browser.Address(remotePort)
     action(p, target)
   }
 }

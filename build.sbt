@@ -1,3 +1,5 @@
+import com.typesafe.tools.mima.core.{Problem, ProblemFilters}
+
 lazy val baseName       = "ScalaOSC"
 lazy val baseNameL      = baseName.toLowerCase()
 lazy val projectVersion = "1.2.4-SNAPSHOT"
@@ -60,6 +62,9 @@ lazy val root = crossProject(JVMPlatform, JSPlatform).in(file("."))
     ),
     buildInfoPackage := "de.sciss.osc",
     mimaPreviousArtifacts := Set("de.sciss" %% baseNameL % mimaVersion),
+    mimaBinaryIssueFilters ++= Seq(
+      ProblemFilters.exclude[Problem]("de.sciss.osc.impl.*"),
+    ),
   )
   .jsSettings(
     libraryDependencies ++= Seq(

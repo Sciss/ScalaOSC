@@ -15,11 +15,9 @@ package de.sciss.osc
 
 import de.sciss.osc.Browser.Config
 
-import java.net.SocketAddress
-
 trait BrowserClientPlatform {
-  def apply(target: SocketAddress): Browser.Client = apply(target, Config.default)
+  def apply(target: Browser.Address): Browser.Client = apply(target, Config.default)
 
-  def apply(target: SocketAddress, config: Config): Browser.Client =
+  def apply(target: Browser.Address, config: Config): Browser.Client =
     new impl.BrowserClientImpl(target, config)
 }
