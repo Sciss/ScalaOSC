@@ -20,7 +20,10 @@ object Transmitter {
   type Net      = Channel.Net
 
   object Undirected {
-    trait Net extends Undirected[SocketAddress] with Channel.Net.ConfigLike
+    // does not extend Undirected[SocketAddress] for bin-compat reasons. XXX TODO in next major version
+    trait Net extends /*Undirected[SocketAddress] with*/ Channel with Channel.Net.ConfigLike {
+      def send(p: Packet, target: SocketAddress): Unit
+    }
   }
   trait Undirected[Address] extends Channel {
     def send(p: Packet, target: Address): Unit
