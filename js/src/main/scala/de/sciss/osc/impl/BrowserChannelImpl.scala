@@ -14,13 +14,17 @@
 package de.sciss.osc
 package impl
 
-import java.nio.ByteBuffer
+import java.nio.{ByteBuffer, ByteOrder}
 import scala.scalajs.js.typedarray.{ArrayBuffer, TypedArrayBuffer}
 
 private[osc] trait BrowserChannelWrapImpl extends BrowserChannelImpl {
   final protected val arrayBuf = new ArrayBuffer(config.bufferSize)
 
-  protected final val buf: ByteBuffer = TypedArrayBuffer.wrap(arrayBuf)
+  protected final val buf: ByteBuffer = {
+    val res = TypedArrayBuffer.wrap(arrayBuf)
+    res.order(ByteOrder.BIG_ENDIAN)
+    res
+  }
 }
 
 private[osc] trait BrowserChannelImpl extends ChannelImpl with Browser.Channel {
