@@ -197,7 +197,8 @@ case object File extends Transport {
 /** A simple direct invocation protocol for communication client-side within a browser.
   * Encoding and decoding goes through JavaScript's `Uint8Array`.
   */
-case object Browser extends Transport {
+// XXX TODO: should not be `.Net`, but we need that for ScalaCollider bin-compat
+case object Browser extends Transport.Net {
   final val name = "Browser"
 
   final case class Address(port: Int)
