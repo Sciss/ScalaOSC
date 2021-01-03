@@ -14,9 +14,4 @@
 package de.sciss.osc
 package impl
 
-import java.io.IOException
-
-private[osc] trait TransmitterImpl extends SingleOutputChannelImpl {
-  @throws(classOf[IOException])
-  final def close(): Unit = channel.close()
-}
+private[osc] trait TransmitterImpl extends SingleOutputChannelImpl

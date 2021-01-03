@@ -68,7 +68,7 @@ object VariousTests {
     sync.synchronized(sync.wait())
   }
 
-  def transmitter(transport: Transport.Net): Unit = {
+  def transmitter(transport: Transport): Unit = {
     import Implicits._
 
     println(

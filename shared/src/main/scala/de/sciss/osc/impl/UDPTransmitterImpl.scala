@@ -14,4 +14,6 @@
 package de.sciss.osc
 package impl
 
-private[osc] trait UDPTransmitterImpl extends TransmitterImpl with SingleChannelDirectImpl with UDPChannelImpl
+private[osc] trait UDPTransmitterImpl extends TransmitterImpl with SingleChannelDirectImpl with UDPChannelImpl {
+  override def close(): Unit = closeChannel()
+}

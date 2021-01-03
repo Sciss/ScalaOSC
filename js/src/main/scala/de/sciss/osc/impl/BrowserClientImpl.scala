@@ -18,6 +18,8 @@ private[osc] final class BrowserClientImpl(protected val target: Browser.Address
                                            protected val config: Browser.Config)
   extends ClientImpl[Browser.Address] with BrowserChannelImpl {
 
+  override def isOpen: Boolean = input.isOpen
+
   protected val input : Browser.Receiver   .Directed = Browser.Receiver   (target, config)
   protected val output: Browser.Transmitter.Directed = Browser.Transmitter(target, config)
 }

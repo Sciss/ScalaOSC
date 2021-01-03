@@ -20,9 +20,16 @@ private[osc] final class UndirectedBrowserTransmitterImpl(protected val driver: 
                                                           protected val config: Browser.Config)
   extends BrowserTransmitterImpl with Browser.Transmitter.Undirected {
 
-  override def isConnected: Boolean = isOpen
+  private[this] var _open = true
+
+  override def isConnected: Boolean = _open
 
   override def connect(): Unit = ()
+
+  override def isOpen: Boolean = _open
+
+  override def close(): Unit =
+    _open = false
 
   override def send(p: Packet, target: Browser.Address): Unit = {
     val key = target.port.toString

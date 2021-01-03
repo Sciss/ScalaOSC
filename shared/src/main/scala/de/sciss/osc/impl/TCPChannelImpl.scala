@@ -17,10 +17,10 @@ package impl
 import java.net.{InetSocketAddress, SocketAddress}
 import java.nio.channels.SocketChannel
 
-private[osc] trait TCPChannelImpl extends ChannelImpl {
+private[osc] trait TCPChannelImpl extends NetChannelImpl {
   protected def config: TCP.Config
 
-  final def transport: Transport.Net = config.transport
+  final def transport: Transport = config.transport
 }
 
 private[osc] trait TCPSingleChannelImpl extends TCPChannelImpl with TCP.Channel with DirectedImpl[SocketAddress] {

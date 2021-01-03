@@ -5,10 +5,9 @@ object TestApp extends App {
     case Seq("--pingPong") =>
       VariousTests.pingPong()
     case Seq("--testTransmitter", transName) =>
-      Transport(transName) match {
-        case netTrans: Transport.Net => VariousTests.transmitter(netTrans)
-        case _ => sys.error(s"Unsupported transport '$transName'")
-      }
+      val t = Transport(transName)
+      VariousTests.transmitter(t)
+
     case Seq("--testReceiver") =>
       VariousTests.receiver()
     //         case Seq( "--runChecks" ) =>

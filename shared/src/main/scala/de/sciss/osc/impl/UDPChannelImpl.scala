@@ -15,14 +15,11 @@ package de.sciss.osc
 package impl
 
 import java.net.InetSocketAddress
-import java.nio.channels.DatagramChannel
 
-private[osc] trait UDPChannelImpl extends ChannelImpl with UDP.Channel {
+private[osc] trait UDPChannelImpl extends NetChannelImpl with UDP.Channel {
   override protected def config: UDP.Config
 
-  final def transport: Transport.Net = config.transport
-
-  override def channel: DatagramChannel
+  final def transport: Transport = config.transport
 
   final def localSocketAddress: InetSocketAddress = {
     val so = channel.socket()

@@ -30,6 +30,8 @@ private[osc] trait ThreadedReceiverImpl extends SingleInputChannelImpl with Thre
   @throws(classOf[IOException])
   protected def connectChannel(): Unit
 
+  protected def closeChannel(): Unit
+
   final protected def threadLoop(): Unit =
     try {
       receive()
@@ -44,7 +46,7 @@ private[osc] trait ThreadedReceiverImpl extends SingleInputChannelImpl with Thre
   @throws(classOf[IOException])
   final def close(): Unit = {
     stopThread()
-    channel.close()
+    closeChannel()
   }
 
   @throws(classOf[IOException])

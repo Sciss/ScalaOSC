@@ -23,8 +23,6 @@ sealed trait Transport {
   def name: String
 }
 object Transport {
-  sealed trait Net extends Transport
-
   def apply(name: String): Transport = name.toUpperCase match {
     case UDP    .name => UDP
     case TCP    .name => TCP
@@ -33,7 +31,7 @@ object Transport {
   }
 }
 
-case object UDP extends Transport.Net {
+case object UDP extends Transport {
   final val name = "UDP"
 
   object Config {
@@ -73,7 +71,7 @@ case object UDP extends Transport.Net {
       new impl.DirectedUDPTransmitterImpl(channel, target, config)
   }
 
-  trait Channel extends OSCChannel with OSCChannel.Net.ConfigLike {
+  trait Channel extends OSCChannel.Net {
     override def channel: DatagramChannel
   }
 
@@ -118,7 +116,7 @@ case object UDP extends Transport.Net {
   * (cf. http://www.faqs.org/rfcs/rfc1055.html).
   * This may be configurable in the future.
   */
-case object TCP extends Transport.Net {
+case object TCP extends Transport {
   final val name = "TCP"
 
   object Config {
@@ -188,17 +186,10 @@ case object TCP extends Transport.Net {
   }
 }
 
-/** XXX TODO -- this transport has not yet been implemented. Remove in major version */
-@deprecated("This transport is unsupported and will be removed", since = "1.2.4")
-case object File extends Transport {
-  final val name = "File"
-}
-
 /** A simple direct invocation protocol for communication client-side within a browser.
   * Encoding and decoding goes through JavaScript's `Uint8Array`.
   */
-// XXX TODO: should not be `.Net`, but we need that for ScalaCollider bin-compat
-case object Browser extends Transport.Net {
+case object Browser extends Transport {
   final val name = "Browser"
 
   final case class Address(port: Int)

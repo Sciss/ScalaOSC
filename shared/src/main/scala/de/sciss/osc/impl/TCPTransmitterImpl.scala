@@ -26,6 +26,8 @@ private[osc] final class TCPTransmitterImpl(val channel: SocketChannel,
 
   override def toString: String = s"${TCP.name}.Transmitter($target)@${hashCode().toHexString}"
 
+  override def close(): Unit = closeChannel()
+
   def isConnected: Boolean = channel.isConnected
 
   @throws(classOf[IOException])

@@ -13,9 +13,9 @@
 
 package de.sciss.osc
 
-import java.io.{IOException, PrintStream}
+import java.io.{Closeable, IOException, PrintStream}
 import java.net.{InetAddress, InetSocketAddress, SocketAddress}
-import java.nio.channels.{InterruptibleChannel, Channel => NIOChannel}
+import java.nio.channels.{Channel => NIOChannel}
 
 object Channel {
   trait ConfigLike {
@@ -57,8 +57,6 @@ object Channel {
 
   object Net {
     trait ConfigLike extends Channel.ConfigLike {
-      override def transport: Transport.Net
-
       def localSocketAddress: InetSocketAddress
 
       final def localPort       : Int         = localSocketAddress.getPort
@@ -81,7 +79,9 @@ object Channel {
     }
   }
 
-  type Net = Channel with Net.ConfigLike
+  trait Net extends Channel with Net.ConfigLike {
+    def channel: NIOChannel
+  }
 
   object Undirected {
     object Input {
@@ -98,7 +98,7 @@ object Channel {
   }
 
   object Directed {
-    trait Net extends Channel with Net.ConfigLike {
+    trait Net extends Channel.Net {
       /** The remote socket address of this channel. Returns `null` if the
         * channel has not yet been connected.
         *
@@ -136,12 +136,10 @@ object Channel {
   }
 }
 
-trait Channel extends Channel.ConfigLike with NIOChannel {
+trait Channel extends Channel.ConfigLike with Closeable {
   def bufferSize: Int
 
   def codec: PacketCodec
-
-  def channel: InterruptibleChannel
 
   /** Queries whether the channel is still open. */
   def isOpen: Boolean

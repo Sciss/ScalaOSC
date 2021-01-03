@@ -22,7 +22,12 @@ private[osc] trait ChannelImpl extends Channel {
 
   final def bufferSize: Int         = config.bufferSize
   final def codec     : PacketCodec = config.codec
-  final def isOpen    : Boolean     = channel.isOpen
+}
+
+private[osc] trait NetChannelImpl extends ChannelImpl with Channel.Net {
+  final def isOpen: Boolean = channel.isOpen
+
+  final protected def closeChannel(): Unit = channel.close()
 }
 
 private[osc] trait SingleChannelDirectImpl extends SingleChannelImpl {

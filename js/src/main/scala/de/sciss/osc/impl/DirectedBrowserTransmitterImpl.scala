@@ -26,6 +26,7 @@ private[osc] final class DirectedBrowserTransmitterImpl(protected val driver: Br
     send(p, ep)
   }
 
+  private[this] var _open = true
   private[this] var ep: BrowserEndpoint = null
 
   def connect(): Unit = bufSync.synchronized {
@@ -36,4 +37,11 @@ private[osc] final class DirectedBrowserTransmitterImpl(protected val driver: Br
   }
 
   override def isConnected: Boolean = bufSync.synchronized { ep != null }
+
+  override def isOpen: Boolean = _open
+
+  override def close(): Unit = bufSync.synchronized {
+    _open = false
+    ep = null
+  }
 }
