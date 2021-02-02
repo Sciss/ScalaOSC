@@ -19,7 +19,7 @@ ThisBuild / version      := projectVersion
 ThisBuild / organization := "de.sciss"
 
 lazy val commonJvmSettings = Seq(
-  crossScalaVersions    := Seq("3.0.0-M2", "2.13.4", "2.12.12"),  // 3.0.0-M3 ScalaTest is not working yet
+  crossScalaVersions    := Seq("3.0.0-M3", "2.13.4", "2.12.12"),  // 3.0.0-M3 ScalaTest is not working yet
 )
 
 lazy val commonSettings = Seq(
