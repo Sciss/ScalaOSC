@@ -10,7 +10,7 @@ lazy val deps = new {
     val scalaJavaLocales = "1.1.0"
   }
   val test = new {
-    val scalaTest = "3.2.3"
+    val scalaTest = "3.2.4"
   }
 }
 
@@ -19,7 +19,7 @@ ThisBuild / version      := projectVersion
 ThisBuild / organization := "de.sciss"
 
 lazy val commonJvmSettings = Seq(
-  crossScalaVersions    := Seq("3.0.0-M3", "2.13.4", "2.12.12"),  // 3.0.0-M3 ScalaTest is not working yet
+  crossScalaVersions    := Seq("3.0.0-RC1", "2.13.4", "2.12.13"),
 )
 
 lazy val commonSettings = Seq(
