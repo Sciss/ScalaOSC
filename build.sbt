@@ -7,10 +7,10 @@ lazy val mimaVersion    = "1.3.0"
 
 lazy val deps = new {
   val main = new {
-    val scalaJavaLocales = "1.1.0"
+    val scalaJavaLocales = "1.1.2"
   }
   val test = new {
-    val scalaTest = "3.2.4"
+    val scalaTest = "3.2.7"
   }
 }
 
@@ -19,14 +19,14 @@ ThisBuild / version      := projectVersion
 ThisBuild / organization := "de.sciss"
 
 lazy val commonJvmSettings = Seq(
-  crossScalaVersions    := Seq("3.0.0-RC1", "2.13.4", "2.12.13"),
+  crossScalaVersions    := Seq("3.0.0-RC2", "2.13.5", "2.12.13"),
 )
 
 lazy val commonSettings = Seq(
   name                  := baseName,
 //  version               := projectVersion,
 //  organization          := "de.sciss",
-  scalaVersion          := "2.13.4",
+  scalaVersion          := "2.13.5",
   description           := "A library for OpenSoundControl (OSC), a message protocol used in multi-media applications.",
   homepage              := Some(url(s"https://git.iem.at/sciss/${name.value}")),
   licenses              := Seq("LGPL v2.1+" -> url("http://www.gnu.org/licenses/lgpl-2.1.txt")),
