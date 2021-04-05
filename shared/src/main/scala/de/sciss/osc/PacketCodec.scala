@@ -121,7 +121,7 @@ object PacketCodec {
     def symbols(): Builder
 
     // stupidly, like in the case of String, no charset is defined
-    // ("an ascii character, sent as 32 bits" -- but in which encoding???)
+    // ("an ascii character, sent as 32 bits" -- but in which encoding?)
     // - should this thus be UTF-32? We currently drop support
     // for 'c'. It also hasn't made it into OSC 1.1
     //      def chars() : Builder

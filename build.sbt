@@ -2,7 +2,7 @@ import com.typesafe.tools.mima.core.{Problem, ProblemFilters}
 
 lazy val baseName       = "ScalaOSC"
 lazy val baseNameL      = baseName.toLowerCase()
-lazy val projectVersion = "1.3.0"
+lazy val projectVersion = "1.3.1"
 lazy val mimaVersion    = "1.3.0"
 
 lazy val deps = new {

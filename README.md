@@ -23,7 +23,7 @@ To link to ScalaOSC:
 
     libraryDependencies += "de.sciss" %% "scalaosc" % v
 
-The current version `v` is `"1.3.0"`
+The current version `v` is `"1.3.1"`
 
 __N.B.:__ A version is published for Scala 2.13 on Scala.js, but due to type-safety issues it does not
 maintain the contract of the library under JVM. The artefact is published solely for the purpose of

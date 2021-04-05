@@ -25,7 +25,7 @@ private[osc] final class UndirectedUDPReceiverImpl(val channel: DatagramChannel,
   extends UndirectedNetReceiverImpl[SocketAddress]
     with SingleChannelDirectImpl with ThreadedReceiverImpl with UDPChannelImpl with Channel.Undirected.Input.Net {
 
-  override var action: Action = ???
+  override var action: Action = Channel.Undirected.Input.Net.NoAction
 
   override def isConnected: Boolean = isOpen && isThreadRunning
 
