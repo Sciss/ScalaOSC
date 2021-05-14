@@ -10,7 +10,7 @@ lazy val deps = new {
     val scalaJavaLocales = "1.1.2"
   }
   val test = new {
-    val scalaTest = "3.2.8"
+    val scalaTest = "3.2.9"
   }
 }
 
@@ -19,7 +19,7 @@ ThisBuild / version      := projectVersion
 ThisBuild / organization := "de.sciss"
 
 lazy val commonJvmSettings = Seq(
-  crossScalaVersions    := Seq("3.0.0-RC3", "2.13.5", "2.12.13"),
+  crossScalaVersions    := Seq("3.0.0", "2.13.5", "2.12.13"),
 )
 
 lazy val commonSettings = Seq(
@@ -35,15 +35,16 @@ lazy val commonSettings = Seq(
   },
   scalacOptions       ++= Seq("-deprecation", "-unchecked", "-feature", "-encoding", "utf8"),
   scalacOptions ++= {
-    if (isDotty.value) Nil else Seq("-Xsource:2.13", "-Xlint:-stars-align,_")
+    // if (isDotty.value) Nil else 
+    Seq("-Xsource:2.13", "-Xlint:-stars-align,_")
   },
   scalacOptions in (Compile, compile) ++= {
     val jdkGt8 = scala.util.Properties.isJavaAtLeast("9")
-    if (!isDotty.value && jdkGt8) Seq("-release", "8") else Nil // JDK >8 breaks API; skip scala-doc
+    if (/* !isDotty.value && */ jdkGt8) Seq("-release", "8") else Nil // JDK >8 breaks API; skip scala-doc
   },
-  sources in (Compile, doc) := {
-    if (isDotty.value) Nil else (sources in (Compile, doc)).value // bug in dottydoc
-  },
+  // sources in (Compile, doc) := {
+  //   if (isDotty.value) Nil else (sources in (Compile, doc)).value // bug in dottydoc
+  // },
   initialCommands in console :=
     """import de.sciss.osc._
       |import Implicits._
